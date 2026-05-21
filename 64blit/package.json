@@ -1,0 +1,51 @@
+{
+  "name": "64blit-aigitdiff",
+  "displayName": "64blit AI Git Diff",
+  "description": "VS Code extension scaffold for the 64blit AI Git Diff tool.",
+  "version": "0.0.1",
+  "publisher": "64blit",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "git",
+    "diff",
+    "ai",
+    "code-review"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/64blit/extensions-vscode-64blit-aigitdiff.git"
+  },
+  "bugs": {
+    "url": "https://github.com/64blit/extensions-vscode-64blit-aigitdiff/issues"
+  },
+  "homepage": "https://github.com/64blit/extensions-vscode-64blit-aigitdiff#readme",
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {},
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.95.0",
+    "@types/mocha": "^10.0.9",
+    "@types/node": "20.x",
+    "@typescript-eslint/eslint-plugin": "^8.10.0",
+    "@typescript-eslint/parser": "^8.7.0",
+    "eslint": "^9.13.0",
+    "typescript": "^5.6.3",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1"
+  }
+}
