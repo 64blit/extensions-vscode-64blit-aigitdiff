@@ -4704,6 +4704,11 @@ let renderer = null, scene = null, camera = null, raycaster = null;
 let fileMesh = null, dirMesh = null, ringMesh = null, edgeLines = null, labelGroup = null, rootGroup = null;
 let dirLabelGroup = null, dirNodes = [];
 let nodes = [], fileNodes = [], changedNodes = [];
+let bobItems = []; // changed files gently floating
+const bobMatrix = new THREE.Matrix4();
+const bobQuat = new THREE.Quaternion();
+const bobScale = new THREE.Vector3();
+const bobPos = new THREE.Vector3();
 let byPath = new Map(), adj = new Map(), analysisByPath = new Map(), labelByPath = new Map();
 let viewedSet = new Set();
 let ringIndexByPath = new Map();
@@ -4718,6 +4723,11 @@ function esc(s) {
 }
 function churnOf(n) { return (n.add || 0) + (n.del || 0); }
 function isChanged(n) { return n.add !== undefined || n.del !== undefined; }
+function hash01(s) {
+    let h = 2166136261;
+    for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return ((h >>> 0) % 10000) / 10000;
+}
 
 // Orbit state — spherical coords around a pannable target on the map plane.
 let camTheta = 0, camPhi = 0.85, camDist = 1500;
@@ -4796,6 +4806,7 @@ function initThree() {
     const loop = () => {
         frameN++;
         if (camDirty && frameN % 5 === 0) { updateLabelVisibility(); camDirty = false; }
+        animateBob(performance.now() * 0.001);
         renderer.render(scene, camera);
         requestAnimationFrame(loop);
     };
@@ -4817,8 +4828,10 @@ function worldPos(n) {
     const half = layoutSize / 2;
     let z = n.depth * 1.5;
     if (!n.dir) {
-        z += n.r; // spheres sit on the plane
-        if (isChanged(n)) z += 5 + Math.min(30, Math.sqrt(churnOf(n)) * 1.3);
+        // Planets in space: each file floats at a deterministic altitude above
+        // its directory disc; changed files rise higher with churn.
+        z += n.r + 14 + hash01(n.path) * 110;
+        if (isChanged(n)) z += 22 + Math.min(48, Math.sqrt(churnOf(n)) * 1.6);
     }
     return new THREE.Vector3(n.x - half, half - n.y, z);
 }
@@ -4910,6 +4923,7 @@ function setData(payload) {
     }
 
     // File bubbles — real spheres, lit for depth.
+    const fileIdxByPath = new Map();
     if (fileNodes.length) {
         const geo = new THREE.SphereGeometry(1, 20, 14);
         fileMesh = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: 0xffffff }), fileNodes.length);
@@ -4920,23 +4934,25 @@ function setData(payload) {
             const r = fileNodes[i].r;
             m.multiply(new THREE.Matrix4().makeScale(r, r, r));
             fileMesh.setMatrixAt(i, m);
+            fileIdxByPath.set(fileNodes[i].path, i);
         }
         rootGroup.add(fileMesh);
     } else {
         fileMesh = null;
     }
 
-    // Quality / viewed halos on the floor under changed files.
+    // Quality / viewed rings — Saturn-style, around the sphere's equator.
     if (changedNodes.length) {
-        const geo = new THREE.RingGeometry(1.12, 1.38, 44);
+        const geo = new THREE.RingGeometry(1.35, 1.6, 44);
         ringMesh = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({
-            color: 0xffffff, transparent: true, opacity: 0.95, side: THREE.DoubleSide, depthWrite: false,
+            color: 0xffffff, transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthWrite: false,
         }), changedNodes.length);
         const m = new THREE.Matrix4();
         for (let i = 0; i < changedNodes.length; i++) {
             const n = changedNodes[i];
             ringIndexByPath.set(n.path, i);
-            m.makeTranslation(worldPos(n).x, worldPos(n).y, n.depth * 1.5 + 0.5);
+            const p = worldPos(n);
+            m.makeTranslation(p.x, p.y, p.z);
             m.multiply(new THREE.Matrix4().makeScale(n.r, n.r, 1));
             ringMesh.setMatrixAt(i, m);
             ringMesh.setColorAt(i, new THREE.Color(PAL.dir));
@@ -4946,11 +4962,13 @@ function setData(payload) {
         ringMesh = null;
     }
 
-    // Import edges — quadratic curves pulled toward the center (bundling-lite).
+    // Import edges — neural connections. Hot (touching a change) glow additive;
+    // cold repo wiring stays faint background structure.
     adj = new Map();
     const edges = payload.edges || [];
+    edgeLines = null;
     if (edges.length) {
-        const pos = [];
+        const hotPos = [], coldPos = [];
         for (const e of edges) {
             const a = nodes[e.from], b = nodes[e.to];
             if (!a || !b) continue;
@@ -4959,24 +4977,32 @@ function setData(payload) {
             adj.get(a.path).push(b.path);
             adj.get(b.path).push(a.path);
             const pa = worldPos(a), pb = worldPos(b);
-            pa.z += 2; pb.z += 2;
             const mid = pa.clone().add(pb).multiplyScalar(0.5);
-            const ctrl = mid.multiplyScalar(0.55);
-            ctrl.z = Math.max(pa.z, pb.z) + pa.distanceTo(pb) * 0.22 + 12;
+            const ctrl = new THREE.Vector3(mid.x * 0.7, mid.y * 0.7, Math.max(pa.z, pb.z) + pa.distanceTo(pb) * 0.18 + 10);
             const pts = new THREE.QuadraticBezierCurve3(pa, ctrl, pb).getPoints(16);
+            const dst = e.hot ? hotPos : coldPos;
             for (let i = 0; i < pts.length - 1; i++) {
-                pos.push(pts[i].x, pts[i].y, pts[i].z, pts[i + 1].x, pts[i + 1].y, pts[i + 1].z);
+                dst.push(pts[i].x, pts[i].y, pts[i].z, pts[i + 1].x, pts[i + 1].y, pts[i + 1].z);
             }
         }
-        const geo = new THREE.BufferGeometry();
-        geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-        edgeLines = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({
-            color: PAL.edge, transparent: true, opacity: 0.38,
-        }));
-        edgeLines.renderOrder = 5;
-        rootGroup.add(edgeLines);
-    } else {
-        edgeLines = null;
+        if (coldPos.length) {
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.Float32BufferAttribute(coldPos, 3));
+            const cold = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({
+                color: PAL.dir, transparent: true, opacity: 0.16, depthWrite: false,
+            }));
+            cold.renderOrder = 4;
+            rootGroup.add(cold);
+        }
+        if (hotPos.length) {
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.Float32BufferAttribute(hotPos, 3));
+            edgeLines = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({
+                color: PAL.edge, transparent: true, opacity: 0.6, depthWrite: false, blending: THREE.AdditiveBlending,
+            }));
+            edgeLines.renderOrder = 5;
+            rootGroup.add(edgeLines);
+        }
     }
 
     // One-word labels floating above changed bubbles.
@@ -4994,10 +5020,46 @@ function setData(payload) {
         labelByPath.set(n.path, sprite);
     }
     rootGroup.add(labelGroup);
+
+    // Gentle float — nuclei drifting. Changed files only (cheap: ≤ a few hundred).
+    bobItems = [];
+    for (const n of changedNodes) {
+        const fi = fileIdxByPath.get(n.path);
+        if (fi === undefined) continue;
+        bobItems.push({
+            n,
+            fi,
+            ri: ringIndexByPath.has(n.path) ? ringIndexByPath.get(n.path) : -1,
+            base: worldPos(n),
+            phase: hash01(n.path) * 6.283,
+            sprite: labelByPath.get(n.path) || null,
+        });
+    }
     camDirty = true;
 
     applyColors();
     updateProgress();
+}
+
+function animateBob(t) {
+    if (!fileMesh || !bobItems.length) return;
+    if (!document.body.classList.contains('map-mode')) return;
+    bobQuat.set(0, 0, 0, 1);
+    for (const it of bobItems) {
+        const dz = Math.sin(t * 0.9 + it.phase) * 3.5 + Math.sin(t * 0.37 + it.phase * 2.1) * 1.5;
+        bobPos.set(it.base.x, it.base.y, it.base.z + dz);
+        bobScale.set(it.n.r, it.n.r, it.n.r);
+        bobMatrix.compose(bobPos, bobQuat, bobScale);
+        fileMesh.setMatrixAt(it.fi, bobMatrix);
+        if (ringMesh && it.ri >= 0) {
+            bobScale.set(it.n.r, it.n.r, 1);
+            bobMatrix.compose(bobPos, bobQuat, bobScale);
+            ringMesh.setMatrixAt(it.ri, bobMatrix);
+        }
+        if (it.sprite) it.sprite.position.z = it.base.z + it.n.r + 8 + dz;
+    }
+    fileMesh.instanceMatrix.needsUpdate = true;
+    if (ringMesh) ringMesh.instanceMatrix.needsUpdate = true;
 }
 
 function weightOf(n) {

@@ -32,6 +32,8 @@ export interface MapNode {
 export interface MapEdge {
     from: number;
     to: number;
+    /** true when either endpoint is a changed file — drawn hot */
+    hot?: boolean;
 }
 
 export interface ArchMapPayload {
@@ -79,22 +81,32 @@ const IMPORT_RE = /(?:import|export)\s[^'"]*?from\s*['"]([^'"]+)['"]|import\s*\(
 
 const RESOLVE_SUFFIXES = ['', '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '/index.ts', '/index.tsx', '/index.js'];
 
-export function extractImports(fromPath: string, content: string, fileSet: Set<string>): string[] {
+/** Raw relative import specifiers found in a file's source. */
+export function extractImportSpecs(content: string): string[] {
     const out: string[] = [];
-    const dir = path.posix.dirname(fromPath);
     let m: RegExpExecArray | null;
     IMPORT_RE.lastIndex = 0;
     while ((m = IMPORT_RE.exec(content)) !== null) {
         const spec = m[1] || m[2] || m[3] || m[4];
-        if (!spec || (!spec.startsWith('./') && !spec.startsWith('../'))) continue;
-        const base = path.posix.normalize(path.posix.join(dir, spec));
-        for (const suffix of RESOLVE_SUFFIXES) {
-            const candidate = base + suffix;
-            if (fileSet.has(candidate)) {
-                out.push(candidate);
-                break;
-            }
-        }
+        if (spec && (spec.startsWith('./') || spec.startsWith('../'))) out.push(spec);
+    }
+    return out;
+}
+
+export function resolveImport(fromPath: string, spec: string, fileSet: Set<string>): string | null {
+    const base = path.posix.normalize(path.posix.join(path.posix.dirname(fromPath), spec));
+    for (const suffix of RESOLVE_SUFFIXES) {
+        const candidate = base + suffix;
+        if (fileSet.has(candidate)) return candidate;
+    }
+    return null;
+}
+
+export function extractImports(fromPath: string, content: string, fileSet: Set<string>): string[] {
+    const out: string[] = [];
+    for (const spec of extractImportSpecs(content)) {
+        const target = resolveImport(fromPath, spec, fileSet);
+        if (target) out.push(target);
     }
     return out;
 }
@@ -124,6 +136,8 @@ export interface BuildMapInput {
     comments: Map<string, number>;
     /** worktree contents for changed text files — used for import edges */
     contents: Map<string, string>;
+    /** pre-extracted relative import specifiers per file (whole-repo scan) */
+    importSpecs?: Map<string, string[]>;
     /** scope map to this folder (posix path, no trailing slash); '' = repo root */
     root?: string;
     /** glob patterns for non-code files/folders to hide */
@@ -277,20 +291,41 @@ export function buildArchMap(input: BuildMapInput): ArchMapPayload {
         nodes.push(node);
     });
 
-    // Import edges — from changed files' worktree contents.
-    const edges: MapEdge[] = [];
-    const seen = new Set<string>();
+    // Import edges. Whole-repo specs when the caller scanned them; changed-file
+    // worktree contents as the fallback source.
+    const specsByPath = new Map<string, string[]>();
+    if (input.importSpecs) {
+        for (const [p, specs] of input.importSpecs) specsByPath.set(p, specs);
+    }
     for (const [p, content] of contents) {
+        if (!specsByPath.has(p)) specsByPath.set(p, extractImportSpecs(content));
+    }
+    let edges: MapEdge[] = [];
+    const seen = new Set<string>();
+    for (const [p, specs] of specsByPath) {
         const fromId = idByPath.get(p);
         if (fromId === undefined) continue;
-        for (const target of extractImports(p, content, fileSet)) {
+        for (const spec of specs) {
+            const target = resolveImport(p, spec, fileSet);
+            if (!target) continue;
             const toId = idByPath.get(target);
             if (toId === undefined || toId === fromId) continue;
             const key = fromId + '>' + toId;
             if (seen.has(key)) continue;
             seen.add(key);
-            edges.push({ from: fromId, to: toId });
+            edges.push({
+                from: fromId,
+                to: toId,
+                hot: changes.has(p) || changes.has(target) || undefined,
+            });
         }
+    }
+    // Hairball guard — hot edges always survive.
+    const MAX_EDGES = 900;
+    if (edges.length > MAX_EDGES) {
+        const hot = edges.filter((e) => e.hot);
+        const cold = edges.filter((e) => !e.hot);
+        edges = hot.concat(cold.slice(0, Math.max(0, MAX_EDGES - hot.length)));
     }
 
     return {

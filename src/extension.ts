@@ -5,7 +5,7 @@ import * as os from 'os';
 import * as fsp from 'fs/promises';
 import * as crypto from 'crypto';
 import { getWebviewHtml } from './webview';
-import { buildArchMap, MapChangeInfo } from './archMap';
+import { buildArchMap, extractImportSpecs, MapChangeInfo } from './archMap';
 
 // node-pty native module — loaded lazily so the extension still activates
 // even on platforms where the prebuilt binary is missing/incompatible.
@@ -687,6 +687,40 @@ export function activate(context: vscode.ExtensionContext) {
     let mapRootOverride: string | undefined; // in-session override of gitDiffViewer.mapRoot
     const mapEnabled = () =>
         vscode.workspace.getConfiguration('gitDiffViewer').get<boolean>('experimentalMap', true);
+    // Whole-repo import scan, cached by (mtime, size) so repeat map builds only
+    // re-read files that actually changed on disk.
+    const importScanCache = new Map<string, { m: number; s: number; specs: string[] }>();
+    const CODE_FILE_RE = /\.(ts|tsx|js|jsx|mjs|cjs|svelte|vue)$/;
+    const IMPORT_SCAN_MAX_FILES = 2500;
+    const IMPORT_SCAN_MAX_BYTES = 256 * 1024;
+
+    const scanImportSpecs = async (repoRoot: string, files: string[]): Promise<Map<string, string[]>> => {
+        const out = new Map<string, string[]>();
+        const codeFiles = files.filter((f) => CODE_FILE_RE.test(f)).slice(0, IMPORT_SCAN_MAX_FILES);
+        const POOL = 24;
+        let i = 0;
+        const worker = async () => {
+            while (i < codeFiles.length) {
+                const f = codeFiles[i++];
+                try {
+                    const full = path.join(repoRoot, f);
+                    const st = await fsp.stat(full);
+                    const cached = importScanCache.get(f);
+                    if (cached && cached.m === st.mtimeMs && cached.s === st.size) {
+                        out.set(f, cached.specs);
+                        continue;
+                    }
+                    if (st.size > IMPORT_SCAN_MAX_BYTES) continue;
+                    const content = await fsp.readFile(full, 'utf8');
+                    const specs = extractImportSpecs(content);
+                    importScanCache.set(f, { m: st.mtimeMs, s: st.size, specs });
+                    out.set(f, specs);
+                } catch { /* deleted/unreadable — skip */ }
+            }
+        };
+        await Promise.all(Array.from({ length: Math.min(POOL, codeFiles.length) }, () => worker()));
+        return out;
+    };
 
     // === Embedded terminal sessions (xterm.js + node-pty) ===
     const ptySessions = new Map<string, PtySession>();
@@ -1837,12 +1871,15 @@ export function activate(context: vscode.ExtensionContext) {
                 commentCounts.set(cm.file, (commentCounts.get(cm.file) || 0) + 1);
             }
             const cfg = vscode.workspace.getConfiguration('gitDiffViewer');
+            const scanList = Array.from(new Set(files.concat(Array.from(changes.keys()))));
+            const importSpecs = await scanImportSpecs(repoRoot, scanList);
             const payload = buildArchMap({
                 files,
                 changes,
                 viewed: new Set(getViewed(context, repoRoot)),
                 comments: commentCounts,
                 contents,
+                importSpecs,
                 root: mapRootOverride !== undefined ? mapRootOverride : cfg.get<string>('mapRoot', ''),
                 exclude: cfg.get<string[]>('mapExclude', []),
             });
