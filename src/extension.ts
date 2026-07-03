@@ -535,6 +535,9 @@ function getAiConfig(): AiConfig {
     };
 }
 
+// Session-wide token/cost accounting — every OpenRouter response adds here.
+export const aiUsageTotals = { prompt: 0, completion: 0, requests: 0 };
+
 // Single OpenRouter entry point — every AI feature goes through here so the
 // model stays configurable and requests stay abortable.
 async function openRouterChat(key: string, body: Record<string, unknown>, signal?: AbortSignal): Promise<string> {
@@ -554,6 +557,10 @@ async function openRouterChat(key: string, body: Record<string, unknown>, signal
         throw new Error(`OpenRouter ${res.status}: ${errText.slice(0, 600)}`);
     }
     const json: any = await res.json();
+    const u = json?.usage || {};
+    aiUsageTotals.prompt += Number(u.prompt_tokens) || 0;
+    aiUsageTotals.completion += Number(u.completion_tokens) || 0;
+    aiUsageTotals.requests += 1;
     const content = json?.choices?.[0]?.message?.content;
     if (!content) throw new Error('Empty response from model.');
     return String(content);
@@ -681,6 +688,25 @@ export function activate(context: vscode.ExtensionContext) {
     let lastChangesForAnalysis: FileChange[] = [];
     const fileAnalysisCache = new Map<string, any>();
     const FILE_ANALYSIS_CACHE_MAX = 300;
+
+    // Session override for auto analysis (webview checkbox); undefined = config value.
+    let analysisAutoOverride: boolean | undefined;
+    const analysisAutoOn = () => analysisAutoOverride !== undefined ? analysisAutoOverride : getAiConfig().autoAnalyze;
+
+    const postAiUsage = () => {
+        if (!panel) return;
+        const cfg = vscode.workspace.getConfiguration('gitDiffViewer');
+        const pi = cfg.get<number>('priceInputPerM', 0) || 0;
+        const po = cfg.get<number>('priceOutputPerM', 0) || 0;
+        panel.webview.postMessage({
+            type: 'aiUsage',
+            promptTokens: aiUsageTotals.prompt,
+            completionTokens: aiUsageTotals.completion,
+            requests: aiUsageTotals.requests,
+            cost: (aiUsageTotals.prompt / 1e6) * pi + (aiUsageTotals.completion / 1e6) * po,
+            hasPrices: pi > 0 || po > 0,
+        });
+    };
 
     // === Code Map (experimental) ===
     let mapRequested = false;
@@ -909,6 +935,17 @@ export function activate(context: vscode.ExtensionContext) {
                 case 'archDocRun':
                     void runAnalysis(lastChangesForAnalysis, true);
                     return;
+                case 'archDocSetAuto': {
+                    analysisAutoOverride = !!msg.on;
+                    if (analysisAutoOverride) {
+                        void runAnalysis(lastChangesForAnalysis, true);
+                    } else {
+                        analysisAbort?.abort();
+                        analysisGen++;
+                        panel?.webview.postMessage({ type: 'archDoc', phase: 'cancelled' });
+                    }
+                    return;
+                }
                 case 'archDocCancel':
                     analysisAbort?.abort();
                     analysisGen++;
@@ -1307,6 +1344,7 @@ export function activate(context: vscode.ExtensionContext) {
                             message: cleaned.trim(),
                             truncated,
                         });
+                        postAiUsage();
                     } catch (e: any) {
                         panel?.webview.postMessage({
                             type: 'commitMessageGenerated',
@@ -1438,6 +1476,7 @@ export function activate(context: vscode.ExtensionContext) {
                             markdown: String(content).trim(),
                             truncated,
                         });
+                        postAiUsage();
                     } catch (e: any) {
                         panel?.webview.postMessage({
                             type: 'reviewAllDiffsResult', ok: false,
@@ -1593,6 +1632,7 @@ export function activate(context: vscode.ExtensionContext) {
                             type: 'analyzeDiffResult', ok: true, path: filePath,
                             count: newComments.length, truncated,
                         });
+                        postAiUsage();
                     } catch (e: any) {
                         panel?.webview.postMessage({
                             type: 'analyzeDiffResult', ok: false, path: filePath,
@@ -1992,6 +2032,7 @@ export function activate(context: vscode.ExtensionContext) {
                 completed++;
                 results.push({ path: c.path, ...out });
                 post({ phase: 'file', path: c.path, completed, total: files.length, result: out });
+                postAiUsage();
             }
         };
         await Promise.all(Array.from({ length: Math.min(ai.concurrency, files.length) }, () => worker()));
@@ -2030,6 +2071,7 @@ export function activate(context: vscode.ExtensionContext) {
                 max_tokens: 1200,
             }, ctrl.signal);
             post({ phase: 'overview', markdown: overview.trim() });
+            postAiUsage();
         } catch (e: any) {
             if (!ctrl.signal.aborted) post({ phase: 'error', error: `Overview failed: ${String(e?.message ?? e).slice(0, 300)}` });
         }
@@ -2062,9 +2104,10 @@ export function activate(context: vscode.ExtensionContext) {
                 autoExpandRecent,
                 view,
                 experimentalMap: mapEnabled(),
+                analysisAuto: analysisAutoOn(),
             });
             lastChangesForAnalysis = changes;
-            if (getAiConfig().autoAnalyze) void runAnalysis(changes);
+            if (analysisAutoOn()) void runAnalysis(changes);
             if (mapRequested) void buildAndPostMap();
         } catch (e: any) {
             if (token !== refreshToken || !panel) return;

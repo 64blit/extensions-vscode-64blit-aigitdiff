@@ -60,7 +60,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
 <script src="${a.gridstackJsUri}"></script>
 <style>
     :root {
-        /* Editor settings injected by the extension — see buildEditorVars().
+        /* Editor settings injected by the extension â see buildEditorVars().
            These can be live-updated via the editorConfig message. */
         ${editorVars}
 
@@ -99,7 +99,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         --recent-fg: #58a6ff;
         --recent-border: rgba(56, 139, 253, 0.4);
 
-        /* Highlight tokens — bright for dark bg */
+        /* Highlight tokens â bright for dark bg */
         --hl-comment: #00ffff;
         --hl-keyword: #ff2ad4;
         --hl-string: #00ff66;
@@ -116,7 +116,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         --hl-addition: #66ff77;
     }
 
-    /* === Light theme overrides — readable on white === */
+    /* === Light theme overrides â readable on white === */
     body.vscode-light, body.vscode-high-contrast-light {
         --diff-fg: #1f2328;
         --add-bg: rgba(46, 160, 67, 0.18);
@@ -152,7 +152,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         --recent-fg: #0969da;
         --recent-border: rgba(9, 105, 218, 0.4);
 
-        /* Highlight tokens — GitHub Primer Light */
+        /* Highlight tokens â GitHub Primer Light */
         --hl-comment: #6e7781;
         --hl-keyword: #cf222e;
         --hl-string: #0a3069;
@@ -282,7 +282,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     .commit-key-status.ok { color: #3fb950; }
     .commit-key-status.error { color: var(--vscode-errorForeground, #f85149); }
 
-    /* Floating Generate (✨) + key (⚙) buttons inside the textarea. */
+    /* Floating Generate (â¨) + key (â) buttons inside the textarea. */
     .commit-msg-container {
         position: relative;
         flex: 1;
@@ -446,7 +446,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         border: 1px solid var(--action-rejected-border);
     }
 
-    /* Comment affordance — a "+" button appears in the line-num gutter on row hover. */
+    /* Comment affordance â a "+" button appears in the line-num gutter on row hover. */
     .diff-table tr.code-row { position: relative; }
     .diff-table tr.code-row td.num { position: relative; }
     .diff-table tr.code-row .add-comment {
@@ -670,7 +670,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     .files { padding: 8px; display: flex; flex-direction: column; gap: 6px; }
     .empty { padding: 32px; text-align: center; opacity: 0.7; }
 
-    /* Multi-column grid view — gridstack handles per-cell drag/resize/reorder.
+    /* Multi-column grid view â gridstack handles per-cell drag/resize/reorder.
        Cells are absolutely positioned by gridstack, so we don't lay them out
        ourselves; just style the inner content box. */
     .files.grid-mode .grid-stack-item-content {
@@ -725,7 +725,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         flex-wrap: wrap;
         justify-content: flex-start;
     }
-    /* GridStack visual touch-ups — make the resize handle a bit more obvious
+    /* GridStack visual touch-ups â make the resize handle a bit more obvious
        by using the editor foreground color and rounding the corners. */
     .grid-stack > .grid-stack-item > .ui-resizable-handle {
         background-color: rgba(128, 128, 128, 0.25);
@@ -812,7 +812,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         background: var(--hunk-bg); border-bottom: 1px solid var(--border);
     }
 
-    /* Brief outline pulse on the hunk we just navigated to — fades after ~1s. */
+    /* Brief outline pulse on the hunk we just navigated to â fades after ~1s. */
     @keyframes hunk-flash-fade {
         0% { box-shadow: 0 0 0 2px var(--expand-fg, #58a6ff) inset; }
         100% { box-shadow: 0 0 0 2px transparent inset; }
@@ -838,7 +838,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         opacity: 1 !important;
     }
 
-    /* Strict 50/50 split — no horizontal scroll, lines always wrap inside the cell. */
+    /* Strict 50/50 split â no horizontal scroll, lines always wrap inside the cell. */
     .diff-scroll {
         overflow: hidden;
         background: var(--vscode-editor-background);
@@ -906,7 +906,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
        col.code default is "calc(50% - 60px)" sized for the 4-col split. */
     .diff-table.vertical colgroup col.code { width: calc(100% - 60px); }
 
-    /* Intra-line diff highlight — bolds the differing substring on each side
+    /* Intra-line diff highlight â bolds the differing substring on each side
        of a changed line pair (computed via prefix/suffix common-text
        detection in JS). Subtle yellow tint draws the eye without overwhelming
        the surrounding hljs colors. */
@@ -944,7 +944,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
 
     .file.hidden-by-search { display: none; }
 
-    /* Approve All button accent — green to match the per-hunk approve. */
+    /* Approve All button accent â green to match the per-hunk approve. */
     .file-actions .approve-all-btn {
         color: var(--add-line);
         border-color: rgba(0, 255, 100, 0.5);
@@ -1075,7 +1075,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     }
     #term-panel .term-pane.active { display: block; }
 
-    /* Diff review panel — bottom drawer, separate from terminal panel. */
+    /* Diff review panel â bottom drawer, separate from terminal panel. */
     #review-panel {
         position: fixed;
         left: 0; right: 0; bottom: 0;
@@ -1338,7 +1338,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         font-variant-numeric: tabular-nums;
     }
 
-    /* Architect Doc — expandable change-review section at the top. */
+    /* Architect Doc â expandable change-review section at the top. */
     .arch-doc { border-bottom: 1px solid var(--border); background: var(--vscode-sideBar-background, rgba(128,128,128,0.04)); }
     .arch-bar { display: flex; align-items: center; gap: 8px; padding: 5px 12px; cursor: pointer; user-select: none; font-size: 12px; }
     .arch-caret { opacity: .7; width: 10px; flex: none; }
@@ -1346,6 +1346,8 @@ export function getWebviewHtml(a: WebviewAssets): string {
     .arch-tldr { opacity: .85; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
     .arch-status { font-size: 11px; opacity: .75; white-space: nowrap; flex: none; }
     .arch-status.error { color: var(--vscode-errorForeground, #f85149); opacity: 1; }
+    .arch-auto { display: flex; gap: 3px; align-items: center; font-size: 11px; opacity: .85; flex: none; cursor: pointer; }
+    .arch-usage { font-size: 11px; opacity: .7; white-space: nowrap; flex: none; font-variant-numeric: tabular-nums; }
     .arch-actions { display: flex; gap: 4px; flex: none; }
     .arch-actions button { background: none; border: 1px solid var(--border); border-radius: 3px; color: inherit; cursor: pointer; font-size: 11px; padding: 1px 7px; }
     .arch-actions button:hover { background: var(--expand-bg-hover, rgba(128,128,128,0.15)); }
@@ -1372,7 +1374,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     .arch-note.risk-medium { color: #d29922; }
     .arch-doc.stale .arch-body, .arch-doc.stale .arch-tldr { opacity: .45; }
 
-    /* Code Map — three.js circle-packed repo view. */
+    /* Code Map â three.js circle-packed repo view. */
     #map-view { display: none; position: relative; flex: 1; min-height: 0; overflow: hidden; }
     body.map-mode { display: flex; flex-direction: column; overflow: hidden; }
     body.map-mode > * { flex: none; }
@@ -1395,14 +1397,15 @@ export function getWebviewHtml(a: WebviewAssets): string {
     #map-canvas-wrap canvas { display: block; }
     #map-tooltip {
         position: absolute; display: none; pointer-events: none; z-index: 40;
-        max-width: 420px; padding: 6px 9px; border-radius: 4px; font-size: 12px;
+        max-width: 460px; padding: 9px 12px; border-radius: 6px; font-size: 13px;
         background: var(--vscode-editorHoverWidget-background, #252526);
         border: 1px solid var(--vscode-editorHoverWidget-border, #454545);
-        box-shadow: 0 4px 14px rgba(0,0,0,0.45);
+        box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+        line-height: 1.45;
     }
-    #map-tooltip .t-path { font-family: var(--diff-mono, monospace); font-size: 11px; opacity: .9; }
-    #map-tooltip .t-sum { margin-top: 3px; opacity: .85; }
-    #map-tooltip .t-meta { margin-top: 3px; font-size: 11px; opacity: .7; }
+    #map-tooltip .t-path { font-family: var(--diff-mono, monospace); font-size: 11px; opacity: .65; margin-top: 1px; }
+    #map-tooltip .t-sum { margin-top: 6px; font-size: 13px; opacity: .95; white-space: normal; }
+    #map-tooltip .t-meta { margin-top: 5px; font-size: 12px; opacity: .75; }
     #map-card {
         position: absolute; top: 10px; right: 10px; width: 330px; z-index: 41; display: none;
         background: var(--vscode-sideBar-background, #1f1f1f);
@@ -1415,7 +1418,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     #map-card .c-badge.q-clean { color: #2ea043; border-color: #2ea043; }
     #map-card .c-badge.q-review { color: #d29922; border-color: #d29922; }
     #map-card .c-badge.q-concern { color: #f85149; border-color: #f85149; }
-    #map-card .c-sum { opacity: .9; margin: 6px 0; }
+    #map-card .c-sum { opacity: .95; margin: 8px 0; font-size: 13px; line-height: 1.5; }
     #map-card .c-flags { opacity: .8; font-size: 11px; margin-bottom: 6px; }
     #map-card .c-actions { display: flex; gap: 6px; }
     #map-card .c-actions button {
@@ -1439,7 +1442,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     .map-topbar #map-root { width: 110px; background: var(--vscode-input-background, #1e1e1e); color: inherit;
         border: 1px solid var(--border); border-radius: 3px; padding: 2px 8px; font-size: 12px;
         font-family: var(--diff-mono, monospace); }
-    /* In-map diff drawer — review the file without leaving the map. */
+    /* In-map diff drawer â review the file without leaving the map. */
     #map-diff {
         position: absolute; top: 0; right: 0; bottom: 0; width: 52%; min-width: 420px; max-width: 900px;
         display: none; flex-direction: column; z-index: 45;
@@ -1468,22 +1471,22 @@ export function getWebviewHtml(a: WebviewAssets): string {
 <body>
     <div class="toolbar">
         <div class="meta">
-            <div class="branch" id="branch">—</div>
-            <div class="repo" id="repo">Loading…</div>
+            <div class="branch" id="branch">â</div>
+            <div class="repo" id="repo">Loadingâ¦</div>
         </div>
-        <input type="search" id="search" placeholder="Filter files…" />
+        <input type="search" id="search" placeholder="Filter filesâ¦" />
         <button id="expand-all" title="Expand all files">Expand All</button>
         <button id="collapse-all" title="Collapse all files">Collapse All</button>
         <button id="toggle-all" title="Show / hide all changes">Hide All</button>
         <label class="toolbar-toggle" id="auto-expand-toggle" title="Sort by last modified and auto-expand the most recent file">
             <input type="checkbox" id="auto-expand-cb"> Auto-expand recent
         </label>
-        <button id="refresh" title="Refresh">↻ Refresh</button>
+        <button id="refresh" title="Refresh">â» Refresh</button>
         <button id="grid-size-toggle" title="Cycle default tile width (sm / md / lg)">Size: md</button>
-        <button id="grid-reset" title="Reset grid layout — clears all custom positions/sizes back to defaults">⟳ Reset Layout</button>
-        <button id="diff-orient-toggle" title="Switch diff layout between side-by-side and unified top/bottom">↔ Side-by-side</button>
-        <button id="review-all-btn" title="Run senior-architect review across all changed files (OpenRouter model, configurable)">🧠 Review All</button>
-        <button id="map-toggle" title="Code Map — bubble view of the repo with change heat and review progress" style="display:none">◉ Map</button>
+        <button id="grid-reset" title="Reset grid layout â clears all custom positions/sizes back to defaults">â³ Reset Layout</button>
+        <button id="diff-orient-toggle" title="Switch diff layout between side-by-side and unified top/bottom">â Side-by-side</button>
+        <button id="review-all-btn" title="Run senior-architect review across all changed files (OpenRouter model, configurable)">ð§  Review All</button>
+        <button id="map-toggle" title="Code Map â bubble view of the repo with change heat and review progress" style="display:none">â Map</button>
         <span id="hidden-pill" class="hidden-pill" title="Click to manage hidden files">
             <span id="hidden-count">0</span> hidden
         </span>
@@ -1492,10 +1495,10 @@ export function getWebviewHtml(a: WebviewAssets): string {
     <div class="commit-bar">
         <div class="commit-msg-wrap">
             <div class="commit-msg-container">
-                <textarea id="commit-msg" title="⌘/Ctrl+Enter — stage all, commit, push. Empty? Generate a message AND ship it. ⌘/Ctrl+Shift+Enter — push only." placeholder="Commit message — ⌘+Enter to stage+commit+push (empty? generates AND ships)"></textarea>
+                <textarea id="commit-msg" title="â/Ctrl+Enter â stage all, commit, push. Empty? Generate a message AND ship it. â/Ctrl+Shift+Enter â push only." placeholder="Commit message â â+Enter to stage+commit+push (empty? generates AND ships)"></textarea>
                 <div class="commit-msg-floating">
-                    <button id="commit-generate" title="Generate commit message from diff (OpenRouter model, configurable)">✨</button>
-                    <button id="commit-key-toggle" title="Set / change OpenRouter API key">⚙</button>
+                    <button id="commit-generate" title="Generate commit message from diff (OpenRouter model, configurable)">â¨</button>
+                    <button id="commit-key-toggle" title="Set / change OpenRouter API key">â</button>
                 </div>
             </div>
             <div id="commit-key-row" class="commit-key-row" style="display:none;">
@@ -1509,20 +1512,22 @@ export function getWebviewHtml(a: WebviewAssets): string {
         <div class="commit-actions">
             <label><input type="checkbox" id="amend"> Amend last commit</label>
             <button id="stage-all-only-btn" class="secondary" title="git add --all">Stage All</button>
-            <button id="commit-btn" title="Commit currently staged files (⌘/Ctrl+Enter)">Commit Staged</button>
-            <button id="commit-push-btn" class="secondary" title="git push (⌘/Ctrl+Shift+Enter)">Push</button>
+            <button id="commit-btn" title="Commit currently staged files (â/Ctrl+Enter)">Commit Staged</button>
+            <button id="commit-push-btn" class="secondary" title="git push (â/Ctrl+Shift+Enter)">Push</button>
             <span id="commit-status" class="commit-status"></span>
         </div>
     </div>
     <div id="arch-doc" class="arch-doc">
         <div class="arch-bar" id="arch-bar" role="button" aria-expanded="false" title="Expand / collapse change review">
-            <span class="arch-caret" id="arch-caret">▸</span>
-            <span class="arch-title">🏛 Change Review</span>
+            <span class="arch-caret" id="arch-caret">â¸</span>
+            <span class="arch-title">ð Change Review</span>
             <span class="arch-tldr" id="arch-tldr"></span>
             <span class="arch-status" id="arch-status"></span>
+            <label class="arch-auto" title="Run AI per-file summaries and the architecture overview automatically when changes appear"><input type="checkbox" id="arch-auto-cb"> AI</label>
+            <span id="ai-usage" class="arch-usage" title="Session AI usage: input / output tokens Â· cost (set prices: gitDiffViewer.priceInputPerM / priceOutputPerM)"></span>
             <span class="arch-actions">
-                <button id="arch-rerun" title="Re-run change analysis now">⟳</button>
-                <button id="arch-cancel" title="Cancel running analysis" style="display:none">✕</button>
+                <button id="arch-rerun" title="Re-run change analysis now">â³</button>
+                <button id="arch-cancel" title="Cancel running analysis" style="display:none">â</button>
             </span>
         </div>
         <div class="arch-body" id="arch-body" style="display:none">
@@ -1540,14 +1545,14 @@ export function getWebviewHtml(a: WebviewAssets): string {
         <div id="hidden-rows"></div>
     </div>
     <div id="content" class="files">
-        <div class="empty">Loading…</div>
+        <div class="empty">Loadingâ¦</div>
     </div>
     <div id="map-view" aria-label="Code Map">
         <div class="map-topbar">
             <label title="Scope the map to a folder (e.g. src). Empty = whole repo.">Root
                 <input type="text" id="map-root" placeholder="whole repo" autocomplete="off" spellcheck="false" />
             </label>
-            <input type="search" id="map-filter" placeholder="Filter files… ( / )" autocomplete="off" spellcheck="false" />
+            <input type="search" id="map-filter" placeholder="Filter filesâ¦ ( / )" autocomplete="off" spellcheck="false" />
             <label><input type="checkbox" id="map-unreviewed-cb"> Unreviewed only</label>
             <label><input type="checkbox" id="map-changed-cb" checked> Dim unchanged</label>
             <span class="map-progress" id="map-progress"></span>
@@ -1557,21 +1562,22 @@ export function getWebviewHtml(a: WebviewAssets): string {
             <div id="map-tooltip"></div>
             <div id="map-card"></div>
             <div id="map-legend">
-                <div class="lg-row"><span class="lg-dot" style="background:#f85149"></span> high churn</div>
-                <div class="lg-row"><span class="lg-dot" style="background:#d29922"></span> low churn</div>
+                <div class="lg-row"><span class="lg-dot" style="background:#2ea043"></span> clean</div>
+                <div class="lg-row"><span class="lg-dot" style="background:#d29922"></span> review Â· pre-analysis heat</div>
+                <div class="lg-row"><span class="lg-dot" style="background:#f85149"></span> concern Â· high churn</div>
                 <div class="lg-row"><span class="lg-dot" style="background:#3d444d"></span> unchanged</div>
-                <div class="lg-row"><span class="lg-dot" style="background:#2ea043"></span> reviewed ✓</div>
+                <div class="lg-row"><span class="lg-dot" style="background:#2ea043"></span> reviewed â</div>
                 <div class="lg-row"><span class="lg-dot" style="border:2px solid #f85149; width:5px; height:5px; background:transparent"></span> quality ring</div>
-                <div class="lg-row" style="opacity:.7">click bubble → card · Enter → diff · v → viewed</div>
+                <div class="lg-row" style="opacity:.7">click bubble â card Â· Enter â diff Â· v â viewed</div>
             </div>
             <div id="map-empty"></div>
             <div id="map-diff">
                 <div class="md-bar">
                     <span class="md-path" id="map-diff-path"></span>
                     <span class="md-actions">
-                        <button id="map-diff-viewed">✓ Reviewed</button>
-                        <button id="map-diff-grid" title="Open in grid view">▤ Grid</button>
-                        <button id="map-diff-close" title="Close (Esc)">✕</button>
+                        <button id="map-diff-viewed">â Reviewed</button>
+                        <button id="map-diff-grid" title="Open in grid view">â¤ Grid</button>
+                        <button id="map-diff-close" title="Close (Esc)">â</button>
                     </span>
                 </div>
                 <div class="md-body files" id="map-diff-body"></div>
@@ -1580,22 +1586,22 @@ export function getWebviewHtml(a: WebviewAssets): string {
     </div>
     <div id="find-status" class="find-status" role="status"></div>
     <div id="find-bar" class="find-bar" role="search">
-        <input type="search" id="find-input" placeholder="Find in diffs…" autocomplete="off" spellcheck="false" />
+        <input type="search" id="find-input" placeholder="Find in diffsâ¦" autocomplete="off" spellcheck="false" />
         <span id="find-count" class="find-count">0 / 0</span>
         <label id="find-case" title="Match case"><input type="checkbox" id="find-case-cb"> Aa</label>
-        <button id="find-prev" title="Previous match (Shift+Enter)">↑</button>
-        <button id="find-next" title="Next match (Enter)">↓</button>
-        <button id="find-close" title="Close (Esc)">✕</button>
+        <button id="find-prev" title="Previous match (Shift+Enter)">â</button>
+        <button id="find-next" title="Next match (Enter)">â</button>
+        <button id="find-close" title="Close (Esc)">â</button>
     </div>
-    <div id="term-launcher" title="Show embedded terminals">▲ Terminals (<span id="term-launcher-count">0</span>)</div>
+    <div id="term-launcher" title="Show embedded terminals">â² Terminals (<span id="term-launcher-count">0</span>)</div>
     <div id="review-panel" role="region" aria-label="Diff review">
         <div class="review-resize" id="review-resize" title="Drag to resize"></div>
         <div class="review-bar">
-            <div class="review-title">🧠 Diff review <span id="review-status" class="review-status"></span></div>
+            <div class="review-title">ð§  Diff review <span id="review-status" class="review-status"></span></div>
             <div class="review-controls">
                 <button id="review-copy" title="Copy review markdown to clipboard">Copy</button>
-                <button id="review-min" title="Minimize">─</button>
-                <button id="review-close" title="Close">✕</button>
+                <button id="review-min" title="Minimize">â</button>
+                <button id="review-close" title="Close">â</button>
             </div>
         </div>
         <div class="review-body" id="review-body"></div>
@@ -1605,9 +1611,9 @@ export function getWebviewHtml(a: WebviewAssets): string {
         <div class="term-bar">
             <div class="term-tabs" id="term-tabs"></div>
             <div class="term-controls">
-                <button id="term-new" title="New shell terminal">＋</button>
-                <button id="term-min" title="Minimize">─</button>
-                <button id="term-close" title="Close all terminals">✕</button>
+                <button id="term-new" title="New shell terminal">ï¼</button>
+                <button id="term-min" title="Minimize">â</button>
+                <button id="term-close" title="Close all terminals">â</button>
             </div>
         </div>
         <div class="term-body" id="term-body"></div>
@@ -1619,9 +1625,9 @@ export function getWebviewHtml(a: WebviewAssets): string {
                 <label for="ai-target">Target:</label>
                 <select id="ai-target">
                     <optgroup label="Embedded (in this panel)">
-                        <option value="embedded-claude">🤖 Claude — embedded terminal</option>
-                        <option value="embedded-gemini">✨ Gemini — embedded terminal</option>
-                        <option value="embedded-shell">$ Shell — embedded terminal</option>
+                        <option value="embedded-claude">ð¤ Claude â embedded terminal</option>
+                        <option value="embedded-gemini">â¨ Gemini â embedded terminal</option>
+                        <option value="embedded-shell">$ Shell â embedded terminal</option>
                     </optgroup>
                     <optgroup label="External">
                         <option value="antigravity">Antigravity (built-in chat)</option>
@@ -1631,7 +1637,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
                 </select>
                 <span style="opacity: 0.65; font-size: 11px;">Prompt is also copied to your clipboard.</span>
             </div>
-            <textarea id="ai-message" placeholder="Prompt to send…"></textarea>
+            <textarea id="ai-message" placeholder="Prompt to sendâ¦"></textarea>
             <div class="ai-actions">
                 <button id="ai-cancel">Cancel</button>
                 <button id="ai-send" class="primary">Send</button>
@@ -1678,7 +1684,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     const autoExpandToggle = document.getElementById('auto-expand-toggle');
     const gridSizeBtn = document.getElementById('grid-size-toggle');
     const gridResetBtn = document.getElementById('grid-reset');
-    // Stack mode was removed — grid is the only layout. Kept as a const so
+    // Stack mode was removed â grid is the only layout. Kept as a const so
     // downstream guards (renderFile wrap, gridstack init, etc.) keep working
     // without a sweep through every call site.
     const gridMode = true;
@@ -1688,13 +1694,13 @@ export function getWebviewHtml(a: WebviewAssets): string {
 
     // Per-file GridStack layout (path -> { x, y, w, h } in grid units).
     // Persisted via vscode.setState so a panel reload preserves the user's
-    // tile arrangement. w/h are column/row counts, not pixels — GridStack
+    // tile arrangement. w/h are column/row counts, not pixels â GridStack
     // converts via its column count + cellHeight.
     const persistedState = (typeof vscode.getState === 'function' && vscode.getState()) || {};
     const fileGridLayout = (persistedState && persistedState.fileGridLayout) || {};
     const GRID_COLUMN_COUNT = 12;
     const GRID_CELL_HEIGHT = 60;       // px per row unit
-    const GRID_DEFAULT_H = 12;         // ~720px tall — bigger so a tile shows several hunks
+    const GRID_DEFAULT_H = 12;         // ~720px tall â bigger so a tile shows several hunks
     const GRID_MIN_H = 6;              // floor at ~360px so tiles stay readable
     const GRID_MIN_W = 3;              // floor at ~25% width
     const GRID_DEFAULT_W = { sm: 4, md: 6, lg: 12 };
@@ -1710,7 +1716,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     }
     function captureGridLayout() {
         if (!gridStack) return;
-        // grid.save(false) returns a serializable layout (no DOM content) —
+        // grid.save(false) returns a serializable layout (no DOM content) â
         // safer than reaching into grid.engine.nodes directly.
         let items;
         try { items = gridStack.save(false) || []; } catch (e) { return; }
@@ -1803,7 +1809,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     function refreshGridSizeBtn() {
         if (!gridSizeBtn) return;
         gridSizeBtn.textContent = 'Size: ' + gridSize;
-        gridSizeBtn.title = 'Default tile width (cycle sm → md → lg). Currently: ' + gridSize;
+        gridSizeBtn.title = 'Default tile width (cycle sm â md â lg). Currently: ' + gridSize;
     }
 
     function applyViewSettings(v) {
@@ -1815,7 +1821,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         if (v.gridSize === 'sm' || v.gridSize === 'md' || v.gridSize === 'lg') {
             gridSize = v.gridSize;
         }
-        // viewMode is no longer honored — stack mode was removed. Always grid.
+        // viewMode is no longer honored â stack mode was removed. Always grid.
         contentEl.classList.add('grid-mode');
         refreshGridSizeBtn();
     }
@@ -1844,13 +1850,13 @@ export function getWebviewHtml(a: WebviewAssets): string {
         gridStack.on('resizestop dragstop', () => captureGridLayout());
     }
 
-    // Reset grid layout — wipe persisted positions/sizes and rerender so
+    // Reset grid layout â wipe persisted positions/sizes and rerender so
     // gridstack auto-places every tile at its default size.
     function resetGridLayout() {
         const keys = Object.keys(fileGridLayout);
         if (!keys.length) {
             // Nothing persisted, but a current GridStack instance may still
-            // be holding modified positions from this session — destroy it
+            // be holding modified positions from this session â destroy it
             // and rerender so defaults apply.
             teardownGridStack();
             rerenderFromLast();
@@ -1886,7 +1892,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     function applyVerticalDiff() {
         document.body.classList.toggle('diff-vertical', verticalDiff);
         if (diffOrientBtn) {
-            diffOrientBtn.textContent = verticalDiff ? '↕ Top/Bottom' : '↔ Side-by-side';
+            diffOrientBtn.textContent = verticalDiff ? 'â Top/Bottom' : 'â Side-by-side';
             diffOrientBtn.title = verticalDiff
                 ? 'Switch diff layout to side-by-side'
                 : 'Switch diff layout to unified top/bottom';
@@ -1905,7 +1911,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
             applyVerticalDiff();
             persistVerticalDiff();
             // The two layouts emit different markup from renderHunk, so we
-            // need a full re-render — toggling a class isn't enough.
+            // need a full re-render â toggling a class isn't enough.
             rerenderFromLast();
         });
     }
@@ -2014,7 +2020,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
             if (c === '+') currentHunk.rows.push({ kind: 'add', text });
             else if (c === '-') currentHunk.rows.push({ kind: 'del', text });
             else if (c === ' ') currentHunk.rows.push({ kind: 'ctx', text });
-            else if (c === '\\\\') { /* "\\ No newline at end of file" — skip */ }
+            else if (c === '\\\\') { /* "\\ No newline at end of file" â skip */ }
         }
         pushSection();
         return sections;
@@ -2062,7 +2068,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
 
     /**
      * Compute per-line intra-diff ranges for a pair of changed lines.
-     * Uses common-prefix + common-suffix detection — O(n), no DP table — to
+     * Uses common-prefix + common-suffix detection â O(n), no DP table â to
      * find the smallest substring on each side that actually differs. Returns
      * { aStart, aEnd, bStart, bEnd } where [Start, End) on each string is the
      * differing range, or null when the lines are identical / one is empty.
@@ -2131,7 +2137,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     /**
      * Build per-row highlighted HTML for one side of a hunk by joining all the side's
      * code into a single block, highlighting once, and slicing back to lines.
-     * (Hunk-only fallback — used when full-file content isn't available.)
+     * (Hunk-only fallback â used when full-file content isn't available.)
      */
     function highlightSide(pairs, side, language) {
         const indices = [];
@@ -2185,7 +2191,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
                 right: change.indexContent, rightVersion: 'index',
             };
         }
-        // unstaged section: index → worktree
+        // unstaged section: index â worktree
         return {
             left: change.indexContent, leftVersion: 'index',
             right: change.worktreeContent, rightVersion: 'worktree',
@@ -2208,7 +2214,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
             const idx = (typeof num === 'number' ? num : parseInt(num, 10)) - 1;
             if (idx < 0 || idx >= fullLines.length) return escapeHtml(text || '');
             // Defensive: if the displayed text doesn't match the base file line
-            // (rare — file changed mid-render), fall back to escaped raw text
+            // (rare â file changed mid-render), fall back to escaped raw text
             // so users don't see HTML for a wrong line.
             // Stripping highlight tags to compare would be costly, so just trust
             // the line-number mapping; mismatches happen for at most one render.
@@ -2233,7 +2239,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
 
     function truncateText(s, n) {
         const flat = (s || '').replace(/\\s+/g, ' ').trim();
-        return flat.length > n ? flat.slice(0, n - 1) + '…' : flat;
+        return flat.length > n ? flat.slice(0, n - 1) + 'â¦' : flat;
     }
 
     function renderCommentRow(filePath, side, lineNum, lineText, entries, isComposingHere) {
@@ -2241,7 +2247,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
             if (editingCommentId === comment.id) {
                 return \`
                     <div class="comment-block editing" data-comment-id="\${comment.id}">
-                        <div class="meta"><span>✎ Editing comment on \${comment.side === 'right' ? '+' : '-'}line \${comment.lineNum}</span></div>
+                        <div class="meta"><span>â Editing comment on \${comment.side === 'right' ? '+' : '-'}line \${comment.lineNum}</span></div>
                         <textarea data-role="edit-input">\${escapeHtml(comment.body)}</textarea>
                         <div class="actions">
                             <button class="primary" data-c-action="save-edit" data-id="\${comment.id}">Save</button>
@@ -2256,14 +2262,14 @@ export function getWebviewHtml(a: WebviewAssets): string {
             return \`
                 <div class="comment-block \${isCollapsed ? 'collapsed' : ''}\${aiCls}" data-comment-id="\${comment.id}">
                     <div class="meta" data-c-action="toggle-collapse" data-id="\${comment.id}" title="Click to \${isCollapsed ? 'expand' : 'minimize'}">
-                        <span class="chevron">▶</span>
-                        <span>💬 \${comment.side === 'right' ? '+' : '-'}line \${comment.lineNum}</span>
+                        <span class="chevron">â¶</span>
+                        <span>ð¬ \${comment.side === 'right' ? '+' : '-'}line \${comment.lineNum}</span>
                         \${stale ? '<span class="stale" title="Source line no longer matches the original text">(line shifted)</span>' : ''}
                         \${peek}
                     </div>
                     <div class="body">\${escapeHtml(comment.body)}</div>
                     <div class="actions">
-                        <button data-c-action="copy" data-id="\${comment.id}" title="Copy diff context + this comment as markdown">📋 Copy with context</button>
+                        <button data-c-action="copy" data-id="\${comment.id}" title="Copy diff context + this comment as markdown">ð Copy with context</button>
                         <button data-c-action="edit" data-id="\${comment.id}">Edit</button>
                         <button data-c-action="delete" data-id="\${comment.id}">Delete</button>
                     </div>
@@ -2276,13 +2282,13 @@ export function getWebviewHtml(a: WebviewAssets): string {
             composer = \`
                 <div class="comment-block" data-composing="1">
                     <div class="meta">New comment on \${side === 'right' ? '+' : '-'}line \${lineNum}</div>
-                    <textarea data-role="new-input" autofocus placeholder="Write a review comment…"></textarea>
+                    <textarea data-role="new-input" autofocus placeholder="Write a review commentâ¦"></textarea>
                     <div class="actions">
                         <button class="primary" data-c-action="save-new"
                             data-file="\${escapeHtml(filePath)}"
                             data-side="\${side}"
                             data-line-num="\${lineNum}"
-                            data-line-text="\${escapeHtml(lineText)}">Save (⌘+Enter)</button>
+                            data-line-text="\${escapeHtml(lineText)}">Save (â+Enter)</button>
                         <button data-c-action="cancel-new">Cancel</button>
                     </div>
                 </div>
@@ -2406,9 +2412,9 @@ export function getWebviewHtml(a: WebviewAssets): string {
         const actions = options.allowHunkActions ? \`
             <span class="hunk-actions">
                 \${section === 'unstaged'
-                    ? '<button class="approve" data-hunk-action="approve" title="Stage this hunk">✓ Approve</button>'
+                    ? '<button class="approve" data-hunk-action="approve" title="Stage this hunk">â Approve</button>'
                     : ''}
-                <button class="reject" data-hunk-action="reject" title="Discard this hunk">✗ Reject</button>
+                <button class="reject" data-hunk-action="reject" title="Discard this hunk">â Reject</button>
             </span>
         \` : '';
 
@@ -2452,7 +2458,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
             ? '<div class="binary-note">No diff content available.</div>'
             : sections.map(sec => {
                 const title = sec.title ? \`<div class="section-title">\${escapeHtml(sec.title)}</div>\` : '';
-                if (sec.binary) return \`\${title}<div class="binary-note">Binary file — diff not shown.</div>\`;
+                if (sec.binary) return \`\${title}<div class="binary-note">Binary file â diff not shown.</div>\`;
                 if (sec.hunks.length === 0) return \`\${title}<div class="binary-note">No textual changes.</div>\`;
                 const sk = sec.title ? sectionKey(sec.title) : (change.staged ? 'staged' : 'unstaged');
                 return title + sec.hunks
@@ -2462,12 +2468,12 @@ export function getWebviewHtml(a: WebviewAssets): string {
 
         const tags = [];
         const actionStatus = fileActionStatus.get(change.path);
-        if (actionStatus === 'approved') tags.push('<span class="action-tag approved">✓ approved</span>');
-        if (actionStatus === 'rejected') tags.push('<span class="action-tag rejected">✗ rejected</span>');
+        if (actionStatus === 'approved') tags.push('<span class="action-tag approved">â approved</span>');
+        if (actionStatus === 'rejected') tags.push('<span class="action-tag rejected">â rejected</span>');
         if (change.staged) tags.push('<span class="stage-tag">staged</span>');
         if (change.unstaged) tags.push('<span class="stage-tag">unstaged</span>');
         if (change.untracked) tags.push('<span class="stage-tag">untracked</span>');
-        if (change.isMostRecent) tags.push('<span class="recent-tag" title="Most recently modified">↑ recent</span>');
+        if (change.isMostRecent) tags.push('<span class="recent-tag" title="Most recently modified">â recent</span>');
 
         const statusClass = change.status === '?' ? '\\\\?' : change.status;
         const ctxLabel = CONTEXT_LABELS[change.context] || String(change.context);
@@ -2478,8 +2484,8 @@ export function getWebviewHtml(a: WebviewAssets): string {
         const inner = \`
             <div class="file \${isExpanded ? 'expanded' : ''} \${change.isMostRecent ? 'most-recent' : ''} \${statusCls}" data-path="\${escapeHtml(change.path)}" data-context="\${change.context}">
                 <div class="file-header">
-                    <span class="grid-drag-handle" title="Drag to rearrange">⋮⋮</span>
-                    <span class="chevron">▶</span>
+                    <span class="grid-drag-handle" title="Drag to rearrange">â®â®</span>
+                    <span class="chevron">â¶</span>
                     <span class="badge \${statusClass}">\${escapeHtml(change.statusLabel)}</span>
                     \${tags.join('')}
                     <span class="path" title="\${escapeHtml(change.path)}">\${escapeHtml(change.path)}</span>
@@ -2489,8 +2495,8 @@ export function getWebviewHtml(a: WebviewAssets): string {
                     </span>
                     <span class="file-actions">
                         <span class="action-group" data-group="nav" title="Navigate hunks in this file">
-                            <button data-action="prevHunk" title="Scroll to previous hunk in this file (Alt+↑ for global)">↑ Prev</button>
-                            <button data-action="nextHunk" title="Scroll to next hunk in this file (Alt+↓ for global)">↓ Next</button>
+                            <button data-action="prevHunk" title="Scroll to previous hunk in this file (Alt+â for global)">â Prev</button>
+                            <button data-action="nextHunk" title="Scroll to next hunk in this file (Alt+â for global)">â Next</button>
                             <button class="ctx-btn" data-action="cycleContext" title="Cycle visible context lines (also: Alt+scroll on the diff)">Context: \${ctxLabel}</button>
                         </span>
                         <span class="action-group" data-group="file">
@@ -2502,15 +2508,15 @@ export function getWebviewHtml(a: WebviewAssets): string {
                                     ? '<button data-action="stage">Stage</button>'
                                     : ''}
                             \${(change.unstaged || change.untracked)
-                                ? '<button class="approve-all-btn" data-action="approveAll" title="Approve every hunk in this file (git add)">✓ Approve All</button>'
+                                ? '<button class="approve-all-btn" data-action="approveAll" title="Approve every hunk in this file (git add)">â Approve All</button>'
                                 : ''}
                             <button class="danger" data-action="discard" title="Discard ALL changes to this file">Discard</button>
-                            <button class="icon-btn" data-action="hide" title="Hide this file from the list">×</button>
+                            <button class="icon-btn" data-action="hide" title="Hide this file from the list">Ã</button>
                         </span>
                         <span class="action-group" data-group="ai">
-                            <button data-action="sendToAi" title="Open a chat with this file's diff + your comments">🤖 Send to AI</button>
-                            <button data-action="analyzeDiff" title="Run senior-architect code review on this file's diff and add inline comments for issues found">🔍 Analyze</button>
-                            \${fileCommentCount > 0 ? \`<button data-action="copyReview" title="Copy all commented regions + comments as markdown">📋 Copy (\${fileCommentCount})</button>\` : ''}
+                            <button data-action="sendToAi" title="Open a chat with this file's diff + your comments">ð¤ Send to AI</button>
+                            <button data-action="analyzeDiff" title="Run senior-architect code review on this file's diff and add inline comments for issues found">ð Analyze</button>
+                            \${fileCommentCount > 0 ? \`<button data-action="copyReview" title="Copy all commented regions + comments as markdown">ð Copy (\${fileCommentCount})</button>\` : ''}
                         </span>
                     </span>
                 </div>
@@ -2575,8 +2581,8 @@ export function getWebviewHtml(a: WebviewAssets): string {
         branchEl.textContent = state.branch?.branch || '(detached)';
         if (state.branch) {
             const ab = [];
-            if (state.branch.ahead) ab.push(\`↑\${state.branch.ahead}\`);
-            if (state.branch.behind) ab.push(\`↓\${state.branch.behind}\`);
+            if (state.branch.ahead) ab.push(\`â\${state.branch.ahead}\`);
+            if (state.branch.behind) ab.push(\`â\${state.branch.behind}\`);
             if (ab.length) {
                 branchEl.innerHTML = escapeHtml(state.branch.branch || '(detached)') +
                     \` <span class="ahead-behind">\${ab.join(' ')}</span>\`;
@@ -2595,7 +2601,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         } else {
             visible.forEach(c => { c.isMostRecent = false; });
         }
-        // In grid mode, every visible file should be expanded — including ones
+        // In grid mode, every visible file should be expanded â including ones
         // that just appeared from a refresh. setGridMode() only fires on toggle,
         // so without this newly-arrived files would render collapsed.
         if (gridMode) {
@@ -2605,19 +2611,19 @@ export function getWebviewHtml(a: WebviewAssets): string {
         const totalAdd = visible.reduce((n, c) => n + c.additions, 0);
         const totalDel = visible.reduce((n, c) => n + c.deletions, 0);
         const hiddenCount = lastChanges.length - visible.length;
-        const hiddenSuffix = hiddenCount > 0 ? \` • \${hiddenCount} hidden\` : '';
-        summaryEl.textContent = \`\${visible.length} file\${visible.length === 1 ? '' : 's'} • +\${totalAdd} / -\${totalDel}\${hiddenSuffix}\`;
+        const hiddenSuffix = hiddenCount > 0 ? \` â¢ \${hiddenCount} hidden\` : '';
+        summaryEl.textContent = \`\${visible.length} file\${visible.length === 1 ? '' : 's'} â¢ +\${totalAdd} / -\${totalDel}\${hiddenSuffix}\`;
 
         if (visible.length === 0) {
             contentEl.innerHTML = lastChanges.length === 0
-                ? '<div class="empty">Working tree is clean. ✨</div>'
-                : '<div class="empty">All changed files are hidden. Use the “hidden” pill above to bring them back.</div>';
+                ? '<div class="empty">Working tree is clean. â¨</div>'
+                : '<div class="empty">All changed files are hidden. Use the âhiddenâ pill above to bring them back.</div>';
             return;
         }
         const snaps = snapshotComposers(contentEl);
         const scrollSnap = snapshotScroll(contentEl);
         withTransition(() => {
-            // Tear down any existing GridStack before innerHTML replacement —
+            // Tear down any existing GridStack before innerHTML replacement â
             // otherwise gridstack's internal node list points at orphan DOM.
             if (gridStack) teardownGridStack();
             contentEl.innerHTML = visible.map(renderFile).join('');
@@ -2682,7 +2688,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     }
 
     function withTransition(fn) {
-        // Animations were intentionally removed — DOM mutations happen instantly.
+        // Animations were intentionally removed â DOM mutations happen instantly.
         fn();
     }
 
@@ -2752,7 +2758,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         }
     }
 
-    // Shared delegation — used by the grid (#content) and the map's diff drawer,
+    // Shared delegation â used by the grid (#content) and the map's diff drawer,
     // so hunk approve/reject/comment actions work identically in both places.
     const onContentClick = (e) => {
         const target = e.target;
@@ -2875,7 +2881,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
             else if (action === 'cycleContext') {
                 const cur = parseInt(fileEl.getAttribute('data-context') || '3', 10);
                 const next = nextContext(cur);
-                actionBtn.textContent = 'Context: ' + (CONTEXT_LABELS[next] || next) + '…';
+                actionBtn.textContent = 'Context: ' + (CONTEXT_LABELS[next] || next) + 'â¦';
                 vscode.postMessage({ type: 'setContext', path: p, context: next });
             }
             else if (action === 'prevHunk') { scrollHunk(-1, fileEl); }
@@ -2901,13 +2907,13 @@ export function getWebviewHtml(a: WebviewAssets): string {
             else if (action === 'analyzeDiff') {
                 const original = actionBtn.textContent;
                 actionBtn.disabled = true;
-                actionBtn.textContent = '⌛ Analyzing…';
+                actionBtn.textContent = 'â Analyzingâ¦';
                 actionBtn.dataset.originalLabel = original;
                 analyzePathInflight.add(p);
                 vscode.postMessage({ type: 'analyzeDiff', path: p });
             }
             else if (action === 'approveAll') {
-                // Collapse the file once the user has approved everything in it —
+                // Collapse the file once the user has approved everything in it â
                 // signals "done with this one" and clears space for the next file.
                 expandedFiles.delete(p);
                 fileActionStatus.set(p, 'approved');
@@ -2918,7 +2924,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         }
 
         if (target.closest('.file-header')) {
-            // Don't toggle when clicking the drag-grip — that's GridStack's
+            // Don't toggle when clicking the drag-grip â that's GridStack's
             // drag handle, and a stray collapse here would also break the cell
             // height the user just set.
             if (target.closest('.grid-drag-handle')) return;
@@ -2955,7 +2961,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
             vscode.postMessage({ type: 'saveDraft', draft: commitMsgEl.value });
         }, 400);
     });
-    // Cmd/Ctrl+Enter → Commit Staged. Cmd/Ctrl+Shift+Enter → Push.
+    // Cmd/Ctrl+Enter â Commit Staged. Cmd/Ctrl+Shift+Enter â Push.
     // When set, the next successful commitMessageGenerated will auto-fire
     // stage+commit+push without a second keystroke. Cmd+Enter on an empty
     // textarea sets this so "generate then ship" is one user action.
@@ -2963,7 +2969,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     function shipIt() {
         commitBtn.disabled = true;
         commitPushBtn.disabled = true;
-        setCommitStatus('Staging, committing, pushing…', null);
+        setCommitStatus('Staging, committing, pushingâ¦', null);
         vscode.postMessage({
             type: 'commit',
             message: commitMsgEl.value,
@@ -2975,20 +2981,20 @@ export function getWebviewHtml(a: WebviewAssets): string {
     commitMsgEl.addEventListener('keydown', (e) => {
         if (!((e.metaKey || e.ctrlKey) && e.key === 'Enter')) return;
         e.preventDefault();
-        // Cmd+Shift+Enter — push-only legacy shortcut (after committing in UI).
+        // Cmd+Shift+Enter â push-only legacy shortcut (after committing in UI).
         if (e.shiftKey) { commitPushBtn.click(); return; }
         const message = commitMsgEl.value.trim();
         if (!message) {
-            // Empty → generate AND auto-ship when the message lands.
+            // Empty â generate AND auto-ship when the message lands.
             const genBtn = document.getElementById('commit-generate');
             if (genBtn) {
                 autoShipAfterGenerate = true;
-                setCommitStatus('Generating message…', null);
+                setCommitStatus('Generating messageâ¦', null);
                 genBtn.click();
             }
             return;
         }
-        // Has text → ship-it path: stage all + commit + push in one shot.
+        // Has text â ship-it path: stage all + commit + push in one shot.
         shipIt();
     });
 
@@ -3008,14 +3014,14 @@ export function getWebviewHtml(a: WebviewAssets): string {
         }
         commitBtn.disabled = true;
         commitPushBtn.disabled = true;
-        setCommitStatus('Committing…', null);
+        setCommitStatus('Committingâ¦', null);
         vscode.postMessage({ type: 'commit', message, amend, stageAll: false, push: false });
     }
     commitBtn.addEventListener('click', () => doCommit());
     commitPushBtn.addEventListener('click', () => {
         commitPushBtn.disabled = true;
         commitBtn.disabled = true;
-        setCommitStatus('Pushing…', null);
+        setCommitStatus('Pushingâ¦', null);
         vscode.postMessage({ type: 'pushOnly' });
     });
 
@@ -3023,11 +3029,11 @@ export function getWebviewHtml(a: WebviewAssets): string {
     if (stageAllBtn) {
         stageAllBtn.addEventListener('click', () => {
             stageAllBtn.disabled = true;
-            setCommitStatus('Staging all…', null);
+            setCommitStatus('Staging allâ¦', null);
             vscode.postMessage({ type: 'stageAll' });
             setTimeout(() => {
                 stageAllBtn.disabled = false;
-                setCommitStatus('✓ All staged', 'ok');
+                setCommitStatus('â All staged', 'ok');
                 setTimeout(() => setCommitStatus(''), 2500);
             }, 250);
         });
@@ -3064,14 +3070,14 @@ export function getWebviewHtml(a: WebviewAssets): string {
             return;
         }
         keySaveBtn.disabled = true;
-        setKeyStatus('Saving to settings…', null);
-        // Don't clear input until we hear back — otherwise a failed save loses
+        setKeyStatus('Saving to settingsâ¦', null);
+        // Don't clear input until we hear back â otherwise a failed save loses
         // the key the user just typed.
         vscode.postMessage({ type: 'setOpenRouterKey', key: k });
     });
     keyClearBtn.addEventListener('click', () => {
         keyInputEl.value = '';
-        setKeyStatus('Clearing…', null);
+        setKeyStatus('Clearingâ¦', null);
         vscode.postMessage({ type: 'setOpenRouterKey', key: '' });
     });
     keySettingsBtn.addEventListener('click', () => {
@@ -3085,9 +3091,9 @@ export function getWebviewHtml(a: WebviewAssets): string {
     generateBtn.addEventListener('click', () => {
         generateBtn.disabled = true;
         const original = generateBtn.textContent;
-        generateBtn.textContent = '⌛';
-        generateBtn.title = 'Generating…';
-        setCommitStatus('Asking model…', null);
+        generateBtn.textContent = 'â';
+        generateBtn.title = 'Generatingâ¦';
+        setCommitStatus('Asking modelâ¦', null);
         vscode.postMessage({ type: 'generateCommitMessage' });
         generateBtn.dataset.originalLabel = original;
         generateBtn.dataset.originalTitle = 'Generate commit message from diff (OpenRouter model, configurable)';
@@ -3124,14 +3130,14 @@ export function getWebviewHtml(a: WebviewAssets): string {
         const change = lastChanges.find(c => c.path === filePath);
         let body = buildFileReviewMarkdown(filePath);
         if (!body) {
-            // No comments — fall back to the file's full diff so the AI has context.
+            // No comments â fall back to the file's full diff so the AI has context.
             body = '## ' + filePath + '\\n\\n\\\`\\\`\\\`diff\\n' + (change && change.diff || '(no diff)') + '\\n\\\`\\\`\\\`\\n';
         }
         return AI_DEFAULT_INTRO + body;
     }
 
     function openAiDialog(filePath) {
-        aiTitleEl.textContent = 'Send to AI — ' + filePath;
+        aiTitleEl.textContent = 'Send to AI â ' + filePath;
         aiMessageEl.value = buildAiPrompt(filePath);
         aiDialogEl.classList.add('open');
         // Persist target choice across opens within the session.
@@ -3180,7 +3186,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         }
     });
 
-    // CSS Custom Highlight API — shared by find-bar + selection word-match.
+    // CSS Custom Highlight API â shared by find-bar + selection word-match.
     const supportsHighlights = typeof window.Highlight !== 'undefined' && CSS.highlights;
 
     // ---- Cmd/Ctrl + F find bar ----
@@ -3318,7 +3324,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     findNextBtn.addEventListener('click', () => findStep(1));
     findCloseBtn.addEventListener('click', closeFindBar);
 
-    // Alt+ArrowUp / Alt+ArrowDown — jump to previous / next hunk across the
+    // Alt+ArrowUp / Alt+ArrowDown â jump to previous / next hunk across the
     // whole panel (per-file Prev/Next buttons stay scoped to the file). Skip
     // when typing in any input so the keys don't fight the comment composer.
     document.addEventListener('keydown', (e) => {
@@ -3423,7 +3429,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         }
         if (matches.length === 0) {
             const fileName = scopeEl ? scopeEl.getAttribute('data-path') : '';
-            showFindStatus(\`"\${term.length > 30 ? term.slice(0, 30) + '…' : term}" — no matches\${fileName ? ' in ' + fileName : ''}\`);
+            showFindStatus(\`"\${term.length > 30 ? term.slice(0, 30) + 'â¦' : term}" â no matches\${fileName ? ' in ' + fileName : ''}\`);
             return;
         }
         if (term !== lastFindTerm) {
@@ -3447,7 +3453,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
             cell.classList.add('find-flash');
             setTimeout(() => cell.classList.remove('find-flash'), 1600);
         });
-        showFindStatus(\`\${lastFindIndex + 1} / \${matches.length} — \${term.length > 30 ? term.slice(0, 30) + '…' : term}\`);
+        showFindStatus(\`\${lastFindIndex + 1} / \${matches.length} â \${term.length > 30 ? term.slice(0, 30) + 'â¦' : term}\`);
     }
 
     let lastFindScopeEl = null;
@@ -3474,7 +3480,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         let term = sel ? sel.toString() : '';
         if (!term || !term.trim()) term = lastFindTerm;
         if (!term) {
-            showFindStatus('Select text first, then ⌘/Ctrl+D');
+            showFindStatus('Select text first, then â/Ctrl+D');
             return;
         }
         // If we got a fresh selection, lock the scope to the file it's in.
@@ -3501,7 +3507,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         if (next === cur) return;
         fileEl.setAttribute('data-context', String(next));
         const btn = fileEl.querySelector('button[data-action="cycleContext"]');
-        if (btn) btn.textContent = 'Context: ' + (CONTEXT_LABELS[next] || next) + '…';
+        if (btn) btn.textContent = 'Context: ' + (CONTEXT_LABELS[next] || next) + 'â¦';
         vscode.postMessage({
             type: 'setContext',
             path: fileEl.getAttribute('data-path'),
@@ -3588,7 +3594,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
             if (ln) lines.push(ln.text);
         }
         const header = startNum && endNum
-            ? \`\\n_Lines \${startNum}–\${endNum} (\${side === 'right' ? 'after' : 'before'} change)_\\n\`
+            ? \`\\n_Lines \${startNum}â\${endNum} (\${side === 'right' ? 'after' : 'before'} change)_\\n\`
             : '';
         return \`\${header}\\n\\\`\\\`\\\`diff\\n\${lines.join('\\n')}\\n\\\`\\\`\\\`\`;
     }
@@ -3600,7 +3606,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         if (!data) return '';
         const idx = findRowIndexForComment(data.rows, comment);
         if (idx === -1) {
-            // Comment line is not in any visible hunk — copy comment alone.
+            // Comment line is not in any visible hunk â copy comment alone.
             return \`### Comment on \${filePath} (line \${comment.lineNum} \${comment.side})\\n\\n\${comment.body}\\n\`;
         }
         const from = Math.max(0, idx - COPY_CONTEXT_LINES);
@@ -3658,7 +3664,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         const startIdx = targetEl ? allFiles.indexOf(targetEl) : -1;
         const SELECTOR = 'button[data-hunk-action="approve"], button[data-hunk-action="reject"]';
 
-        // 1. Same file — most common case (next remaining hunk).
+        // 1. Same file â most common case (next remaining hunk).
         if (targetEl) {
             expandFileEl(targetEl);
             const btn = targetEl.querySelector(SELECTOR);
@@ -3675,7 +3681,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
                 return f.querySelector(SELECTOR) || btn;
             }
         }
-        // 3. Wrap around — files BEFORE the target.
+        // 3. Wrap around â files BEFORE the target.
         for (let i = 0; i < startIdx; i++) {
             const f = allFiles[i];
             const btn = f.querySelector(SELECTOR);
@@ -3720,7 +3726,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         root.style.setProperty('--editor-tab-size', String(tabSize));
     }
 
-    // === Architect Doc — async change review fed by the extension host ===
+    // === Architect Doc â async change review fed by the extension host ===
     const archDocEl = document.getElementById('arch-doc');
     const archBarEl = document.getElementById('arch-bar');
     const archCaretEl = document.getElementById('arch-caret');
@@ -3742,7 +3748,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     function archToggle(open) {
         archExpanded = open === undefined ? !archExpanded : open;
         archBodyEl.style.display = archExpanded ? 'block' : 'none';
-        archCaretEl.textContent = archExpanded ? '▾' : '▸';
+        archCaretEl.textContent = archExpanded ? 'â¾' : 'â¸';
         archBarEl.setAttribute('aria-expanded', archExpanded ? 'true' : 'false');
     }
     if (archBarEl) {
@@ -3751,7 +3757,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
             archToggle();
         });
         archRerunBtn.addEventListener('click', () => {
-            archSetStatus('restarting…');
+            archSetStatus('restartingâ¦');
             vscode.postMessage({ type: 'archDocRun' });
         });
         archCancelBtn.addEventListener('click', () => vscode.postMessage({ type: 'archDocCancel' }));
@@ -3761,8 +3767,8 @@ export function getWebviewHtml(a: WebviewAssets): string {
         const rows = Array.from(archFiles.entries())
             .sort((a, b) => archRiskRank(a[1].risk) - archRiskRank(b[1].risk) || a[0].localeCompare(b[0]));
         archFilesEl.innerHTML = rows.map(([p, r]) => {
-            const flags = (r.flags && r.flags.length) ? ' <span class="flags">⚑ ' + escapeHtml(r.flags.join(' · ')) + '</span>' : '';
-            const sum = r.error ? '⚠ ' + escapeHtml(r.error) : escapeHtml(r.summary || '');
+            const flags = (r.flags && r.flags.length) ? ' <span class="flags">â ' + escapeHtml(r.flags.join(' Â· ')) + '</span>' : '';
+            const sum = r.error ? 'â  ' + escapeHtml(r.error) : escapeHtml(r.summary || '');
             return '<div class="arch-file-row risk-' + escapeHtml(r.risk || 'unknown') + '" data-path="' + escapeHtml(p) + '" title="Jump to diff">'
                 + '<span class="risk-dot"></span><span class="p">' + escapeHtml(p) + '</span>'
                 + '<span class="s">' + sum + flags + '</span></div>';
@@ -3782,7 +3788,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
             fileEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
     }
-    // One-line AI note in each file panel header — inserted via DOM so the
+    // One-line AI note in each file panel header â inserted via DOM so the
     // renderFile template stays untouched; re-applied after every re-render.
     function archApplyNote(p) {
         const r = archFiles.get(p);
@@ -3796,9 +3802,9 @@ export function getWebviewHtml(a: WebviewAssets): string {
             if (stats && stats.parentNode) stats.parentNode.insertBefore(note, stats.nextSibling);
             else header.appendChild(note);
         }
-        const icon = r.risk === 'high' ? '🔴 ' : r.risk === 'medium' ? '🟡 ' : r.risk === 'unknown' ? '⚪ ' : '🟢 ';
+        const icon = r.risk === 'high' ? 'ð´ ' : r.risk === 'medium' ? 'ð¡ ' : r.risk === 'unknown' ? 'âª ' : 'ð¢ ';
         note.className = 'arch-note risk-' + (r.risk || 'unknown');
-        note.textContent = r.summary ? icon + r.summary : (r.error ? '⚠ analysis failed' : '');
+        note.textContent = r.summary ? icon + r.summary : (r.error ? 'â  analysis failed' : '');
         note.title = (r.summary || '') + ((r.flags && r.flags.length) ? '\\nFlags: ' + r.flags.join('; ') : '');
     }
     function archApplyAllNotes() { for (const p of archFiles.keys()) archApplyNote(p); }
@@ -3806,7 +3812,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         if (!archStaticEl) return;
         if (msg.skipped) { archStaticEl.innerHTML = ''; return; }
         if (!msg.installed) {
-            archStaticEl.innerHTML = '<em>fallow not installed — local static analysis skipped. Install: <code>npm i -g fallow</code> (or set gitDiffViewer.fallowPath).</em>';
+            archStaticEl.innerHTML = '<em>fallow not installed â local static analysis skipped. Install: <code>npm i -g fallow</code> (or set gitDiffViewer.fallowPath).</em>';
             return;
         }
         if (!msg.ok) {
@@ -3818,23 +3824,23 @@ export function getWebviewHtml(a: WebviewAssets): string {
         const vCls = verdict === 'pass' ? 'verdict-pass' : verdict === 'warn' ? 'verdict-warn' : verdict ? 'verdict-fail' : '';
         const issues = Array.isArray(rep.issues) ? rep.issues : [];
         let html = '<strong>fallow static analysis</strong>'
-            + (verdict ? ' — <span class="' + vCls + '">' + escapeHtml(verdict) + '</span>' : '');
+            + (verdict ? ' â <span class="' + vCls + '">' + escapeHtml(verdict) + '</span>' : '');
         if (!issues.length) {
-            html += ' · no issues on changed files';
+            html += ' Â· no issues on changed files';
         } else {
-            html += ' · ' + issues.length + ' issue' + (issues.length === 1 ? '' : 's') + '<ul>'
+            html += ' Â· ' + issues.length + ' issue' + (issues.length === 1 ? '' : 's') + '<ul>'
                 + issues.slice(0, 20).map(it => {
                     const loc = it.file ? escapeHtml(String(it.file)) + (it.line ? ':' + escapeHtml(String(it.line)) : '') : '';
                     const kind = escapeHtml(String(it.rule || it.kind || it.category || ''));
                     const m = escapeHtml(String(it.message || it.title || it.summary || JSON.stringify(it).slice(0, 120)));
                     return '<li><code>' + loc + '</code> ' + (kind ? '[' + kind + '] ' : '') + m + '</li>';
                 }).join('')
-                + (issues.length > 20 ? '<li>… ' + (issues.length - 20) + ' more</li>' : '')
+                + (issues.length > 20 ? '<li>â¦ ' + (issues.length - 20) + ' more</li>' : '')
                 + '</ul>';
         }
         archStaticEl.innerHTML = html;
     }
-    // === Code Map glue — renderer lives in the module script (window.GitMap);
+    // === Code Map glue â renderer lives in the module script (window.GitMap);
     // this side owns vscode messaging, view switching, and jump-to-diff. ===
     const mapToggleBtn = document.getElementById('map-toggle');
     const mapViewEl = document.getElementById('map-view');
@@ -3858,7 +3864,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         fileEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    // In-map diff drawer — review a file without leaving the map.
+    // In-map diff drawer â review a file without leaving the map.
     const mapDiffEl = document.getElementById('map-diff');
     const mapDiffBody = document.getElementById('map-diff-body');
     const mapDiffPathEl = document.getElementById('map-diff-path');
@@ -3870,7 +3876,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     function updateMapDiffViewedBtn() {
         if (!mapDiffViewedBtn) return;
         const viewed = !!(mapDiffCurrent && window.GitMap && window.GitMap.isViewed && window.GitMap.isViewed(mapDiffCurrent));
-        mapDiffViewedBtn.textContent = viewed ? '✓ Reviewed ·  unmark' : '✓ Mark reviewed';
+        mapDiffViewedBtn.textContent = viewed ? 'â Reviewed Â·  unmark' : 'â Mark reviewed';
     }
 
     function mapHideDiff() {
@@ -3883,7 +3889,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         const change = lastChanges.find(c => c.path === p);
         if (!change) { mapJumpToDiff(p); return; }
         mapDiffCurrent = p;
-        // renderFile emits gridstack wrappers in grid mode — render flat here.
+        // renderFile emits gridstack wrappers in grid mode â render flat here.
         const savedGridMode = gridMode;
         gridMode = false;
         let html = '';
@@ -3894,7 +3900,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         mapDiffPathEl.textContent = p;
         updateMapDiffViewedBtn();
         if (!mapDiffBody.dataset.wired) {
-            // Same delegation as the grid — hunk approve/reject, comments,
+            // Same delegation as the grid â hunk approve/reject, comments,
             // stage/unstage all work inside the drawer.
             mapDiffBody.addEventListener('click', onContentClick);
             mapDiffBody.dataset.wired = '1';
@@ -3933,7 +3939,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     function setMapActive(on) {
         mapActive = !!on;
         document.body.classList.toggle('map-mode', mapActive);
-        if (mapToggleBtn) mapToggleBtn.textContent = mapActive ? '▤ Grid' : '◉ Map';
+        if (mapToggleBtn) mapToggleBtn.textContent = mapActive ? 'â¤ Grid' : 'â Map';
         if (mapActive) {
             vscode.postMessage({ type: 'archMapRequest' });
             if (window.GitMap) window.GitMap.resize();
@@ -3960,7 +3966,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         }
         if (mapEmptyEl) {
             if (pendingMapPayload.changedCount === 0) {
-                mapEmptyEl.textContent = 'Working tree clean — map shows repo structure only.';
+                mapEmptyEl.textContent = 'Working tree clean â map shows repo structure only.';
                 mapEmptyEl.style.display = 'flex';
                 setTimeout(() => { mapEmptyEl.style.display = 'none'; }, 3500);
             } else {
@@ -4004,6 +4010,30 @@ export function getWebviewHtml(a: WebviewAssets): string {
         else if (e.key === 'Enter') { window.GitMap.diffSelected(); }
     });
 
+    const archAutoCb = document.getElementById('arch-auto-cb');
+    const aiUsageEl = document.getElementById('ai-usage');
+    if (archAutoCb) {
+        archAutoCb.addEventListener('change', () => {
+            vscode.postMessage({ type: 'archDocSetAuto', on: archAutoCb.checked });
+        });
+    }
+    function fmtTok(n) {
+        n = Number(n) || 0;
+        if (n >= 1000000) return (n / 1000000).toFixed(2) + 'M';
+        if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
+        return String(n);
+    }
+    function handleAiUsage(msg) {
+        if (!aiUsageEl) return;
+        if (!msg.requests) { aiUsageEl.textContent = ''; return; }
+        let text = fmtTok(msg.promptTokens) + '↑ ' + fmtTok(msg.completionTokens) + '↓';
+        if (msg.hasPrices) {
+            const c = Number(msg.cost) || 0;
+            text += ' · $' + (c < 0.1 ? c.toFixed(4) : c.toFixed(2));
+        }
+        aiUsageEl.textContent = text;
+    }
+
     function handleArchMap(msg) {
         if (msg.error) {
             if (mapEmptyEl) {
@@ -4028,14 +4058,14 @@ export function getWebviewHtml(a: WebviewAssets): string {
             archDocEl.classList.remove('stale');
             archFiles = new Map();
             archFilesEl.innerHTML = '';
-            archOverviewEl.innerHTML = '<div class="review-loading">Analyzing ' + msg.total + ' file' + (msg.total === 1 ? '' : 's') + '…</div>';
+            archOverviewEl.innerHTML = '<div class="review-loading">Analyzing ' + msg.total + ' file' + (msg.total === 1 ? '' : 's') + 'â¦</div>';
             archTldrEl.textContent = '';
             archCancelBtn.style.display = '';
-            archSetStatus('analyzing 0/' + msg.total + '…');
+            archSetStatus('analyzing 0/' + msg.total + 'â¦');
             contentEl.querySelectorAll('.arch-note').forEach(n => n.remove());
         } else if (msg.phase === 'file') {
             archFiles.set(msg.path, msg.result || {});
-            archSetStatus('analyzing ' + msg.completed + '/' + msg.total + '…');
+            archSetStatus('analyzing ' + msg.completed + '/' + msg.total + 'â¦');
             archRenderFiles();
             archApplyNote(msg.path);
         } else if (msg.phase === 'static') {
@@ -4047,7 +4077,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
             archTldrEl.textContent = m ? m[1].trim() : '';
         } else if (msg.phase === 'done') {
             archCancelBtn.style.display = 'none';
-            archSetStatus(msg.localOnly ? '✓ current (local only)' : '✓ current');
+            archSetStatus(msg.localOnly ? 'â current (local only)' : 'â current');
             if (msg.localOnly) archOverviewEl.innerHTML = '';
         } else if (msg.phase === 'error') {
             archCancelBtn.style.display = 'none';
@@ -4055,7 +4085,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
             archOverviewEl.innerHTML = '<div class="review-loading">' + escapeHtml(msg.error || 'Analysis failed.') + '</div>';
         } else if (msg.phase === 'cancelled') {
             archCancelBtn.style.display = 'none';
-            archSetStatus('cancelled — ⟳ to re-run');
+            archSetStatus('cancelled â â³ to re-run');
             archDocEl.classList.add('stale');
         } else if (msg.phase === 'empty') {
             archCancelBtn.style.display = 'none';
@@ -4082,6 +4112,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
             render(msg);
             maybeScrollToNextHunkAction();
             archApplyAllNotes();
+            if (archAutoCb && msg.analysisAuto !== undefined) archAutoCb.checked = !!msg.analysisAuto;
             if (mapToggleBtn && msg.experimentalMap !== undefined) {
                 mapToggleBtn.style.display = msg.experimentalMap ? '' : 'none';
                 if (!msg.experimentalMap && mapActive) setMapActive(false);
@@ -4092,6 +4123,9 @@ export function getWebviewHtml(a: WebviewAssets): string {
         }
         else if (msg.type === 'archMap') {
             handleArchMap(msg);
+        }
+        else if (msg.type === 'aiUsage') {
+            handleAiUsage(msg);
         }
         else if (msg.type === 'fileUpdated') {
             replaceFile(msg.change);
@@ -4127,10 +4161,10 @@ export function getWebviewHtml(a: WebviewAssets): string {
                 setKeyStatus('Save failed: ' + msg.error, 'error');
             } else if (msg.hasKey) {
                 if (msg.saved) {
-                    // Successful save — clear the input and confirm.
+                    // Successful save â clear the input and confirm.
                     keyInputEl.value = '';
                 }
-                setKeyStatus('✓ ' + sourceLabel, 'ok');
+                setKeyStatus('â ' + sourceLabel, 'ok');
                 keyToggleBtn.title = 'Change OpenRouter API key (' + sourceLabel + ')';
             } else {
                 setKeyStatus('No key configured', null);
@@ -4139,7 +4173,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         }
         else if (msg.type === 'commitMessageGenerated') {
             generateBtn.disabled = false;
-            generateBtn.textContent = generateBtn.dataset.originalLabel || '✨';
+            generateBtn.textContent = generateBtn.dataset.originalLabel || 'â¨';
             generateBtn.title = generateBtn.dataset.originalTitle
                 || 'Generate commit message from diff (OpenRouter model, configurable)';
             if (msg.ok) {
@@ -4148,12 +4182,12 @@ export function getWebviewHtml(a: WebviewAssets): string {
                 const tail = msg.truncated ? ' (diff truncated)' : '';
                 if (autoShipAfterGenerate && commitMsgEl.value.trim()) {
                     autoShipAfterGenerate = false;
-                    setCommitStatus('✓ Generated — staging, committing, pushing…', null);
+                    setCommitStatus('â Generated â staging, committing, pushingâ¦', null);
                     shipIt();
                 } else {
                     autoShipAfterGenerate = false;
                     commitMsgEl.focus();
-                    setCommitStatus('✓ Generated' + tail, 'ok');
+                    setCommitStatus('â Generated' + tail, 'ok');
                     setTimeout(() => setCommitStatus(''), 4000);
                 }
             } else {
@@ -4167,7 +4201,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         else if (msg.type === 'reviewAllDiffsResult') {
             if (reviewBtn) {
                 reviewBtn.disabled = false;
-                reviewBtn.textContent = reviewBtn.dataset.originalLabel || '🧠 Review All';
+                reviewBtn.textContent = reviewBtn.dataset.originalLabel || 'ð§  Review All';
             }
             if (msg.ok) {
                 const md = String(msg.markdown || '');
@@ -4175,7 +4209,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
                 reviewBodyEl.innerHTML = renderMarkdown(md);
                 reviewBodyEl.scrollTop = 0;
                 const tail = msg.truncated ? ' (some diffs truncated)' : '';
-                setReviewStatus('✓ done' + tail, null);
+                setReviewStatus('â done' + tail, null);
             } else {
                 reviewLastMarkdown = '';
                 reviewBodyEl.innerHTML = '<div class="review-loading">' + escapeHtml(msg.error || 'Review failed.') + '</div>';
@@ -4189,13 +4223,13 @@ export function getWebviewHtml(a: WebviewAssets): string {
             const btn = contentEl.querySelector(\`.file[data-path="\${CSS.escape(msg.path)}"] button[data-action="analyzeDiff"]\`);
             if (btn) {
                 btn.disabled = false;
-                btn.textContent = btn.dataset.originalLabel || '🔍 Analyze';
+                btn.textContent = btn.dataset.originalLabel || 'ð Analyze';
             }
             if (msg.ok) {
                 const tail = msg.truncated ? ' (diff truncated)' : '';
                 const text = msg.count === 0
-                    ? \`✓ Analyzed \${msg.path} — no issues flagged\${tail}\`
-                    : \`✓ Analyzed \${msg.path} — \${msg.count} comment\${msg.count === 1 ? '' : 's'} added\${tail}\`;
+                    ? \`â Analyzed \${msg.path} â no issues flagged\${tail}\`
+                    : \`â Analyzed \${msg.path} â \${msg.count} comment\${msg.count === 1 ? '' : 's'} added\${tail}\`;
                 showFindStatus(text);
             } else {
                 showFindStatus(\`Analyze failed: \${msg.error || 'unknown error'}\`);
@@ -4215,7 +4249,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
             commitBtn.disabled = false;
             commitPushBtn.disabled = false;
             if (msg.ok) {
-                setCommitStatus('✓ pushed', 'ok');
+                setCommitStatus('â pushed', 'ok');
                 setTimeout(() => setCommitStatus(''), 3500);
             } else {
                 setCommitStatus(msg.error || 'Push failed', 'error');
@@ -4234,10 +4268,10 @@ export function getWebviewHtml(a: WebviewAssets): string {
                 composingFor = null;
                 editingCommentId = null;
                 const verb = msg.pushed ? 'Committed & pushed' : 'Committed';
-                contentEl.innerHTML = \`<div class="empty">✓ \${verb} — refreshing…</div>\`;
+                contentEl.innerHTML = \`<div class="empty">â \${verb} â refreshingâ¦</div>\`;
                 summaryEl.textContent = '';
                 const pushedSuffix = msg.pushed ? ' & pushed' : '';
-                setCommitStatus(\`✓ \${msg.head || 'committed'}\${pushedSuffix}\`, 'ok');
+                setCommitStatus(\`â \${msg.head || 'committed'}\${pushedSuffix}\`, 'ok');
                 setTimeout(() => setCommitStatus(''), 4000);
             } else {
                 setCommitStatus(msg.error || 'Commit failed.', 'error');
@@ -4272,7 +4306,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     }
 
     /**
-     * Tiny markdown → HTML converter. Not feature-complete; just enough for
+     * Tiny markdown â HTML converter. Not feature-complete; just enough for
      * a typical AI-written code review (headers, lists, code, bold, italic,
      * blockquotes, fenced blocks).
      */
@@ -4328,10 +4362,10 @@ export function getWebviewHtml(a: WebviewAssets): string {
             reviewBtn.disabled = true;
             const original = reviewBtn.textContent;
             reviewBtn.dataset.originalLabel = original;
-            reviewBtn.textContent = '⌛ Reviewing…';
+            reviewBtn.textContent = 'â Reviewingâ¦';
             showReviewPanel();
-            reviewBodyEl.innerHTML = '<div class="review-loading">Sending all diffs to review model…</div>';
-            setReviewStatus('thinking…', null);
+            reviewBodyEl.innerHTML = '<div class="review-loading">Sending all diffs to review modelâ¦</div>';
+            setReviewStatus('thinkingâ¦', null);
             vscode.postMessage({ type: 'reviewAllDiffs' });
         });
     }
@@ -4457,7 +4491,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
             tab.innerHTML = '<span class="term-status"></span>'
                 + '<span class="label"></span>'
                 + (s.pid ? '<span class="pid">#' + s.pid + '</span>' : '')
-                + '<span class="close-btn" title="Close">×</span>';
+                + '<span class="close-btn" title="Close">Ã</span>';
             tab.querySelector('.label').textContent = s.label;
             tab.addEventListener('click', (e) => {
                 if (e.target.classList.contains('close-btn')) {
@@ -4474,7 +4508,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     function spawnPty(opts) {
         const id = uid();
         const label = opts.label || 'Shell';
-        // Empty command lets the extension default to user's $SHELL — that
+        // Empty command lets the extension default to user's $SHELL â that
         // way zsh users on macOS get their actual login shell with the right
         // PATH (where claude/gemini are installed).
         const command = opts.command || '';
@@ -4692,11 +4726,11 @@ const isLight = document.body.classList.contains('vscode-light');
 const PAL = isLight ? {
     dir: 0x8a919a, file: 0xc4c9cf, bgMix: 0xf3f3f3,
     heatLo: 0xd4a72c, heatHi: 0xd1242f, viewed: 0x57ab5a, edge: 0x0969da,
-    label: '#1f2328', labelStroke: 'rgba(255,255,255,0.9)',
+    label: '#1f2328', labelAccent: '#0969da', pill: 'rgba(255,255,255,0.88)',
 } : {
     dir: 0x3a4048, file: 0x59626c, bgMix: 0x14181c,
     heatLo: 0xd29922, heatHi: 0xf85149, viewed: 0x2ea043, edge: 0x39c5cf,
-    label: '#e6edf3', labelStroke: 'rgba(0,0,0,0.85)',
+    label: '#f0f6fc', labelAccent: '#7ee2eb', pill: 'rgba(8,12,16,0.74)',
 };
 const QUALITY = { clean: 0x2ea043, review: 0xd29922, concern: 0xf85149 };
 
@@ -4729,7 +4763,7 @@ function hash01(s) {
     return ((h >>> 0) % 10000) / 10000;
 }
 
-// Orbit state — spherical coords around a pannable target on the map plane.
+// Orbit state â spherical coords around a pannable target on the map plane.
 let camTheta = 0, camPhi = 0.85, camDist = 1500;
 const camTarget = new THREE.Vector3(0, 0, 0);
 let camDirty = true, frameN = 0;
@@ -4768,11 +4802,11 @@ function updateLabelVisibility() {
         const v = new THREE.Vector3(p.x, p.y, p.z).project(camera);
         if (v.z > 1 || v.x < -1.05 || v.x > 1.05 || v.y < -1.05 || v.y > 1.05) { sprite.visible = false; return; }
         const sx = v.x * halfW + halfW, sy = -v.y * halfH + halfH;
-        const w = Math.max(48, Math.min(230, screenR * 2.2));
+        const w = Math.max(62, Math.min(280, screenR * 2.8));
         const pri = (blastSet && blastSet.has(n.path) ? 1000 : 0)
             + (n.dir ? 100 - n.depth * 12 : 220 + Math.min(99, churnOf(n)))
             + screenR * 0.01;
-        items.push({ sprite, sx, sy, w, h: 19, pri });
+        items.push({ sprite, sx, sy, w, h: 26, pri });
     };
     if (labelGroup) for (const s of labelGroup.children) collect(s);
     if (dirLabelGroup) for (const s of dirLabelGroup.children) collect(s);
@@ -4831,7 +4865,7 @@ function worldPos(n) {
     const floor = n.depth * 3 + 2;
     let z;
     if (isChanged(n)) {
-        // Changed files rise with churn — the skyline IS the changeset.
+        // Changed files rise with churn â the skyline IS the changeset.
         z = floor + n.r + 10 + Math.min(44, Math.sqrt(churnOf(n)) * 1.7) + hash01(n.path) * 10;
     } else {
         // Unchanged files hug their platform: quiet background terrain.
@@ -4840,47 +4874,63 @@ function worldPos(n) {
     return new THREE.Vector3(n.x - half, half - n.y, z);
 }
 
-function drawLabel(canvas, text) {
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, 256, 64);
-    const t = String(text || '').slice(0, 16);
-    if (!t) return;
-    ctx.font = 'bold 34px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.lineWidth = 7;
-    ctx.strokeStyle = PAL.labelStroke;
-    ctx.fillStyle = PAL.label;
-    ctx.strokeText(t, 128, 32);
-    ctx.fillText(t, 128, 32);
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + r, r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+    ctx.lineTo(x + r, y + h);
+    ctx.arcTo(x, y + h, x, y + h - r, r);
+    ctx.lineTo(x, y + r);
+    ctx.arcTo(x, y, x + r, y, r);
+    ctx.closePath();
 }
 
-function makeLabelSprite(text) {
+// High-res pill label: bold name on top, accent word/stats underneath.
+function drawLabel(canvas, line1, line2, accent) {
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, 512, 128);
+    const t1 = String(line1 || '').slice(0, 24);
+    const t2 = String(line2 || '').slice(0, 24);
+    if (!t1 && !t2) return;
+    ctx.fillStyle = PAL.pill;
+    roundRect(ctx, 2, 2, 508, 124, 30);
+    ctx.fill();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    if (t2) {
+        ctx.font = '700 44px system-ui, sans-serif';
+        ctx.fillStyle = PAL.label;
+        ctx.fillText(t1, 256, 42);
+        ctx.font = '600 34px system-ui, sans-serif';
+        ctx.fillStyle = accent || PAL.labelAccent;
+        ctx.fillText(t2, 256, 91);
+    } else {
+        ctx.font = '700 48px system-ui, sans-serif';
+        ctx.fillStyle = PAL.label;
+        ctx.fillText(t1, 256, 66);
+    }
+}
+
+function qualityAccent(a) {
+    if (!a || !a.quality) return PAL.labelAccent;
+    if (a.quality === 'clean') return '#2ea043';
+    if (a.quality === 'review') return '#d29922';
+    if (a.quality === 'concern') return '#f85149';
+    return PAL.labelAccent;
+}
+
+function makeLabelSprite(line1, line2, accent) {
     const canvas = document.createElement('canvas');
-    canvas.width = 256; canvas.height = 64;
-    drawLabel(canvas, text);
+    canvas.width = 512; canvas.height = 128;
+    drawLabel(canvas, line1, line2, accent);
     const tex = new THREE.CanvasTexture(canvas);
     const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
     const sprite = new THREE.Sprite(mat);
     sprite.renderOrder = 20;
     sprite.userData.canvas = canvas;
     return sprite;
-}
-
-// Text painted into the 3D world (lies on the platform, perspective-correct)
-// rather than a screen-facing billboard.
-function makeGroundLabel(text) {
-    const canvas = document.createElement('canvas');
-    canvas.width = 256; canvas.height = 64;
-    drawLabel(canvas, text);
-    const tex = new THREE.CanvasTexture(canvas);
-    const mat = new THREE.MeshBasicMaterial({
-        map: tex, transparent: true, depthWrite: false, side: THREE.DoubleSide,
-    });
-    const plane = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat);
-    plane.renderOrder = 8;
-    plane.userData.canvas = canvas;
-    return plane;
 }
 
 function setData(payload) {
@@ -4901,13 +4951,13 @@ function setData(payload) {
     selectedPath = null; blastSet = null;
     hideCard(); hideTooltip();
 
-    // Directory platforms: real 3D — lit cylinder plinths with a torus rim,
+    // Directory platforms: real 3D â lit cylinder plinths with a torus rim,
     // stacked by depth. Names are painted onto the platform as 3D planes.
     const dirs = nodes.filter((n) => n.dir && n.depth > 0);
     dirNodes = dirs;
     if (dirs.length) {
         const platGeo = new THREE.CylinderGeometry(1, 1, 2.4, 56);
-        platGeo.rotateX(Math.PI / 2); // axis → Z (map up)
+        platGeo.rotateX(Math.PI / 2); // axis â Z (map up)
         dirMesh = new THREE.InstancedMesh(platGeo, new THREE.MeshLambertMaterial({
             color: PAL.dir, transparent: true, opacity: 0.16,
         }), dirs.length);
@@ -4929,17 +4979,18 @@ function setData(payload) {
         }
         rootGroup.add(dirMesh);
         rootGroup.add(dirRim);
-        // Folder names painted on the platform — perspective-correct 3D planes.
+        // Folder names float above their platform as billboards.
         dirLabelGroup = new THREE.Group();
         for (const d of dirs) {
             if (d.r < 14) continue;
-            const plane = makeGroundLabel(d.name);
+            const sprite = makeLabelSprite(d.name);
             const p = worldPos(d);
-            plane.position.set(p.x, p.y + d.r * 0.55, d.depth * 3 + 2.0);
-            const wWorld = Math.max(20, Math.min(90, d.r * 0.9));
-            plane.scale.set(wWorld, wWorld * 0.25, 1);
-            plane.userData.node = d;
-            dirLabelGroup.add(plane);
+            sprite.position.set(p.x, p.y, d.depth * 3 + 26 + d.r * 0.12);
+            const wWorld = Math.max(24, Math.min(110, d.r * 0.85));
+            sprite.scale.set(wWorld, wWorld * 0.25, 1);
+            sprite.material.opacity = 0.92;
+            sprite.userData.node = d;
+            dirLabelGroup.add(sprite);
         }
         rootGroup.add(dirLabelGroup);
     } else {
@@ -4980,7 +5031,7 @@ function setData(payload) {
         rootGroup.add(changedMesh);
     }
 
-    // Quality / viewed rings — Saturn-style, around the sphere's equator.
+    // Quality / viewed rings â Saturn-style, around the sphere's equator.
     if (changedNodes.length) {
         const geo = new THREE.RingGeometry(1.35, 1.6, 44);
         ringMesh = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({
@@ -5001,7 +5052,7 @@ function setData(payload) {
         ringMesh = null;
     }
 
-    // Import edges — neural connections. Hot (touching a change) glow additive;
+    // Import edges â neural connections. Hot (touching a change) glow additive;
     // cold repo wiring stays faint background structure.
     adj = new Map();
     const edges = payload.edges || [];
@@ -5044,15 +5095,15 @@ function setData(payload) {
         }
     }
 
-    // One-word labels floating above changed bubbles.
+    // Two-line pill labels floating above changed bubbles: filename + word.
     labelGroup = new THREE.Group();
     for (const n of changedNodes) {
         const a = analysisByPath.get(n.path);
-        const text = (a && a.word) || n.name;
-        const sprite = makeLabelSprite(text);
+        const counts = '+' + (n.add || 0) + ' â' + (n.del || 0);
+        const sprite = makeLabelSprite(n.name, (a && a.word) || counts, qualityAccent(a));
         const p = worldPos(n);
-        sprite.position.set(p.x, p.y, p.z + n.r + 8);
-        const wWorld = Math.max(18, Math.min(70, n.r * 2.6));
+        sprite.position.set(p.x, p.y, p.z + n.r + 10);
+        const wWorld = Math.max(26, Math.min(96, n.r * 3.2));
         sprite.scale.set(wWorld, wWorld * 0.25, 1);
         sprite.userData.node = n;
         labelGroup.add(sprite);
@@ -5060,7 +5111,7 @@ function setData(payload) {
     }
     rootGroup.add(labelGroup);
 
-    // Gentle float — nuclei drifting. Changed files only (cheap: ≤ a few hundred).
+    // Gentle float â nuclei drifting. Changed files only (cheap: â¤ a few hundred).
     bobItems = [];
     for (let i = 0; i < changedNodes.length; i++) {
         const n = changedNodes[i];
@@ -5124,9 +5175,17 @@ function applyColors() {
     if (changedMesh) {
         for (let i = 0; i < changedNodes.length; i++) {
             const n = changedNodes[i];
-            const t = Math.min(1, Math.log(1 + churnOf(n)) / Math.log(500));
-            const col = new THREE.Color(PAL.heatLo).lerp(new THREE.Color(PAL.heatHi), t);
-            if (viewedSet.has(n.path)) col.lerp(new THREE.Color(PAL.viewed), 0.65);
+            const a = analysisByPath.get(n.path);
+            let col;
+            // Quality verdict owns the color once analysis lands; churn heat
+            // is the pre-analysis fallback.
+            if (a && a.quality && QUALITY[a.quality] !== undefined) {
+                col = new THREE.Color(QUALITY[a.quality]);
+            } else {
+                const t = Math.min(1, Math.log(1 + churnOf(n)) / Math.log(500));
+                col = new THREE.Color(PAL.heatLo).lerp(new THREE.Color(PAL.heatHi), t);
+            }
+            if (viewedSet.has(n.path)) col.lerp(new THREE.Color(PAL.viewed), 0.55);
             const w = weightOf(n);
             if (w < 1) col.lerp(bg, 0.85 * (1 - w));
             changedMesh.setColorAt(i, col);
@@ -5177,17 +5236,17 @@ function updateProgress() {
 function hideTooltip() { tooltipEl.style.display = 'none'; }
 function showTooltip(n, x, y) {
     const a = analysisByPath.get(n.path);
-    let html = '<div style="font-weight:600; font-size:13px">' + (n.dir ? '📁 ' : '') + esc(n.name) + '</div>';
+    let html = '<div style="font-weight:600; font-size:13px">' + (n.dir ? 'ð ' : '') + esc(n.name) + '</div>';
     html += '<div class="t-path">' + esc(n.path) + '</div>';
     if (isChanged(n)) {
         html += '<div class="t-meta"><span style="color:#2ea043">+' + (n.add || 0) + '</span> <span style="color:#f85149">-' + (n.del || 0) + '</span>';
-        if (a && a.risk) html += ' · risk: ' + esc(a.risk);
-        if (a && a.quality) html += ' · ' + esc(a.quality);
-        if (viewedSet.has(n.path)) html += ' · ✓ reviewed';
+        if (a && a.risk) html += ' Â· risk: ' + esc(a.risk);
+        if (a && a.quality) html += ' Â· ' + esc(a.quality);
+        if (viewedSet.has(n.path)) html += ' Â· â reviewed';
         html += '</div>';
         if (a && a.summary) html += '<div class="t-sum">' + esc(a.summary) + '</div>';
-        if (!n.testPair) html += '<div class="t-meta">⚗ no test pair found</div>';
-        if (n.comments) html += '<div class="t-meta">💬 ' + n.comments + ' comment' + (n.comments === 1 ? '' : 's') + '</div>';
+        if (!n.testPair) html += '<div class="t-meta">â no test pair found</div>';
+        if (n.comments) html += '<div class="t-meta">ð¬ ' + n.comments + ' comment' + (n.comments === 1 ? '' : 's') + '</div>';
     }
     tooltipEl.innerHTML = html;
     tooltipEl.style.display = 'block';
@@ -5207,18 +5266,18 @@ function showCard(n) {
     if (a.word) html += '<span class="c-badge">' + esc(a.word) + '</span>';
     if (a.risk) html += '<span class="c-badge">risk: ' + esc(a.risk) + '</span>';
     if (a.quality) html += '<span class="c-badge q-' + esc(a.quality) + '">' + esc(a.quality) + '</span>';
-    if (viewedSet.has(n.path)) html += '<span class="c-badge q-clean">✓ reviewed</span>';
+    if (viewedSet.has(n.path)) html += '<span class="c-badge q-clean">â reviewed</span>';
     html += '</div>';
     if (a.summary) html += '<div class="c-sum">' + esc(a.summary) + '</div>';
-    if (a.flags && a.flags.length) html += '<div class="c-flags">⚑ ' + a.flags.map(esc).join('<br>⚑ ') + '</div>';
+    if (a.flags && a.flags.length) html += '<div class="c-flags">â ' + a.flags.map(esc).join('<br>â ') + '</div>';
     const deps = adj.get(n.path);
-    if (deps && deps.length) html += '<div class="c-flags">↯ linked: ' + deps.length + ' file' + (deps.length === 1 ? '' : 's') + ' (highlighted)</div>';
+    if (deps && deps.length) html += '<div class="c-flags">â¯ linked: ' + deps.length + ' file' + (deps.length === 1 ? '' : 's') + ' (highlighted)</div>';
     html += '<div class="c-actions">';
     if (isChanged(n)) html += '<button data-act="diff">Diff</button>';
     html += '<button data-act="open">Open</button>';
     if (isChanged(n)) {
-        html += '<button data-act="viewed">' + (viewedSet.has(n.path) ? 'Unmark' : '✓ Reviewed') + '</button>';
-        html += '<button data-act="analyze">🔍 Analyze</button>';
+        html += '<button data-act="viewed">' + (viewedSet.has(n.path) ? 'Unmark' : 'â Reviewed') + '</button>';
+        html += '<button data-act="analyze">ð Analyze</button>';
     }
     html += '</div>';
     cardEl.innerHTML = html;
@@ -5354,12 +5413,14 @@ const api = {
     analysis(p, result) {
         analysisByPath.set(p, result || {});
         const sprite = labelByPath.get(p);
-        if (sprite && result && result.word) {
-            drawLabel(sprite.userData.canvas, result.word);
+        const n = byPath.get(p);
+        if (sprite && n) {
+            const counts = '+' + (n.add || 0) + ' â' + (n.del || 0);
+            drawLabel(sprite.userData.canvas, n.name, (result && result.word) || counts, qualityAccent(result));
             sprite.material.map.needsUpdate = true;
         }
-        if (selectedPath === p) { const n = byPath.get(p); if (n) showCard(n); }
-        if (ringMesh) applyColors();
+        if (selectedPath === p && n) showCard(n);
+        applyColors();
     },
     setFilter(f) {
         filter = { text: String(f.text || ''), unreviewedOnly: !!f.unreviewedOnly, dimUnchanged: !!f.dimUnchanged };

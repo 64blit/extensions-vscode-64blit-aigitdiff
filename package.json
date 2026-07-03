@@ -134,6 +134,16 @@
           "maximum": 8,
           "description": "Max concurrent per-file LLM analysis requests."
         },
+        "gitDiffViewer.priceInputPerM": {
+          "type": "number",
+          "default": 0,
+          "markdownDescription": "USD per 1M input (prompt) tokens for the configured model — used for the running session cost display. Find your model's price on [openrouter.ai/models](https://openrouter.ai/models). 0 hides the dollar figure (token counts still shown)."
+        },
+        "gitDiffViewer.priceOutputPerM": {
+          "type": "number",
+          "default": 0,
+          "markdownDescription": "USD per 1M output (completion) tokens for the configured model. 0 hides the dollar figure."
+        },
         "gitDiffViewer.experimentalMap": {
           "type": "boolean",
           "default": true,
