@@ -4722,6 +4722,7 @@ function isChanged(n) { return n.add !== undefined || n.del !== undefined; }
 // Orbit state — spherical coords around a pannable target on the map plane.
 let camTheta = 0, camPhi = 0.85, camDist = 1500;
 const camTarget = new THREE.Vector3(0, 0, 0);
+let camDirty = true, frameN = 0;
 
 function applyCamera() {
     if (!camera) return;
@@ -4733,6 +4734,48 @@ function applyCamera() {
     );
     camera.up.set(0, 0, 1);
     camera.lookAt(camTarget);
+    camDirty = true;
+}
+
+// Screen-space label management: hide labels whose bubble is too small on
+// screen (LOD), then greedily suppress overlapping labels by priority.
+function updateLabelVisibility() {
+    if (!camera || !renderer) return;
+    camera.updateMatrixWorld();
+    const halfH = H() / 2, halfW = W() / 2;
+    const tanF = Math.tan(camera.fov * Math.PI / 360);
+    const camP = camera.position;
+    const items = [];
+    const collect = (sprite) => {
+        const n = sprite.userData.node;
+        if (!n) { sprite.visible = false; return; }
+        if (sprite.userData.wOk === false) { sprite.visible = false; return; }
+        const p = sprite.position;
+        const dist = camP.distanceTo(p);
+        if (dist <= 1) { sprite.visible = false; return; }
+        const screenR = (n.r * halfH) / (dist * tanF);
+        if (screenR < (n.dir ? 17 : 12)) { sprite.visible = false; return; }
+        const v = new THREE.Vector3(p.x, p.y, p.z).project(camera);
+        if (v.z > 1 || v.x < -1.05 || v.x > 1.05 || v.y < -1.05 || v.y > 1.05) { sprite.visible = false; return; }
+        const sx = v.x * halfW + halfW, sy = -v.y * halfH + halfH;
+        const w = Math.max(48, Math.min(230, screenR * 2.2));
+        const pri = (blastSet && blastSet.has(n.path) ? 1000 : 0)
+            + (n.dir ? 100 - n.depth * 12 : 220 + Math.min(99, churnOf(n)))
+            + screenR * 0.01;
+        items.push({ sprite, sx, sy, w, h: 19, pri });
+    };
+    if (labelGroup) for (const s of labelGroup.children) collect(s);
+    if (dirLabelGroup) for (const s of dirLabelGroup.children) collect(s);
+    items.sort((a, b) => b.pri - a.pri);
+    const kept = [];
+    for (const it of items) {
+        let hit = false;
+        for (const k of kept) {
+            if (Math.abs(it.sx - k.sx) * 2 < (it.w + k.w) && Math.abs(it.sy - k.sy) * 2 < (it.h + k.h) + 8) { hit = true; break; }
+        }
+        it.sprite.visible = !hit;
+        if (!hit) kept.push(it);
+    }
 }
 
 function initThree() {
@@ -4750,7 +4793,12 @@ function initThree() {
     scene.add(sun);
     raycaster = new THREE.Raycaster();
     bindInput();
-    const loop = () => { renderer.render(scene, camera); requestAnimationFrame(loop); };
+    const loop = () => {
+        frameN++;
+        if (camDirty && frameN % 5 === 0) { updateLabelVisibility(); camDirty = false; }
+        renderer.render(scene, camera);
+        requestAnimationFrame(loop);
+    };
     requestAnimationFrame(loop);
     if (window.ResizeObserver) new ResizeObserver(() => api.resize()).observe(wrap);
 }
@@ -4852,6 +4900,7 @@ function setData(payload) {
             const wWorld = Math.max(16, Math.min(120, d.r * 0.9));
             sprite.scale.set(wWorld, wWorld * 0.25, 1);
             sprite.material.opacity = 0.85;
+            sprite.userData.node = d;
             dirLabelGroup.add(sprite);
         }
         rootGroup.add(dirLabelGroup);
@@ -4940,10 +4989,12 @@ function setData(payload) {
         sprite.position.set(p.x, p.y, p.z + n.r + 8);
         const wWorld = Math.max(18, Math.min(70, n.r * 2.6));
         sprite.scale.set(wWorld, wWorld * 0.25, 1);
+        sprite.userData.node = n;
         labelGroup.add(sprite);
         labelByPath.set(n.path, sprite);
     }
     rootGroup.add(labelGroup);
+    camDirty = true;
 
     applyColors();
     updateProgress();
@@ -4996,8 +5047,9 @@ function applyColors() {
     }
     for (const [p, sprite] of labelByPath) {
         const n = byPath.get(p);
-        sprite.visible = !!n && weightOf(n) > 0.5;
+        sprite.userData.wOk = !!n && weightOf(n) > 0.5;
     }
+    camDirty = true;
     updateProgress();
 }
 
