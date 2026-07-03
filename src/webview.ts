@@ -4755,6 +4755,16 @@ function updateLabelVisibility() {
     const halfH = H() / 2, halfW = W() / 2;
     const tanF = Math.tan(camera.fov * Math.PI / 360);
     const camP = camera.position;
+    // Re-anchor folder labels above their circle in *screen* space so they
+    // stay over the disc at any orbit angle.
+    if (dirLabelGroup) {
+        const upv = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 1);
+        for (const s of dirLabelGroup.children) {
+            if (s.userData.center && s.userData.node) {
+                s.position.copy(s.userData.center).addScaledVector(upv, s.userData.node.r * 0.85);
+            }
+        }
+    }
     const items = [];
     const collect = (sprite) => {
         const n = sprite.userData.node;
@@ -4914,6 +4924,7 @@ function setData(payload) {
             sprite.scale.set(wWorld, wWorld * 0.25, 1);
             sprite.material.opacity = 0.85;
             sprite.userData.node = d;
+            sprite.userData.center = new THREE.Vector3(p.x, p.y, d.depth * 1.5 + 4);
             dirLabelGroup.add(sprite);
         }
         rootGroup.add(dirLabelGroup);
@@ -5045,6 +5056,9 @@ function animateBob(t) {
     if (!fileMesh || !bobItems.length) return;
     if (!document.body.classList.contains('map-mode')) return;
     bobQuat.set(0, 0, 0, 1);
+    // Labels ride above the sphere along the camera's up vector, so the word
+    // reads "over the planet" from any orbit angle.
+    const upv = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 1);
     for (const it of bobItems) {
         const dz = Math.sin(t * 0.9 + it.phase) * 3.5 + Math.sin(t * 0.37 + it.phase * 2.1) * 1.5;
         bobPos.set(it.base.x, it.base.y, it.base.z + dz);
@@ -5056,7 +5070,10 @@ function animateBob(t) {
             bobMatrix.compose(bobPos, bobQuat, bobScale);
             ringMesh.setMatrixAt(it.ri, bobMatrix);
         }
-        if (it.sprite) it.sprite.position.z = it.base.z + it.n.r + 8 + dz;
+        if (it.sprite) {
+            it.sprite.position.set(it.base.x, it.base.y, it.base.z + dz)
+                .addScaledVector(upv, it.n.r * 1.15 + 9);
+        }
     }
     fileMesh.instanceMatrix.needsUpdate = true;
     if (ringMesh) ringMesh.instanceMatrix.needsUpdate = true;
