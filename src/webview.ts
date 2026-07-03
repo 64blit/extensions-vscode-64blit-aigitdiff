@@ -4694,16 +4694,16 @@ const PAL = isLight ? {
     heatLo: 0xd4a72c, heatHi: 0xd1242f, viewed: 0x57ab5a, edge: 0x0969da,
     label: '#1f2328', labelStroke: 'rgba(255,255,255,0.9)',
 } : {
-    dir: 0x3a4048, file: 0x3d444d, bgMix: 0x14181c,
+    dir: 0x3a4048, file: 0x59626c, bgMix: 0x14181c,
     heatLo: 0xd29922, heatHi: 0xf85149, viewed: 0x2ea043, edge: 0x39c5cf,
     label: '#e6edf3', labelStroke: 'rgba(0,0,0,0.85)',
 };
 const QUALITY = { clean: 0x2ea043, review: 0xd29922, concern: 0xf85149 };
 
 let renderer = null, scene = null, camera = null, raycaster = null;
-let fileMesh = null, dirMesh = null, ringMesh = null, edgeLines = null, labelGroup = null, rootGroup = null;
+let changedMesh = null, baseMesh = null, dirMesh = null, ringMesh = null, edgeLines = null, labelGroup = null, rootGroup = null;
 let dirLabelGroup = null, dirNodes = [];
-let nodes = [], fileNodes = [], changedNodes = [];
+let nodes = [], fileNodes = [], changedNodes = [], baseNodes = [];
 let bobItems = []; // changed files gently floating
 const bobMatrix = new THREE.Matrix4();
 const bobQuat = new THREE.Quaternion();
@@ -4795,6 +4795,7 @@ function initThree() {
     renderer.setSize(W(), H());
     wrap.insertBefore(renderer.domElement, tooltipEl);
     scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(PAL.bgMix, 2400, 8500);
     camera = new THREE.PerspectiveCamera(50, W() / Math.max(1, H()), 2, 14000);
     applyCamera();
     scene.add(new THREE.AmbientLight(0xffffff, 0.78));
@@ -4826,12 +4827,15 @@ function disposeTree(obj) {
 
 function worldPos(n) {
     const half = layoutSize / 2;
-    let z = n.depth * 1.5;
-    if (!n.dir) {
-        // Planets in space: each file floats at a deterministic altitude above
-        // its directory disc; changed files rise higher with churn.
-        z += n.r + 14 + hash01(n.path) * 110;
-        if (isChanged(n)) z += 22 + Math.min(48, Math.sqrt(churnOf(n)) * 1.6);
+    if (n.dir) return new THREE.Vector3(n.x - half, half - n.y, n.depth * 3);
+    const floor = n.depth * 3 + 2;
+    let z;
+    if (isChanged(n)) {
+        // Changed files rise with churn — the skyline IS the changeset.
+        z = floor + n.r + 10 + Math.min(44, Math.sqrt(churnOf(n)) * 1.7) + hash01(n.path) * 10;
+    } else {
+        // Unchanged files hug their platform: quiet background terrain.
+        z = floor + n.r * 0.55 + 2 + hash01(n.path) * 6;
     }
     return new THREE.Vector3(n.x - half, half - n.y, z);
 }
@@ -4905,7 +4909,7 @@ function setData(payload) {
         const platGeo = new THREE.CylinderGeometry(1, 1, 2.4, 56);
         platGeo.rotateX(Math.PI / 2); // axis → Z (map up)
         dirMesh = new THREE.InstancedMesh(platGeo, new THREE.MeshLambertMaterial({
-            color: PAL.dir, transparent: true, opacity: 0.22,
+            color: PAL.dir, transparent: true, opacity: 0.16,
         }), dirs.length);
         const rimGeo = new THREE.TorusGeometry(1, 0.014, 8, 72);
         const dirRim = new THREE.InstancedMesh(rimGeo, new THREE.MeshBasicMaterial({
@@ -4932,7 +4936,7 @@ function setData(payload) {
             const plane = makeGroundLabel(d.name);
             const p = worldPos(d);
             plane.position.set(p.x, p.y + d.r * 0.55, d.depth * 3 + 2.0);
-            const wWorld = Math.max(20, Math.min(150, d.r * 1.05));
+            const wWorld = Math.max(20, Math.min(90, d.r * 0.9));
             plane.scale.set(wWorld, wWorld * 0.25, 1);
             plane.userData.node = d;
             dirLabelGroup.add(plane);
@@ -4943,23 +4947,37 @@ function setData(payload) {
         dirLabelGroup = null;
     }
 
-    // File bubbles — real spheres, lit for depth.
-    const fileIdxByPath = new Map();
-    if (fileNodes.length) {
-        const geo = new THREE.SphereGeometry(1, 20, 14);
-        fileMesh = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: 0xffffff }), fileNodes.length);
+    // Two sphere populations: quiet lit terrain for unchanged files, bright
+    // unlit (always-vivid) spheres for the changeset.
+    baseNodes = fileNodes.filter((n) => !isChanged(n));
+    baseMesh = null;
+    changedMesh = null;
+    if (baseNodes.length) {
+        const geo = new THREE.SphereGeometry(1, 14, 10);
+        baseMesh = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: 0xffffff }), baseNodes.length);
         const m = new THREE.Matrix4();
-        for (let i = 0; i < fileNodes.length; i++) {
-            const p = worldPos(fileNodes[i]);
+        for (let i = 0; i < baseNodes.length; i++) {
+            const n = baseNodes[i];
+            const p = worldPos(n);
+            const r = n.r * 0.55;
             m.makeTranslation(p.x, p.y, p.z);
-            const r = fileNodes[i].r;
             m.multiply(new THREE.Matrix4().makeScale(r, r, r));
-            fileMesh.setMatrixAt(i, m);
-            fileIdxByPath.set(fileNodes[i].path, i);
+            baseMesh.setMatrixAt(i, m);
         }
-        rootGroup.add(fileMesh);
-    } else {
-        fileMesh = null;
+        rootGroup.add(baseMesh);
+    }
+    if (changedNodes.length) {
+        const geo = new THREE.SphereGeometry(1, 24, 18);
+        changedMesh = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({ color: 0xffffff }), changedNodes.length);
+        const m = new THREE.Matrix4();
+        for (let i = 0; i < changedNodes.length; i++) {
+            const n = changedNodes[i];
+            const p = worldPos(n);
+            m.makeTranslation(p.x, p.y, p.z);
+            m.multiply(new THREE.Matrix4().makeScale(n.r, n.r, n.r));
+            changedMesh.setMatrixAt(i, m);
+        }
+        rootGroup.add(changedMesh);
     }
 
     // Quality / viewed rings — Saturn-style, around the sphere's equator.
@@ -5010,7 +5028,7 @@ function setData(payload) {
             const geo = new THREE.BufferGeometry();
             geo.setAttribute('position', new THREE.Float32BufferAttribute(coldPos, 3));
             const cold = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({
-                color: PAL.dir, transparent: true, opacity: 0.16, depthWrite: false,
+                color: PAL.dir, transparent: true, opacity: 0.12, depthWrite: false,
             }));
             cold.renderOrder = 4;
             rootGroup.add(cold);
@@ -5019,7 +5037,7 @@ function setData(payload) {
             const geo = new THREE.BufferGeometry();
             geo.setAttribute('position', new THREE.Float32BufferAttribute(hotPos, 3));
             edgeLines = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({
-                color: PAL.edge, transparent: true, opacity: 0.6, depthWrite: false, blending: THREE.AdditiveBlending,
+                color: PAL.edge, transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending,
             }));
             edgeLines.renderOrder = 5;
             rootGroup.add(edgeLines);
@@ -5044,12 +5062,11 @@ function setData(payload) {
 
     // Gentle float — nuclei drifting. Changed files only (cheap: ≤ a few hundred).
     bobItems = [];
-    for (const n of changedNodes) {
-        const fi = fileIdxByPath.get(n.path);
-        if (fi === undefined) continue;
+    for (let i = 0; i < changedNodes.length; i++) {
+        const n = changedNodes[i];
         bobItems.push({
             n,
-            fi,
+            fi: i,
             ri: ringIndexByPath.has(n.path) ? ringIndexByPath.get(n.path) : -1,
             base: worldPos(n),
             phase: hash01(n.path) * 6.283,
@@ -5063,7 +5080,7 @@ function setData(payload) {
 }
 
 function animateBob(t) {
-    if (!fileMesh || !bobItems.length) return;
+    if (!changedMesh || !bobItems.length) return;
     if (!document.body.classList.contains('map-mode')) return;
     bobQuat.set(0, 0, 0, 1);
     // Labels ride above the sphere along the camera's up vector, so the word
@@ -5074,7 +5091,7 @@ function animateBob(t) {
         bobPos.set(it.base.x, it.base.y, it.base.z + dz);
         bobScale.set(it.n.r, it.n.r, it.n.r);
         bobMatrix.compose(bobPos, bobQuat, bobScale);
-        fileMesh.setMatrixAt(it.fi, bobMatrix);
+        changedMesh.setMatrixAt(it.fi, bobMatrix);
         if (ringMesh && it.ri >= 0) {
             bobScale.set(it.n.r, it.n.r, 1);
             bobMatrix.compose(bobPos, bobQuat, bobScale);
@@ -5085,7 +5102,7 @@ function animateBob(t) {
                 .addScaledVector(upv, it.n.r * 1.15 + 9);
         }
     }
-    fileMesh.instanceMatrix.needsUpdate = true;
+    changedMesh.instanceMatrix.needsUpdate = true;
     if (ringMesh) ringMesh.instanceMatrix.needsUpdate = true;
 }
 
@@ -5103,23 +5120,29 @@ function weightOf(n) {
 }
 
 function applyColors() {
-    if (!fileMesh) return;
     const bg = new THREE.Color(PAL.bgMix);
-    for (let i = 0; i < fileNodes.length; i++) {
-        const n = fileNodes[i];
-        let col;
-        if (isChanged(n)) {
+    if (changedMesh) {
+        for (let i = 0; i < changedNodes.length; i++) {
+            const n = changedNodes[i];
             const t = Math.min(1, Math.log(1 + churnOf(n)) / Math.log(500));
-            col = new THREE.Color(PAL.heatLo).lerp(new THREE.Color(PAL.heatHi), t);
+            const col = new THREE.Color(PAL.heatLo).lerp(new THREE.Color(PAL.heatHi), t);
             if (viewedSet.has(n.path)) col.lerp(new THREE.Color(PAL.viewed), 0.65);
-        } else {
-            col = new THREE.Color(PAL.file);
+            const w = weightOf(n);
+            if (w < 1) col.lerp(bg, 0.85 * (1 - w));
+            changedMesh.setColorAt(i, col);
         }
-        const w = weightOf(n);
-        if (w < 1) col.lerp(bg, 0.85 * (1 - w));
-        fileMesh.setColorAt(i, col);
+        if (changedMesh.instanceColor) changedMesh.instanceColor.needsUpdate = true;
     }
-    if (fileMesh.instanceColor) fileMesh.instanceColor.needsUpdate = true;
+    if (baseMesh) {
+        for (let i = 0; i < baseNodes.length; i++) {
+            const n = baseNodes[i];
+            const col = new THREE.Color(PAL.file);
+            const w = weightOf(n);
+            if (w < 1) col.lerp(bg, 0.85 * (1 - w));
+            baseMesh.setColorAt(i, col);
+        }
+        if (baseMesh.instanceColor) baseMesh.instanceColor.needsUpdate = true;
+    }
     if (ringMesh) {
         for (const [p, i] of ringIndexByPath) {
             const a = analysisByPath.get(p);
@@ -5241,10 +5264,16 @@ function pick(e) {
         -((e.clientY - rect.top) / rect.height) * 2 + 1
     );
     raycaster.setFromCamera(ndc, camera);
-    if (fileMesh) {
-        const hits = raycaster.intersectObject(fileMesh);
+    if (changedMesh) {
+        const hits = raycaster.intersectObject(changedMesh);
         if (hits.length && hits[0].instanceId !== undefined && hits[0].instanceId !== null) {
-            return fileNodes[hits[0].instanceId];
+            return changedNodes[hits[0].instanceId];
+        }
+    }
+    if (baseMesh) {
+        const hits = raycaster.intersectObject(baseMesh);
+        if (hits.length && hits[0].instanceId !== undefined && hits[0].instanceId !== null) {
+            return baseNodes[hits[0].instanceId];
         }
     }
     if (dirMesh) {

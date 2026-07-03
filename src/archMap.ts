@@ -186,43 +186,6 @@ export function buildExcluder(patterns: string[]): (p: string) => boolean {
     };
 }
 
-function relaxLayout(nodes: MapNode[], edges: MapEdge[], iters: number): void {
-    const files = nodes.filter((n) => !n.dir && n.path);
-    if (!files.length || !edges.length) return;
-    const anchors = new Map<number, { x: number; y: number }>();
-    for (const f of files) anchors.set(f.id, { x: f.x, y: f.y });
-    const byId = new Map<number, MapNode>();
-    for (const n of nodes) byId.set(n.id, n);
-    for (let it = 0; it < iters; it++) {
-        for (const e of edges) {
-            const a = byId.get(e.from), b = byId.get(e.to);
-            if (!a || !b || a.dir || b.dir) continue;
-            let dx = b.x - a.x, dy = b.y - a.y;
-            const dist = Math.max(1, Math.hypot(dx, dy));
-            const rest = a.r + b.r + 14;
-            dx /= dist; dy /= dist;
-            if (dist <= rest) {
-                const push = Math.min(2, (rest - dist) * 0.05);
-                a.x -= dx * push; a.y -= dy * push;
-                b.x += dx * push; b.y += dy * push;
-            } else {
-                const pull = Math.min(6, (dist - rest) * 0.03);
-                a.x += dx * pull; a.y += dy * pull;
-                b.x -= dx * pull; b.y -= dy * pull;
-            }
-        }
-        for (const f of files) {
-            const an = anchors.get(f.id)!;
-            f.x += (an.x - f.x) * 0.004;
-            f.y += (an.y - f.y) * 0.004;
-        }
-    }
-    for (const f of files) {
-        f.x = Math.round(f.x * 100) / 100;
-        f.y = Math.round(f.y * 100) / 100;
-    }
-}
-
 export function buildArchMap(input: BuildMapInput): ArchMapPayload {
     const { viewed, comments, contents } = input;
     const scopeRoot = (input.root || '').replace(/^\/+|\/+$/g, '');
@@ -364,11 +327,6 @@ export function buildArchMap(input: BuildMapInput): ArchMapPayload {
         const cold = edges.filter((e) => !e.hot);
         edges = hot.concat(cold.slice(0, Math.max(0, MAX_EDGES - hot.length)));
     }
-
-    // Force relaxation: connected files drift toward each other, an anchor
-    // spring keeps them near their directory. Fixed iteration order + no
-    // randomness = deterministic.
-    relaxLayout(nodes, edges, 220);
 
     return {
         v: 1,
