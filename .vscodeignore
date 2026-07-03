@@ -1,0 +1,34 @@
+.vscode/**
+.vscode-test/**
+src/**
+**/*.ts
+**/*.map
+**/tsconfig.json
+**/yarn.lock
+**/package-lock.json
+**/.gitignore
+**/.eslintrc*
+**/.editorconfig
+*.vsix
+
+# Dev-time deps — all front-end assets are already copied into media/
+node_modules/typescript/**
+node_modules/@types/**
+node_modules/@vscode/**
+node_modules/@highlightjs/**
+node_modules/@xterm/**
+node_modules/gridstack/**
+
+# Test fixtures, docs from native deps
+node_modules/**/test/**
+node_modules/**/tests/**
+node_modules/**/docs/**
+node_modules/**/*.md
+node_modules/**/*.markdown
+node_modules/**/CHANGELOG*
+node_modules/**/HISTORY*
+node_modules/**/.editorconfig
+node_modules/**/.eslintrc*
+node_modules/**/.prettierrc*
+node_modules/**/example*
+node_modules/three/**

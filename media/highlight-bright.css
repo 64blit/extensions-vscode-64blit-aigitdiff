@@ -1,0 +1,133 @@
+/* Theme-driven syntax highlighting. Token colors come from CSS variables
+   defined per-theme in the webview (--hl-* on :root for dark, overridden on
+   body.vscode-light for light). Fallback values are bright/dark by default. */
+
+.hljs {
+    color: var(--diff-fg, #ffffff) !important;
+    background: transparent !important;
+    font-weight: 500;
+}
+
+/* Comments */
+.hljs-comment,
+.hljs-quote {
+    color: var(--hl-comment, #00ffff) !important;
+    font-style: italic;
+    font-weight: 600;
+}
+
+/* Keywords */
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-subst,
+.hljs-doctag {
+    color: var(--hl-keyword, #ff2ad4) !important;
+    font-weight: 700;
+}
+
+/* Strings + regex */
+.hljs-string,
+.hljs-template-string,
+.hljs-regexp,
+.hljs-link,
+.hljs-meta-string {
+    color: var(--hl-string, #00ff66) !important;
+    font-weight: 600;
+}
+
+/* Numbers + literals */
+.hljs-number,
+.hljs-literal,
+.hljs-symbol,
+.hljs-bullet {
+    color: var(--hl-number, #ffae00) !important;
+    font-weight: 700;
+}
+
+/* Function / method names */
+.hljs-title,
+.hljs-title.function_,
+.hljs-title.class_,
+.hljs-section {
+    color: var(--hl-function, #ffff00) !important;
+    font-weight: 700;
+}
+
+/* Built-ins / classes */
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-class .hljs-title,
+.hljs-type {
+    color: var(--hl-builtin, #ff66cc) !important;
+    font-weight: 700;
+}
+
+/* Variables */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-name {
+    color: var(--hl-variable, #00d4ff) !important;
+    font-weight: 600;
+}
+
+/* Properties */
+.hljs-property,
+.hljs-attr {
+    color: var(--hl-property, #66ffff) !important;
+    font-weight: 600;
+}
+
+/* Attributes */
+.hljs-attribute {
+    color: var(--hl-attribute, #ffff66) !important;
+    font-weight: 600;
+}
+
+/* Tags */
+.hljs-tag,
+.hljs-tag .hljs-name {
+    color: var(--hl-tag, #ff2ad4) !important;
+    font-weight: 700;
+}
+
+.hljs-tag .hljs-attr {
+    color: var(--hl-attribute, #ffff66) !important;
+}
+
+/* Meta (decorators / preprocessor / jsdoc) */
+.hljs-meta,
+.hljs-meta .hljs-keyword,
+.hljs-meta .hljs-string {
+    color: var(--hl-meta, #ffff66) !important;
+    font-weight: 700;
+}
+
+/* Operators / punctuation */
+.hljs-operator,
+.hljs-punctuation {
+    color: var(--hl-operator, #ffffff) !important;
+    font-weight: 700;
+}
+
+/* Function parameters */
+.hljs-params {
+    color: var(--hl-operator, #ffffff) !important;
+    font-weight: 600;
+}
+
+/* Markdown / structural emphasis */
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: 800; }
+
+/* Diff-inside-diff (rare) */
+.hljs-deletion { color: var(--hl-deletion, #ff5577) !important; }
+.hljs-addition { color: var(--hl-addition, #66ff77) !important; }
+
+/* Selectors (CSS / SCSS) */
+.hljs-selector-id { color: var(--hl-attribute, #ffff66) !important; }
+.hljs-selector-class { color: var(--hl-builtin, #ff66cc) !important; }
+.hljs-selector-attr,
+.hljs-selector-pseudo { color: var(--hl-variable, #00d4ff) !important; }
+
+/* Character escapes */
+.hljs-char.escape_ { color: var(--hl-number, #ffae00) !important; }

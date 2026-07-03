@@ -1,6 +1,6 @@
 node_modules/
 out/
-.vscode-test/
 *.vsix
+.vscode-test/
 .DS_Store
-*.log
+.env

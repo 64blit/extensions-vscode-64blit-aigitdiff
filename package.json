@@ -1,0 +1,183 @@
+{
+  "name": "git-diff-viewer",
+  "displayName": "Git Diff Viewer",
+  "description": "Browse all local git changes in a single windowed view with collapsible per-file side-by-side diffs. Compatible with VS Code and Antigravity.",
+  "version": "0.32.0",
+  "publisher": "64blit",
+  "license": "MIT",
+  "author": {
+    "name": "64blit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/64blit/extensions-vscode-64blit-aigitdiff.git"
+  },
+  "bugs": {
+    "url": "https://github.com/64blit/extensions-vscode-64blit-aigitdiff/issues"
+  },
+  "homepage": "https://github.com/64blit/extensions-vscode-64blit-aigitdiff#readme",
+  "keywords": [
+    "git",
+    "diff",
+    "scm",
+    "side-by-side",
+    "review",
+    "changes"
+  ],
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "SCM Providers",
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "gitDiffViewer.open",
+        "title": "Git Diff Viewer: Open Local Changes",
+        "category": "Git Diff Viewer"
+      },
+      {
+        "command": "gitDiffViewer.refresh",
+        "title": "Git Diff Viewer: Refresh",
+        "category": "Git Diff Viewer"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "gitDiffViewer.open",
+        "key": "ctrl+alt+g",
+        "mac": "cmd+alt+g"
+      }
+    ],
+    "menus": {
+      "scm/title": [
+        {
+          "command": "gitDiffViewer.open",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Git Diff Viewer",
+      "properties": {
+        "gitDiffViewer.autoOpenOnStartup": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically open the Git Changes panel when the editor starts in a git repository."
+        },
+        "gitDiffViewer.autoOpenFocus": {
+          "type": "boolean",
+          "default": false,
+          "description": "Steal focus when the panel auto-opens. When false, the panel opens beside your current editor without disturbing it."
+        },
+        "gitDiffViewer.openRouterApiKey": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "OpenRouter API key used for AI-powered commit messages, reviews, and change analysis. Get one at [openrouter.ai/keys](https://openrouter.ai/keys). Stored in your user settings; you can also set `OPENROUTER_API_KEY` in `~/.env` as a fallback.",
+          "scope": "application"
+        },
+        "gitDiffViewer.model": {
+          "type": "string",
+          "default": "deepseek/deepseek-v4-flash",
+          "markdownDescription": "OpenRouter model id used for all AI features (commit messages, reviews, per-file analysis). Any model on [openrouter.ai/models](https://openrouter.ai/models) works. Per-task overrides: `#gitDiffViewer.analysisModel#`, `#gitDiffViewer.reviewModel#`, `#gitDiffViewer.commitModel#`."
+        },
+        "gitDiffViewer.analysisModel": {
+          "type": "string",
+          "default": "",
+          "description": "Optional OpenRouter model override for per-file change analysis. Empty = use gitDiffViewer.model."
+        },
+        "gitDiffViewer.reviewModel": {
+          "type": "string",
+          "default": "",
+          "description": "Optional OpenRouter model override for Review All / architecture overview. Empty = use gitDiffViewer.model."
+        },
+        "gitDiffViewer.commitModel": {
+          "type": "string",
+          "default": "",
+          "description": "Optional OpenRouter model override for commit message generation. Empty = use gitDiffViewer.model."
+        },
+        "gitDiffViewer.autoAnalyze": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically run change analysis (Architect Doc) whenever the changeset changes. In-flight runs are cancelled and restarted; unchanged files reuse cached results."
+        },
+        "gitDiffViewer.analysisMode": {
+          "type": "string",
+          "enum": [
+            "local",
+            "remote",
+            "both"
+          ],
+          "enumDescriptions": [
+            "Only local static analysis (fallow) — no network calls.",
+            "Only remote LLM analysis via OpenRouter.",
+            "Local static analysis + remote LLM analysis (default)."
+          ],
+          "default": "both",
+          "description": "Which analysis engines feed the Architect Doc."
+        },
+        "gitDiffViewer.fallowPath": {
+          "type": "string",
+          "default": "fallow",
+          "markdownDescription": "Path to the [fallow](https://github.com/fallow-rs/fallow) CLI used for local static analysis. Section is skipped gracefully if the binary is missing."
+        },
+        "gitDiffViewer.analysisConcurrency": {
+          "type": "number",
+          "default": 3,
+          "minimum": 1,
+          "maximum": 8,
+          "description": "Max concurrent per-file LLM analysis requests."
+        },
+        "gitDiffViewer.experimentalMap": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the experimental Code Map — a zoomable circle-packed bubble view of the repo showing change heat, quality, review progress, and import links."
+        },
+        "gitDiffViewer.gridSize": {
+          "type": "string",
+          "enum": [
+            "sm",
+            "md",
+            "lg"
+          ],
+          "enumDescriptions": [
+            "Small — narrow columns, more files per row (~560px each).",
+            "Medium — comfortable side-by-side diffs (~840px each, default).",
+            "Large — wide columns for long lines (~1200px each)."
+          ],
+          "default": "md",
+          "description": "Minimum width preset for each file panel in grid view. The toolbar's grid size button can cycle through these in-session."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "tsc -p ./",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@highlightjs/cdn-assets": "^11.11.1",
+    "@types/d3-hierarchy": "^3.1.7",
+    "@types/node": "^22.13.13",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.9.1",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
+    "gridstack": "^12.6.0",
+    "typescript": "^5.8.2"
+  },
+  "dependencies": {
+    "@homebridge/node-pty-prebuilt-multiarch": "^0.13.1",
+    "d3-hierarchy": "^3.1.2",
+    "three": "^0.170.0"
+  }
+}
