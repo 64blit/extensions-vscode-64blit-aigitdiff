@@ -684,6 +684,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     // === Code Map (experimental) ===
     let mapRequested = false;
+    let mapRootOverride: string | undefined; // in-session override of gitDiffViewer.mapRoot
     const mapEnabled = () =>
         vscode.workspace.getConfiguration('gitDiffViewer').get<boolean>('experimentalMap', true);
 
@@ -881,6 +882,7 @@ export function activate(context: vscode.ExtensionContext) {
                     return;
                 case 'archMapRequest':
                     mapRequested = true;
+                    if (typeof msg.root === 'string') mapRootOverride = msg.root.trim();
                     void buildAndPostMap();
                     return;
                 case 'mapViewed': {
@@ -1834,12 +1836,15 @@ export function activate(context: vscode.ExtensionContext) {
             for (const cm of getComments(context, repoRoot)) {
                 commentCounts.set(cm.file, (commentCounts.get(cm.file) || 0) + 1);
             }
+            const cfg = vscode.workspace.getConfiguration('gitDiffViewer');
             const payload = buildArchMap({
                 files,
                 changes,
                 viewed: new Set(getViewed(context, repoRoot)),
                 comments: commentCounts,
                 contents,
+                root: mapRootOverride !== undefined ? mapRootOverride : cfg.get<string>('mapRoot', ''),
+                exclude: cfg.get<string[]>('mapExclude', []),
             });
             panel.webview.postMessage({ type: 'archMap', payload });
         } catch (e: any) {

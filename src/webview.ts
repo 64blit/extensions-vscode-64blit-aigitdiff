@@ -1436,6 +1436,33 @@ export function getWebviewHtml(a: WebviewAssets): string {
         z-index: 39; font-size: 13px; opacity: .75; text-align: center; padding: 30px;
     }
     #map-view.stale #map-canvas-wrap { opacity: .55; }
+    .map-topbar #map-root { width: 110px; background: var(--vscode-input-background, #1e1e1e); color: inherit;
+        border: 1px solid var(--border); border-radius: 3px; padding: 2px 8px; font-size: 12px;
+        font-family: var(--diff-mono, monospace); }
+    /* In-map diff drawer — review the file without leaving the map. */
+    #map-diff {
+        position: absolute; top: 0; right: 0; bottom: 0; width: 52%; min-width: 420px; max-width: 900px;
+        display: none; flex-direction: column; z-index: 45;
+        background: var(--vscode-editor-background);
+        border-left: 1px solid var(--border);
+        box-shadow: -8px 0 26px rgba(0,0,0,0.45);
+    }
+    #map-diff.open { display: flex; }
+    #map-diff .md-bar {
+        display: flex; align-items: center; gap: 8px; padding: 6px 10px; flex: none;
+        border-bottom: 1px solid var(--border);
+        background: var(--vscode-sideBar-background, rgba(128,128,128,0.05));
+    }
+    #map-diff .md-path { font-family: var(--diff-mono, monospace); font-size: 11px; flex: 1; min-width: 0;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #map-diff .md-actions { display: flex; gap: 5px; }
+    #map-diff .md-actions button {
+        background: none; border: 1px solid var(--border); border-radius: 3px;
+        color: inherit; cursor: pointer; font-size: 11px; padding: 2px 9px;
+    }
+    #map-diff .md-actions button:hover { background: var(--expand-bg-hover, rgba(128,128,128,0.15)); }
+    #map-diff .md-body { flex: 1; overflow: auto; padding: 8px; }
+    #map-diff .md-body .file { border: 1px solid var(--border); border-radius: 6px; }
 </style>
 </head>
 <body>
@@ -1517,6 +1544,9 @@ export function getWebviewHtml(a: WebviewAssets): string {
     </div>
     <div id="map-view" aria-label="Code Map">
         <div class="map-topbar">
+            <label title="Scope the map to a folder (e.g. src). Empty = whole repo.">Root
+                <input type="text" id="map-root" placeholder="whole repo" autocomplete="off" spellcheck="false" />
+            </label>
             <input type="search" id="map-filter" placeholder="Filter files… ( / )" autocomplete="off" spellcheck="false" />
             <label><input type="checkbox" id="map-unreviewed-cb"> Unreviewed only</label>
             <label><input type="checkbox" id="map-changed-cb" checked> Dim unchanged</label>
@@ -1535,6 +1565,17 @@ export function getWebviewHtml(a: WebviewAssets): string {
                 <div class="lg-row" style="opacity:.7">click bubble → card · Enter → diff · v → viewed</div>
             </div>
             <div id="map-empty"></div>
+            <div id="map-diff">
+                <div class="md-bar">
+                    <span class="md-path" id="map-diff-path"></span>
+                    <span class="md-actions">
+                        <button id="map-diff-viewed">✓ Reviewed</button>
+                        <button id="map-diff-grid" title="Open in grid view">▤ Grid</button>
+                        <button id="map-diff-close" title="Close (Esc)">✕</button>
+                    </span>
+                </div>
+                <div class="md-body files" id="map-diff-body"></div>
+            </div>
         </div>
     </div>
     <div id="find-status" class="find-status" role="status"></div>
@@ -2711,7 +2752,9 @@ export function getWebviewHtml(a: WebviewAssets): string {
         }
     }
 
-    contentEl.addEventListener('click', (e) => {
+    // Shared delegation — used by the grid (#content) and the map's diff drawer,
+    // so hunk approve/reject/comment actions work identically in both places.
+    const onContentClick = (e) => {
         const target = e.target;
         const fileEl = target.closest('.file');
         if (!fileEl) return;
@@ -2882,7 +2925,8 @@ export function getWebviewHtml(a: WebviewAssets): string {
             const expanded = fileEl.classList.toggle('expanded');
             if (expanded) expandedFiles.add(p); else expandedFiles.delete(p);
         }
-    });
+    };
+    contentEl.addEventListener('click', onContentClick);
 
     document.getElementById('expand-all').addEventListener('click', () => {
         for (const f of contentEl.querySelectorAll('.file')) {
@@ -3803,6 +3847,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     let pendingMapPayload = null;
 
     function mapJumpToDiff(p) {
+        mapHideDiff();
         setMapActive(false);
         const fileEl = contentEl.querySelector('.file[data-path="' + CSS.escape(p) + '"]');
         if (!fileEl) return;
@@ -3813,8 +3858,73 @@ export function getWebviewHtml(a: WebviewAssets): string {
         fileEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
+    // In-map diff drawer — review a file without leaving the map.
+    const mapDiffEl = document.getElementById('map-diff');
+    const mapDiffBody = document.getElementById('map-diff-body');
+    const mapDiffPathEl = document.getElementById('map-diff-path');
+    const mapDiffViewedBtn = document.getElementById('map-diff-viewed');
+    const mapDiffGridBtn = document.getElementById('map-diff-grid');
+    const mapDiffCloseBtn = document.getElementById('map-diff-close');
+    let mapDiffCurrent = null;
+
+    function updateMapDiffViewedBtn() {
+        if (!mapDiffViewedBtn) return;
+        const viewed = !!(mapDiffCurrent && window.GitMap && window.GitMap.isViewed && window.GitMap.isViewed(mapDiffCurrent));
+        mapDiffViewedBtn.textContent = viewed ? '✓ Reviewed ·  unmark' : '✓ Mark reviewed';
+    }
+
+    function mapHideDiff() {
+        if (mapDiffEl) mapDiffEl.classList.remove('open');
+        if (mapDiffBody) mapDiffBody.innerHTML = '';
+        mapDiffCurrent = null;
+    }
+
+    function mapShowDiff(p) {
+        const change = lastChanges.find(c => c.path === p);
+        if (!change) { mapJumpToDiff(p); return; }
+        mapDiffCurrent = p;
+        // renderFile emits gridstack wrappers in grid mode — render flat here.
+        const savedGridMode = gridMode;
+        gridMode = false;
+        let html = '';
+        try { html = renderFile(change); } finally { gridMode = savedGridMode; }
+        mapDiffBody.innerHTML = html;
+        const fileEl = mapDiffBody.querySelector('.file');
+        if (fileEl) fileEl.classList.add('expanded');
+        mapDiffPathEl.textContent = p;
+        updateMapDiffViewedBtn();
+        if (!mapDiffBody.dataset.wired) {
+            // Same delegation as the grid — hunk approve/reject, comments,
+            // stage/unstage all work inside the drawer.
+            mapDiffBody.addEventListener('click', onContentClick);
+            mapDiffBody.dataset.wired = '1';
+        }
+        mapDiffEl.classList.add('open');
+    }
+    if (mapDiffCloseBtn) mapDiffCloseBtn.addEventListener('click', mapHideDiff);
+    if (mapDiffGridBtn) mapDiffGridBtn.addEventListener('click', () => { if (mapDiffCurrent) mapJumpToDiff(mapDiffCurrent); });
+    if (mapDiffViewedBtn) mapDiffViewedBtn.addEventListener('click', () => {
+        if (mapDiffCurrent && window.GitMap && window.GitMap.toggleViewedPath) {
+            window.GitMap.toggleViewedPath(mapDiffCurrent);
+            updateMapDiffViewedBtn();
+        }
+    });
+
+    const mapRootEl = document.getElementById('map-root');
+    function mapSetRoot(root) {
+        if (mapRootEl) mapRootEl.value = root || '';
+        vscode.postMessage({ type: 'archMapRequest', root: root || '' });
+    }
+    if (mapRootEl) {
+        mapRootEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { mapSetRoot(mapRootEl.value.trim()); mapRootEl.blur(); }
+        });
+    }
+
     window.__gdvMapBridge = {
         jumpToDiff: mapJumpToDiff,
+        showDiff: mapShowDiff,
+        setRoot: mapSetRoot,
         openFile: (p) => vscode.postMessage({ type: 'openFile', path: p }),
         setViewed: (p, v) => vscode.postMessage({ type: 'mapViewed', path: p, viewed: !!v }),
         analyze: (p) => vscode.postMessage({ type: 'analyzeDiff', path: p }),
@@ -3840,6 +3950,9 @@ export function getWebviewHtml(a: WebviewAssets): string {
         if (!window.GitMap || !pendingMapPayload) return;
         window.GitMap.setData(pendingMapPayload);
         mapReplayAnalysis();
+        if (mapRootEl && document.activeElement !== mapRootEl) {
+            mapRootEl.value = pendingMapPayload.root || '';
+        }
         if (mapNoteEl) {
             mapNoteEl.textContent = pendingMapPayload.truncated
                 ? 'showing ' + pendingMapPayload.shownFiles + '/' + pendingMapPayload.totalFiles + ' files'
@@ -3880,8 +3993,14 @@ export function getWebviewHtml(a: WebviewAssets): string {
             return;
         }
         if (e.key === '/') { e.preventDefault(); if (mapFilterEl) mapFilterEl.focus(); }
-        else if (e.key === 'Escape') { window.GitMap.clearSelection(); }
-        else if (e.key === 'v') { window.GitMap.toggleViewedSelected(); }
+        else if (e.key === 'Escape') {
+            if (mapDiffEl && mapDiffEl.classList.contains('open')) mapHideDiff();
+            else window.GitMap.clearSelection();
+        }
+        else if (e.key === 'v') {
+            if (mapDiffCurrent && window.GitMap.toggleViewedPath) { window.GitMap.toggleViewedPath(mapDiffCurrent); updateMapDiffViewedBtn(); }
+            else window.GitMap.toggleViewedSelected();
+        }
         else if (e.key === 'Enter') { window.GitMap.diffSelected(); }
     });
 
@@ -3977,7 +4096,12 @@ export function getWebviewHtml(a: WebviewAssets): string {
         else if (msg.type === 'fileUpdated') {
             replaceFile(msg.change);
             maybeScrollToNextHunkAction();
-            if (msg.change) archApplyNote(msg.change.path);
+            if (msg.change) {
+                archApplyNote(msg.change.path);
+                const li = lastChanges.findIndex(c => c.path === msg.change.path);
+                if (li >= 0) lastChanges[li] = msg.change; else lastChanges.push(msg.change);
+                if (mapDiffCurrent === msg.change.path) mapShowDiff(mapDiffCurrent);
+            }
         }
         else if (msg.type === 'hiddenUpdated') {
             hiddenSet = new Set(msg.hidden || []);
@@ -4578,6 +4702,7 @@ const QUALITY = { clean: 0x2ea043, review: 0xd29922, concern: 0xf85149 };
 
 let renderer = null, scene = null, camera = null, raycaster = null;
 let fileMesh = null, dirMesh = null, ringMesh = null, edgeLines = null, labelGroup = null, rootGroup = null;
+let dirLabelGroup = null, dirNodes = [];
 let nodes = [], fileNodes = [], changedNodes = [];
 let byPath = new Map(), adj = new Map(), analysisByPath = new Map(), labelByPath = new Map();
 let viewedSet = new Set();
@@ -4594,12 +4719,20 @@ function esc(s) {
 function churnOf(n) { return (n.add || 0) + (n.del || 0); }
 function isChanged(n) { return n.add !== undefined || n.del !== undefined; }
 
-function updateFrustum() {
+// Orbit state — spherical coords around a pannable target on the map plane.
+let camTheta = 0, camPhi = 0.85, camDist = 1500;
+const camTarget = new THREE.Vector3(0, 0, 0);
+
+function applyCamera() {
     if (!camera) return;
-    const halfW = 720, halfH = 720 * (H() / Math.max(1, W()));
-    camera.left = -halfW; camera.right = halfW;
-    camera.top = halfH; camera.bottom = -halfH;
-    camera.updateProjectionMatrix();
+    const sp = Math.sin(camPhi), cp = Math.cos(camPhi);
+    camera.position.set(
+        camTarget.x + camDist * sp * Math.sin(camTheta),
+        camTarget.y - camDist * sp * Math.cos(camTheta),
+        camTarget.z + camDist * cp
+    );
+    camera.up.set(0, 0, 1);
+    camera.lookAt(camTarget);
 }
 
 function initThree() {
@@ -4609,12 +4742,12 @@ function initThree() {
     renderer.setSize(W(), H());
     wrap.insertBefore(renderer.domElement, tooltipEl);
     scene = new THREE.Scene();
-    camera = new THREE.OrthographicCamera(-720, 720, 500, -500, -5000, 5000);
-    camera.position.set(0, -430, 780);
-    camera.up.set(0, 0, 1);
-    camera.lookAt(0, 0, 0);
-    camera.zoom = 0.95;
-    updateFrustum();
+    camera = new THREE.PerspectiveCamera(50, W() / Math.max(1, H()), 2, 14000);
+    applyCamera();
+    scene.add(new THREE.AmbientLight(0xffffff, 0.78));
+    const sun = new THREE.DirectionalLight(0xffffff, 1.0);
+    sun.position.set(-600, -900, 1300);
+    scene.add(sun);
     raycaster = new THREE.Raycaster();
     bindInput();
     const loop = () => { renderer.render(scene, camera); requestAnimationFrame(loop); };
@@ -4635,7 +4768,10 @@ function disposeTree(obj) {
 function worldPos(n) {
     const half = layoutSize / 2;
     let z = n.depth * 1.5;
-    if (!n.dir && isChanged(n)) z += 6 + Math.min(28, Math.sqrt(churnOf(n)) * 1.2);
+    if (!n.dir) {
+        z += n.r; // spheres sit on the plane
+        if (isChanged(n)) z += 5 + Math.min(30, Math.sqrt(churnOf(n)) * 1.3);
+    }
     return new THREE.Vector3(n.x - half, half - n.y, z);
 }
 
@@ -4684,12 +4820,17 @@ function setData(payload) {
     selectedPath = null; blastSet = null;
     hideCard(); hideTooltip();
 
-    // Directory outlines.
+    // Directory discs: faint fill + outline ring + name label on the rim.
     const dirs = nodes.filter((n) => n.dir && n.depth > 0);
+    dirNodes = dirs;
     if (dirs.length) {
-        const geo = new THREE.RingGeometry(0.985, 1.0, 72);
-        dirMesh = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({
-            color: PAL.dir, transparent: true, opacity: 0.55, side: THREE.DoubleSide,
+        const fillGeo = new THREE.CircleGeometry(1, 64);
+        dirMesh = new THREE.InstancedMesh(fillGeo, new THREE.MeshBasicMaterial({
+            color: PAL.dir, transparent: true, opacity: 0.10, side: THREE.DoubleSide, depthWrite: false,
+        }), dirs.length);
+        const ringGeo = new THREE.RingGeometry(0.985, 1.0, 72);
+        const dirRing = new THREE.InstancedMesh(ringGeo, new THREE.MeshBasicMaterial({
+            color: PAL.dir, transparent: true, opacity: 0.6, side: THREE.DoubleSide,
         }), dirs.length);
         const m = new THREE.Matrix4();
         for (let i = 0; i < dirs.length; i++) {
@@ -4697,21 +4838,38 @@ function setData(payload) {
             m.makeTranslation(p.x, p.y, dirs[i].depth * 1.5);
             m.multiply(new THREE.Matrix4().makeScale(dirs[i].r, dirs[i].r, 1));
             dirMesh.setMatrixAt(i, m);
+            dirRing.setMatrixAt(i, m);
         }
         rootGroup.add(dirMesh);
+        rootGroup.add(dirRing);
+        // Folder names sit on the top rim of their circle.
+        dirLabelGroup = new THREE.Group();
+        for (const d of dirs) {
+            if (d.r < 14) continue;
+            const sprite = makeLabelSprite(d.name);
+            const p = worldPos(d);
+            sprite.position.set(p.x, p.y + d.r * 0.82, d.depth * 1.5 + 4);
+            const wWorld = Math.max(16, Math.min(120, d.r * 0.9));
+            sprite.scale.set(wWorld, wWorld * 0.25, 1);
+            sprite.material.opacity = 0.85;
+            dirLabelGroup.add(sprite);
+        }
+        rootGroup.add(dirLabelGroup);
     } else {
         dirMesh = null;
+        dirLabelGroup = null;
     }
 
-    // File bubbles.
+    // File bubbles — real spheres, lit for depth.
     if (fileNodes.length) {
-        const geo = new THREE.CircleGeometry(1, 28);
-        fileMesh = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({ color: 0xffffff }), fileNodes.length);
+        const geo = new THREE.SphereGeometry(1, 20, 14);
+        fileMesh = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: 0xffffff }), fileNodes.length);
         const m = new THREE.Matrix4();
         for (let i = 0; i < fileNodes.length; i++) {
             const p = worldPos(fileNodes[i]);
             m.makeTranslation(p.x, p.y, p.z);
-            m.multiply(new THREE.Matrix4().makeScale(fileNodes[i].r, fileNodes[i].r, 1));
+            const r = fileNodes[i].r;
+            m.multiply(new THREE.Matrix4().makeScale(r, r, r));
             fileMesh.setMatrixAt(i, m);
         }
         rootGroup.add(fileMesh);
@@ -4719,18 +4877,17 @@ function setData(payload) {
         fileMesh = null;
     }
 
-    // Quality / viewed rings around changed files.
+    // Quality / viewed halos on the floor under changed files.
     if (changedNodes.length) {
-        const geo = new THREE.RingGeometry(1.08, 1.28, 44);
+        const geo = new THREE.RingGeometry(1.12, 1.38, 44);
         ringMesh = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({
-            color: 0xffffff, transparent: true, opacity: 0.95, side: THREE.DoubleSide,
+            color: 0xffffff, transparent: true, opacity: 0.95, side: THREE.DoubleSide, depthWrite: false,
         }), changedNodes.length);
         const m = new THREE.Matrix4();
         for (let i = 0; i < changedNodes.length; i++) {
             const n = changedNodes[i];
             ringIndexByPath.set(n.path, i);
-            const p = worldPos(n);
-            m.makeTranslation(p.x, p.y, p.z + 0.4);
+            m.makeTranslation(worldPos(n).x, worldPos(n).y, n.depth * 1.5 + 0.5);
             m.multiply(new THREE.Matrix4().makeScale(n.r, n.r, 1));
             ringMesh.setMatrixAt(i, m);
             ringMesh.setColorAt(i, new THREE.Color(PAL.dir));
@@ -4773,14 +4930,14 @@ function setData(payload) {
         edgeLines = null;
     }
 
-    // One-word labels above changed bubbles.
+    // One-word labels floating above changed bubbles.
     labelGroup = new THREE.Group();
     for (const n of changedNodes) {
         const a = analysisByPath.get(n.path);
         const text = (a && a.word) || n.name;
         const sprite = makeLabelSprite(text);
         const p = worldPos(n);
-        sprite.position.set(p.x, p.y, p.z + 6);
+        sprite.position.set(p.x, p.y, p.z + n.r + 8);
         const wWorld = Math.max(18, Math.min(70, n.r * 2.6));
         sprite.scale.set(wWorld, wWorld * 0.25, 1);
         labelGroup.add(sprite);
@@ -4856,7 +5013,8 @@ function updateProgress() {
 function hideTooltip() { tooltipEl.style.display = 'none'; }
 function showTooltip(n, x, y) {
     const a = analysisByPath.get(n.path);
-    let html = '<div class="t-path">' + esc(n.path) + '</div>';
+    let html = '<div style="font-weight:600; font-size:13px">' + (n.dir ? '📁 ' : '') + esc(n.name) + '</div>';
+    html += '<div class="t-path">' + esc(n.path) + '</div>';
     if (isChanged(n)) {
         html += '<div class="t-meta"><span style="color:#2ea043">+' + (n.add || 0) + '</span> <span style="color:#f85149">-' + (n.del || 0) + '</span>';
         if (a && a.risk) html += ' · risk: ' + esc(a.risk);
@@ -4901,7 +5059,7 @@ function showCard(n) {
     html += '</div>';
     cardEl.innerHTML = html;
     cardEl.style.display = 'block';
-    const acts = { diff: () => bridge.jumpToDiff && bridge.jumpToDiff(n.path),
+    const acts = { diff: () => (bridge.showDiff ? bridge.showDiff(n.path) : bridge.jumpToDiff && bridge.jumpToDiff(n.path)),
         open: () => bridge.openFile && bridge.openFile(n.path),
         viewed: () => toggleViewed(n.path),
         analyze: () => bridge.analyze && bridge.analyze(n.path) };
@@ -4935,24 +5093,42 @@ function select(n) {
 }
 
 function pick(e) {
-    if (!fileMesh || !raycaster) return null;
+    if (!raycaster || !camera) return null;
     const rect = renderer.domElement.getBoundingClientRect();
     const ndc = new THREE.Vector2(
         ((e.clientX - rect.left) / rect.width) * 2 - 1,
         -((e.clientY - rect.top) / rect.height) * 2 + 1
     );
     raycaster.setFromCamera(ndc, camera);
-    const hits = raycaster.intersectObject(fileMesh);
-    if (!hits.length) return null;
-    const id = hits[0].instanceId;
-    return (id === undefined || id === null) ? null : fileNodes[id];
+    if (fileMesh) {
+        const hits = raycaster.intersectObject(fileMesh);
+        if (hits.length && hits[0].instanceId !== undefined && hits[0].instanceId !== null) {
+            return fileNodes[hits[0].instanceId];
+        }
+    }
+    if (dirMesh) {
+        const hits = raycaster.intersectObject(dirMesh);
+        if (hits.length && hits[0].instanceId !== undefined && hits[0].instanceId !== null) {
+            // Smallest (deepest) dir wins visually; instances are draw-order, so
+            // walk all hits and prefer the smallest radius.
+            let best = null;
+            for (const h of hits) {
+                const d = dirNodes[h.instanceId];
+                if (d && (!best || d.r < best.r)) best = d;
+            }
+            return best;
+        }
+    }
+    return null;
 }
 
 function bindInput() {
     const el = renderer.domElement;
-    let dragging = false, moved = 0, lastX = 0, lastY = 0;
+    let dragging = false, moved = 0, lastX = 0, lastY = 0, panMode = false;
+    el.addEventListener('contextmenu', (e) => e.preventDefault());
     el.addEventListener('pointerdown', (e) => {
         dragging = true; moved = 0; lastX = e.clientX; lastY = e.clientY;
+        panMode = e.button === 2 || e.shiftKey;
         wrap.classList.add('dragging');
         el.setPointerCapture(e.pointerId);
     });
@@ -4961,9 +5137,17 @@ function bindInput() {
             const dx = e.clientX - lastX, dy = e.clientY - lastY;
             moved += Math.abs(dx) + Math.abs(dy);
             lastX = e.clientX; lastY = e.clientY;
-            const wpp = (camera.right - camera.left) / (camera.zoom * Math.max(1, W()));
-            camera.position.x -= dx * wpp;
-            camera.position.y += dy * wpp * 1.25;
+            if (panMode) {
+                const panScale = camDist * 0.0014;
+                const right = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 0);
+                const upv = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 1);
+                camTarget.addScaledVector(right, -dx * panScale);
+                camTarget.addScaledVector(upv, dy * panScale);
+            } else {
+                camTheta -= dx * 0.005;
+                camPhi = Math.max(0.12, Math.min(1.35, camPhi - dy * 0.005));
+            }
+            applyCamera();
             hideTooltip();
         } else {
             const n = pick(e);
@@ -4972,16 +5156,25 @@ function bindInput() {
     });
     el.addEventListener('pointerup', (e) => {
         wrap.classList.remove('dragging');
-        if (dragging && moved < 6) {
+        if (dragging && moved < 6 && e.button !== 2) {
             const n = pick(e);
-            if (n) select(n); else select(null);
+            if (!n) { select(null); }
+            else if (n.dir) { select(null); }
+            else {
+                select(n);
+                if (isChanged(n) && bridge.showDiff) bridge.showDiff(n.path);
+            }
         }
         dragging = false;
     });
+    el.addEventListener('dblclick', (e) => {
+        const n = pick(e);
+        if (n && n.dir && bridge.setRoot) bridge.setRoot(n.path);
+    });
     el.addEventListener('wheel', (e) => {
         e.preventDefault();
-        camera.zoom = Math.max(0.35, Math.min(14, camera.zoom * Math.pow(1.0016, -e.deltaY)));
-        camera.updateProjectionMatrix();
+        camDist = Math.max(180, Math.min(7000, camDist * Math.pow(1.0016, e.deltaY)));
+        applyCamera();
     }, { passive: false });
     el.addEventListener('pointerleave', hideTooltip);
 }
@@ -5005,12 +5198,17 @@ const api = {
     resize() {
         if (!renderer) return;
         renderer.setSize(W(), H());
-        updateFrustum();
+        if (camera) {
+            camera.aspect = W() / Math.max(1, H());
+            camera.updateProjectionMatrix();
+        }
     },
     setStale(b) { if (mapViewEl) mapViewEl.classList.toggle('stale', !!b); },
     clearSelection() { select(null); },
     toggleViewedSelected() { if (selectedPath) toggleViewed(selectedPath); },
-    diffSelected() { if (selectedPath && bridge.jumpToDiff) bridge.jumpToDiff(selectedPath); },
+    toggleViewedPath(p) { if (p && byPath.has(p)) toggleViewed(p); },
+    isViewed(p) { return viewedSet.has(p); },
+    diffSelected() { if (selectedPath && bridge.showDiff) bridge.showDiff(selectedPath); },
 };
 window.GitMap = api;
 window.dispatchEvent(new Event('gitmap-ready'));

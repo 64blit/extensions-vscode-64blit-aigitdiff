@@ -139,6 +139,23 @@
           "default": true,
           "description": "Enable the experimental Code Map — a zoomable circle-packed bubble view of the repo showing change heat, quality, review progress, and import links."
         },
+        "gitDiffViewer.mapRoot": {
+          "type": "string",
+          "default": "",
+          "description": "Default folder the Code Map is scoped to (e.g. \"src\"). Empty = whole repo. Can be changed in-session from the map's Root box."
+        },
+        "gitDiffViewer.mapExclude": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [
+            "**/node_modules/**", "**/dist/**", "**/build/**", "**/out/**", "**/vendor/**",
+            "**/.git/**", "**/coverage/**", "**/__pycache__/**",
+            "**/*.min.js", "**/*.min.css", "**/*.map", "**/*.lock", "**/package-lock.json", "**/yarn.lock", "**/pnpm-lock.yaml",
+            "**/*.png", "**/*.jpg", "**/*.jpeg", "**/*.gif", "**/*.webp", "**/*.ico", "**/*.svg", "**/*.pdf",
+            "**/*.zip", "**/*.gz", "**/*.woff", "**/*.woff2", "**/*.ttf", "**/*.eot", "**/*.mp4", "**/*.mp3", "**/*.vsix"
+          ],
+          "description": "Glob patterns for non-code files and folders hidden from the Code Map."
+        },
         "gitDiffViewer.gridSize": {
           "type": "string",
           "enum": [

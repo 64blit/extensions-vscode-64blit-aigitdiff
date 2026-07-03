@@ -43,6 +43,7 @@ export interface ArchMapPayload {
     shownFiles: number;
     truncated: boolean;
     changedCount: number;
+    root: string;
 }
 
 const MAX_FILES = 3000;
@@ -123,11 +124,72 @@ export interface BuildMapInput {
     comments: Map<string, number>;
     /** worktree contents for changed text files — used for import edges */
     contents: Map<string, string>;
+    /** scope map to this folder (posix path, no trailing slash); '' = repo root */
+    root?: string;
+    /** glob patterns for non-code files/folders to hide */
+    exclude?: string[];
+}
+
+// Tiny glob → RegExp: ** = any path segment run, * = within-segment, ? = one char.
+export function globToRegExp(glob: string): RegExp {
+    let re = '';
+    let i = 0;
+    while (i < glob.length) {
+        const c = glob[i];
+        if (c === '*') {
+            if (glob[i + 1] === '*') {
+                // Collapse '**/' and '**' to "anything".
+                re += '.*';
+                i += glob[i + 2] === '/' ? 3 : 2;
+            } else {
+                re += '[^/]*';
+                i++;
+            }
+        } else if (c === '?') {
+            re += '[^/]';
+            i++;
+        } else {
+            re += c.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+            i++;
+        }
+    }
+    return new RegExp('^' + re + '$', 'i');
+}
+
+export function buildExcluder(patterns: string[]): (p: string) => boolean {
+    const regs = patterns.filter(Boolean).map((g) => {
+        // Bare names like "media" mean "that folder anywhere".
+        const norm = g.includes('*') || g.includes('/') ? g : '**/' + g + '/**';
+        return globToRegExp(norm);
+    });
+    return (p: string) => {
+        // Also test with leading path so '**/x/**' matches top-level 'x/…'.
+        const padded = '/' + p;
+        for (const r of regs) {
+            if (r.test(p) || r.test(padded)) return true;
+        }
+        return false;
+    };
 }
 
 export function buildArchMap(input: BuildMapInput): ArchMapPayload {
-    const { changes, viewed, comments, contents } = input;
-    const allFiles = Array.from(new Set(input.files.concat(Array.from(changes.keys())))).sort();
+    const { viewed, comments, contents } = input;
+    const scopeRoot = (input.root || '').replace(/^\/+|\/+$/g, '');
+    const excluded = buildExcluder(input.exclude || []);
+    const inRoot = (p: string) => !scopeRoot || p === scopeRoot || p.startsWith(scopeRoot + '/');
+
+    const keep = (p: string) => inRoot(p) && !excluded(p);
+    let changes = input.changes;
+    let scopedFiles = input.files.filter(keep);
+    let scopedChanges = new Map(Array.from(changes.entries()).filter(([p]) => keep(p)));
+    // Safety: a root that matches nothing falls back to unscoped.
+    if (scopeRoot && scopedFiles.length === 0 && scopedChanges.size === 0) {
+        scopedFiles = input.files.filter((p) => !excluded(p));
+        scopedChanges = new Map(Array.from(changes.entries()).filter(([p]) => !excluded(p)));
+    }
+    changes = scopedChanges;
+
+    const allFiles = Array.from(new Set(scopedFiles.concat(Array.from(changes.keys())))).sort();
     const totalFiles = allFiles.length;
 
     // Cap huge repos: changed files always survive, then files sharing a
@@ -240,5 +302,6 @@ export function buildArchMap(input: BuildMapInput): ArchMapPayload {
         shownFiles: files.length,
         truncated,
         changedCount: changes.size,
+        root: scopeRoot,
     };
 }
