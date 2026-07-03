@@ -4755,16 +4755,6 @@ function updateLabelVisibility() {
     const halfH = H() / 2, halfW = W() / 2;
     const tanF = Math.tan(camera.fov * Math.PI / 360);
     const camP = camera.position;
-    // Re-anchor folder labels above their circle in *screen* space so they
-    // stay over the disc at any orbit angle.
-    if (dirLabelGroup) {
-        const upv = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 1);
-        for (const s of dirLabelGroup.children) {
-            if (s.userData.center && s.userData.node) {
-                s.position.copy(s.userData.center).addScaledVector(upv, s.userData.node.r * 0.85);
-            }
-        }
-    }
     const items = [];
     const collect = (sprite) => {
         const n = sprite.userData.node;
@@ -4873,6 +4863,22 @@ function makeLabelSprite(text) {
     return sprite;
 }
 
+// Text painted into the 3D world (lies on the platform, perspective-correct)
+// rather than a screen-facing billboard.
+function makeGroundLabel(text) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256; canvas.height = 64;
+    drawLabel(canvas, text);
+    const tex = new THREE.CanvasTexture(canvas);
+    const mat = new THREE.MeshBasicMaterial({
+        map: tex, transparent: true, depthWrite: false, side: THREE.DoubleSide,
+    });
+    const plane = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat);
+    plane.renderOrder = 8;
+    plane.userData.canvas = canvas;
+    return plane;
+}
+
 function setData(payload) {
     initThree();
     if (rootGroup) { scene.remove(rootGroup); disposeTree(rootGroup); }
@@ -4891,41 +4897,45 @@ function setData(payload) {
     selectedPath = null; blastSet = null;
     hideCard(); hideTooltip();
 
-    // Directory discs: faint fill + outline ring + name label on the rim.
+    // Directory platforms: real 3D — lit cylinder plinths with a torus rim,
+    // stacked by depth. Names are painted onto the platform as 3D planes.
     const dirs = nodes.filter((n) => n.dir && n.depth > 0);
     dirNodes = dirs;
     if (dirs.length) {
-        const fillGeo = new THREE.CircleGeometry(1, 64);
-        dirMesh = new THREE.InstancedMesh(fillGeo, new THREE.MeshBasicMaterial({
-            color: PAL.dir, transparent: true, opacity: 0.10, side: THREE.DoubleSide, depthWrite: false,
+        const platGeo = new THREE.CylinderGeometry(1, 1, 2.4, 56);
+        platGeo.rotateX(Math.PI / 2); // axis → Z (map up)
+        dirMesh = new THREE.InstancedMesh(platGeo, new THREE.MeshLambertMaterial({
+            color: PAL.dir, transparent: true, opacity: 0.22,
         }), dirs.length);
-        const ringGeo = new THREE.RingGeometry(0.985, 1.0, 72);
-        const dirRing = new THREE.InstancedMesh(ringGeo, new THREE.MeshBasicMaterial({
-            color: PAL.dir, transparent: true, opacity: 0.6, side: THREE.DoubleSide,
+        const rimGeo = new THREE.TorusGeometry(1, 0.014, 8, 72);
+        const dirRim = new THREE.InstancedMesh(rimGeo, new THREE.MeshBasicMaterial({
+            color: PAL.dir, transparent: true, opacity: 0.75,
         }), dirs.length);
         const m = new THREE.Matrix4();
         for (let i = 0; i < dirs.length; i++) {
-            const p = worldPos(dirs[i]);
-            m.makeTranslation(p.x, p.y, dirs[i].depth * 1.5);
-            m.multiply(new THREE.Matrix4().makeScale(dirs[i].r, dirs[i].r, 1));
+            const d = dirs[i];
+            const p = worldPos(d);
+            const z = d.depth * 3;
+            m.makeTranslation(p.x, p.y, z);
+            m.multiply(new THREE.Matrix4().makeScale(d.r, d.r, 1));
             dirMesh.setMatrixAt(i, m);
-            dirRing.setMatrixAt(i, m);
+            m.makeTranslation(p.x, p.y, z + 1.3);
+            m.multiply(new THREE.Matrix4().makeScale(d.r, d.r, 1));
+            dirRim.setMatrixAt(i, m);
         }
         rootGroup.add(dirMesh);
-        rootGroup.add(dirRing);
-        // Folder names sit on the top rim of their circle.
+        rootGroup.add(dirRim);
+        // Folder names painted on the platform — perspective-correct 3D planes.
         dirLabelGroup = new THREE.Group();
         for (const d of dirs) {
             if (d.r < 14) continue;
-            const sprite = makeLabelSprite(d.name);
+            const plane = makeGroundLabel(d.name);
             const p = worldPos(d);
-            sprite.position.set(p.x, p.y + d.r * 0.82, d.depth * 1.5 + 4);
-            const wWorld = Math.max(16, Math.min(120, d.r * 0.9));
-            sprite.scale.set(wWorld, wWorld * 0.25, 1);
-            sprite.material.opacity = 0.85;
-            sprite.userData.node = d;
-            sprite.userData.center = new THREE.Vector3(p.x, p.y, d.depth * 1.5 + 4);
-            dirLabelGroup.add(sprite);
+            plane.position.set(p.x, p.y + d.r * 0.55, d.depth * 3 + 2.0);
+            const wWorld = Math.max(20, Math.min(150, d.r * 1.05));
+            plane.scale.set(wWorld, wWorld * 0.25, 1);
+            plane.userData.node = d;
+            dirLabelGroup.add(plane);
         }
         rootGroup.add(dirLabelGroup);
     } else {
