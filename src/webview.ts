@@ -7,6 +7,7 @@ interface WebviewAssets {
     xtermFitUri: string;
     gridstackJsUri: string;
     gridstackCssUri: string;
+    threeUri: string;
     editor: {
         fontFamily: string;
         fontSize: number;
@@ -1370,6 +1371,71 @@ export function getWebviewHtml(a: WebviewAssets): string {
     .arch-note.risk-high { color: #f85149; opacity: 1; }
     .arch-note.risk-medium { color: #d29922; }
     .arch-doc.stale .arch-body, .arch-doc.stale .arch-tldr { opacity: .45; }
+
+    /* Code Map — three.js circle-packed repo view. */
+    #map-view { display: none; position: relative; flex: 1; min-height: 0; overflow: hidden; }
+    body.map-mode { display: flex; flex-direction: column; overflow: hidden; }
+    body.map-mode > * { flex: none; }
+    body.map-mode #content { display: none !important; }
+    body.map-mode #map-view { display: flex; flex-direction: column; flex: 1; }
+    .map-topbar {
+        display: flex; align-items: center; gap: 10px; padding: 4px 12px;
+        border-bottom: 1px solid var(--border); font-size: 12px; flex: none;
+        background: var(--vscode-sideBar-background, rgba(128,128,128,0.04));
+    }
+    .map-topbar input[type="search"] {
+        background: var(--vscode-input-background, #1e1e1e); color: inherit;
+        border: 1px solid var(--border); border-radius: 3px; padding: 2px 8px; font-size: 12px; width: 200px;
+    }
+    .map-topbar label { display: flex; align-items: center; gap: 4px; cursor: pointer; opacity: .85; }
+    .map-progress { font-variant-numeric: tabular-nums; opacity: .8; }
+    .map-note { opacity: .6; font-size: 11px; }
+    #map-canvas-wrap { flex: 1; min-height: 0; position: relative; cursor: grab; }
+    #map-canvas-wrap.dragging { cursor: grabbing; }
+    #map-canvas-wrap canvas { display: block; }
+    #map-tooltip {
+        position: absolute; display: none; pointer-events: none; z-index: 40;
+        max-width: 420px; padding: 6px 9px; border-radius: 4px; font-size: 12px;
+        background: var(--vscode-editorHoverWidget-background, #252526);
+        border: 1px solid var(--vscode-editorHoverWidget-border, #454545);
+        box-shadow: 0 4px 14px rgba(0,0,0,0.45);
+    }
+    #map-tooltip .t-path { font-family: var(--diff-mono, monospace); font-size: 11px; opacity: .9; }
+    #map-tooltip .t-sum { margin-top: 3px; opacity: .85; }
+    #map-tooltip .t-meta { margin-top: 3px; font-size: 11px; opacity: .7; }
+    #map-card {
+        position: absolute; top: 10px; right: 10px; width: 330px; z-index: 41; display: none;
+        background: var(--vscode-sideBar-background, #1f1f1f);
+        border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; font-size: 12px;
+        box-shadow: 0 6px 22px rgba(0,0,0,0.5);
+    }
+    #map-card .c-path { font-family: var(--diff-mono, monospace); font-size: 11px; word-break: break-all; }
+    #map-card .c-badges { display: flex; gap: 6px; margin: 6px 0; flex-wrap: wrap; }
+    #map-card .c-badge { border: 1px solid var(--border); border-radius: 8px; padding: 0 7px; font-size: 11px; }
+    #map-card .c-badge.q-clean { color: #2ea043; border-color: #2ea043; }
+    #map-card .c-badge.q-review { color: #d29922; border-color: #d29922; }
+    #map-card .c-badge.q-concern { color: #f85149; border-color: #f85149; }
+    #map-card .c-sum { opacity: .9; margin: 6px 0; }
+    #map-card .c-flags { opacity: .8; font-size: 11px; margin-bottom: 6px; }
+    #map-card .c-actions { display: flex; gap: 6px; }
+    #map-card .c-actions button {
+        background: none; border: 1px solid var(--border); border-radius: 3px;
+        color: inherit; cursor: pointer; font-size: 11px; padding: 2px 9px;
+    }
+    #map-card .c-actions button:hover { background: var(--expand-bg-hover, rgba(128,128,128,0.15)); }
+    #map-legend {
+        position: absolute; left: 10px; bottom: 10px; z-index: 40; font-size: 11px;
+        background: var(--vscode-sideBar-background, rgba(30,30,30,0.9));
+        border: 1px solid var(--border); border-radius: 5px; padding: 6px 10px; opacity: .92;
+        display: flex; flex-direction: column; gap: 3px;
+    }
+    #map-legend .lg-row { display: flex; align-items: center; gap: 6px; }
+    #map-legend .lg-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; display: inline-block; }
+    #map-empty {
+        position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+        z-index: 39; font-size: 13px; opacity: .75; text-align: center; padding: 30px;
+    }
+    #map-view.stale #map-canvas-wrap { opacity: .55; }
 </style>
 </head>
 <body>
@@ -1390,6 +1456,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         <button id="grid-reset" title="Reset grid layout — clears all custom positions/sizes back to defaults">⟳ Reset Layout</button>
         <button id="diff-orient-toggle" title="Switch diff layout between side-by-side and unified top/bottom">↔ Side-by-side</button>
         <button id="review-all-btn" title="Run senior-architect review across all changed files (OpenRouter model, configurable)">🧠 Review All</button>
+        <button id="map-toggle" title="Code Map — bubble view of the repo with change heat and review progress" style="display:none">◉ Map</button>
         <span id="hidden-pill" class="hidden-pill" title="Click to manage hidden files">
             <span id="hidden-count">0</span> hidden
         </span>
@@ -1447,6 +1514,28 @@ export function getWebviewHtml(a: WebviewAssets): string {
     </div>
     <div id="content" class="files">
         <div class="empty">Loading…</div>
+    </div>
+    <div id="map-view" aria-label="Code Map">
+        <div class="map-topbar">
+            <input type="search" id="map-filter" placeholder="Filter files… ( / )" autocomplete="off" spellcheck="false" />
+            <label><input type="checkbox" id="map-unreviewed-cb"> Unreviewed only</label>
+            <label><input type="checkbox" id="map-changed-cb" checked> Dim unchanged</label>
+            <span class="map-progress" id="map-progress"></span>
+            <span class="map-note" id="map-note"></span>
+        </div>
+        <div id="map-canvas-wrap">
+            <div id="map-tooltip"></div>
+            <div id="map-card"></div>
+            <div id="map-legend">
+                <div class="lg-row"><span class="lg-dot" style="background:#f85149"></span> high churn</div>
+                <div class="lg-row"><span class="lg-dot" style="background:#d29922"></span> low churn</div>
+                <div class="lg-row"><span class="lg-dot" style="background:#3d444d"></span> unchanged</div>
+                <div class="lg-row"><span class="lg-dot" style="background:#2ea043"></span> reviewed ✓</div>
+                <div class="lg-row"><span class="lg-dot" style="border:2px solid #f85149; width:5px; height:5px; background:transparent"></span> quality ring</div>
+                <div class="lg-row" style="opacity:.7">click bubble → card · Enter → diff · v → viewed</div>
+            </div>
+            <div id="map-empty"></div>
+        </div>
     </div>
     <div id="find-status" class="find-status" role="status"></div>
     <div id="find-bar" class="find-bar" role="search">
@@ -3701,7 +3790,121 @@ export function getWebviewHtml(a: WebviewAssets): string {
         }
         archStaticEl.innerHTML = html;
     }
+    // === Code Map glue — renderer lives in the module script (window.GitMap);
+    // this side owns vscode messaging, view switching, and jump-to-diff. ===
+    const mapToggleBtn = document.getElementById('map-toggle');
+    const mapViewEl = document.getElementById('map-view');
+    const mapEmptyEl = document.getElementById('map-empty');
+    const mapNoteEl = document.getElementById('map-note');
+    const mapFilterEl = document.getElementById('map-filter');
+    const mapUnrevCb = document.getElementById('map-unreviewed-cb');
+    const mapChangedCb = document.getElementById('map-changed-cb');
+    let mapActive = false;
+    let pendingMapPayload = null;
+
+    function mapJumpToDiff(p) {
+        setMapActive(false);
+        const fileEl = contentEl.querySelector('.file[data-path="' + CSS.escape(p) + '"]');
+        if (!fileEl) return;
+        if (!fileEl.classList.contains('expanded')) {
+            const header = fileEl.querySelector('.file-header');
+            if (header) header.click();
+        }
+        fileEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    window.__gdvMapBridge = {
+        jumpToDiff: mapJumpToDiff,
+        openFile: (p) => vscode.postMessage({ type: 'openFile', path: p }),
+        setViewed: (p, v) => vscode.postMessage({ type: 'mapViewed', path: p, viewed: !!v }),
+        analyze: (p) => vscode.postMessage({ type: 'analyzeDiff', path: p }),
+    };
+
+    function setMapActive(on) {
+        mapActive = !!on;
+        document.body.classList.toggle('map-mode', mapActive);
+        if (mapToggleBtn) mapToggleBtn.textContent = mapActive ? '▤ Grid' : '◉ Map';
+        if (mapActive) {
+            vscode.postMessage({ type: 'archMapRequest' });
+            if (window.GitMap) window.GitMap.resize();
+        }
+    }
+    if (mapToggleBtn) mapToggleBtn.addEventListener('click', () => setMapActive(!mapActive));
+
+    function mapReplayAnalysis() {
+        if (!window.GitMap) return;
+        for (const entry of archFiles.entries()) window.GitMap.analysis(entry[0], entry[1]);
+    }
+
+    function mapDeliver() {
+        if (!window.GitMap || !pendingMapPayload) return;
+        window.GitMap.setData(pendingMapPayload);
+        mapReplayAnalysis();
+        if (mapNoteEl) {
+            mapNoteEl.textContent = pendingMapPayload.truncated
+                ? 'showing ' + pendingMapPayload.shownFiles + '/' + pendingMapPayload.totalFiles + ' files'
+                : pendingMapPayload.totalFiles + ' files';
+        }
+        if (mapEmptyEl) {
+            if (pendingMapPayload.changedCount === 0) {
+                mapEmptyEl.textContent = 'Working tree clean — map shows repo structure only.';
+                mapEmptyEl.style.display = 'flex';
+                setTimeout(() => { mapEmptyEl.style.display = 'none'; }, 3500);
+            } else {
+                mapEmptyEl.style.display = 'none';
+            }
+        }
+    }
+    window.addEventListener('gitmap-ready', mapDeliver);
+
+    function pushMapFilter() {
+        if (window.GitMap) {
+            window.GitMap.setFilter({
+                text: (mapFilterEl && mapFilterEl.value) || '',
+                unreviewedOnly: !!(mapUnrevCb && mapUnrevCb.checked),
+                dimUnchanged: !!(mapChangedCb && mapChangedCb.checked),
+            });
+        }
+    }
+    if (mapFilterEl) {
+        mapFilterEl.addEventListener('input', pushMapFilter);
+        mapUnrevCb.addEventListener('change', pushMapFilter);
+        mapChangedCb.addEventListener('change', pushMapFilter);
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (!mapActive || !window.GitMap) return;
+        const tag = ((e.target && e.target.tagName) || '').toLowerCase();
+        if (tag === 'input' || tag === 'textarea') {
+            if (e.key === 'Escape' && e.target.blur) e.target.blur();
+            return;
+        }
+        if (e.key === '/') { e.preventDefault(); if (mapFilterEl) mapFilterEl.focus(); }
+        else if (e.key === 'Escape') { window.GitMap.clearSelection(); }
+        else if (e.key === 'v') { window.GitMap.toggleViewedSelected(); }
+        else if (e.key === 'Enter') { window.GitMap.diffSelected(); }
+    });
+
+    function handleArchMap(msg) {
+        if (msg.error) {
+            if (mapEmptyEl) {
+                mapEmptyEl.textContent = 'Map failed: ' + msg.error;
+                mapEmptyEl.style.display = 'flex';
+            }
+            return;
+        }
+        pendingMapPayload = msg.payload;
+        mapDeliver();
+    }
+
     function handleArchDoc(msg) {
+        if (window.GitMap) {
+            if (msg.phase === 'start') { window.GitMap.setStale(true); }
+            else if (msg.phase === 'file') { window.GitMap.analysis(msg.path, msg.result || {}); }
+            else if (msg.phase === 'done' || msg.phase === 'error' || msg.phase === 'cancelled' || msg.phase === 'empty') {
+                window.GitMap.setStale(false);
+            }
+        }
         if (msg.phase === 'start') {
             archDocEl.classList.remove('stale');
             archFiles = new Map();
@@ -3760,9 +3963,16 @@ export function getWebviewHtml(a: WebviewAssets): string {
             render(msg);
             maybeScrollToNextHunkAction();
             archApplyAllNotes();
+            if (mapToggleBtn && msg.experimentalMap !== undefined) {
+                mapToggleBtn.style.display = msg.experimentalMap ? '' : 'none';
+                if (!msg.experimentalMap && mapActive) setMapActive(false);
+            }
         }
         else if (msg.type === 'archDoc') {
             handleArchDoc(msg);
+        }
+        else if (msg.type === 'archMap') {
+            handleArchMap(msg);
         }
         else if (msg.type === 'fileUpdated') {
             replaceFile(msg.change);
@@ -4341,6 +4551,469 @@ export function getWebviewHtml(a: WebviewAssets): string {
 
     vscode.postMessage({ type: 'ready' });
 })();
+</script>
+<script type="module">
+import * as THREE from '${a.threeUri}';
+
+// === Code Map renderer. Data + analysis arrive via window.GitMap.* calls
+// from the main script; user intents go back through window.__gdvMapBridge. ===
+const bridge = window.__gdvMapBridge || {};
+const wrap = document.getElementById('map-canvas-wrap');
+const tooltipEl = document.getElementById('map-tooltip');
+const cardEl = document.getElementById('map-card');
+const progressEl = document.getElementById('map-progress');
+const mapViewEl = document.getElementById('map-view');
+const isLight = document.body.classList.contains('vscode-light');
+
+const PAL = isLight ? {
+    dir: 0x8a919a, file: 0xc4c9cf, bgMix: 0xf3f3f3,
+    heatLo: 0xd4a72c, heatHi: 0xd1242f, viewed: 0x57ab5a, edge: 0x0969da,
+    label: '#1f2328', labelStroke: 'rgba(255,255,255,0.9)',
+} : {
+    dir: 0x3a4048, file: 0x3d444d, bgMix: 0x14181c,
+    heatLo: 0xd29922, heatHi: 0xf85149, viewed: 0x2ea043, edge: 0x39c5cf,
+    label: '#e6edf3', labelStroke: 'rgba(0,0,0,0.85)',
+};
+const QUALITY = { clean: 0x2ea043, review: 0xd29922, concern: 0xf85149 };
+
+let renderer = null, scene = null, camera = null, raycaster = null;
+let fileMesh = null, dirMesh = null, ringMesh = null, edgeLines = null, labelGroup = null, rootGroup = null;
+let nodes = [], fileNodes = [], changedNodes = [];
+let byPath = new Map(), adj = new Map(), analysisByPath = new Map(), labelByPath = new Map();
+let viewedSet = new Set();
+let ringIndexByPath = new Map();
+let filter = { text: '', unreviewedOnly: false, dimUnchanged: true };
+let selectedPath = null, blastSet = null;
+let layoutSize = 1200;
+
+function W() { return wrap.clientWidth || 800; }
+function H() { return wrap.clientHeight || 500; }
+function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function churnOf(n) { return (n.add || 0) + (n.del || 0); }
+function isChanged(n) { return n.add !== undefined || n.del !== undefined; }
+
+function updateFrustum() {
+    if (!camera) return;
+    const halfW = 720, halfH = 720 * (H() / Math.max(1, W()));
+    camera.left = -halfW; camera.right = halfW;
+    camera.top = halfH; camera.bottom = -halfH;
+    camera.updateProjectionMatrix();
+}
+
+function initThree() {
+    if (renderer) return;
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(window.devicePixelRatio || 1);
+    renderer.setSize(W(), H());
+    wrap.insertBefore(renderer.domElement, tooltipEl);
+    scene = new THREE.Scene();
+    camera = new THREE.OrthographicCamera(-720, 720, 500, -500, -5000, 5000);
+    camera.position.set(0, -430, 780);
+    camera.up.set(0, 0, 1);
+    camera.lookAt(0, 0, 0);
+    camera.zoom = 0.95;
+    updateFrustum();
+    raycaster = new THREE.Raycaster();
+    bindInput();
+    const loop = () => { renderer.render(scene, camera); requestAnimationFrame(loop); };
+    requestAnimationFrame(loop);
+    if (window.ResizeObserver) new ResizeObserver(() => api.resize()).observe(wrap);
+}
+
+function disposeTree(obj) {
+    obj.traverse((o) => {
+        if (o.geometry) o.geometry.dispose();
+        if (o.material) {
+            if (o.material.map) o.material.map.dispose();
+            o.material.dispose();
+        }
+    });
+}
+
+function worldPos(n) {
+    const half = layoutSize / 2;
+    let z = n.depth * 1.5;
+    if (!n.dir && isChanged(n)) z += 6 + Math.min(28, Math.sqrt(churnOf(n)) * 1.2);
+    return new THREE.Vector3(n.x - half, half - n.y, z);
+}
+
+function drawLabel(canvas, text) {
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, 256, 64);
+    const t = String(text || '').slice(0, 16);
+    if (!t) return;
+    ctx.font = 'bold 34px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineWidth = 7;
+    ctx.strokeStyle = PAL.labelStroke;
+    ctx.fillStyle = PAL.label;
+    ctx.strokeText(t, 128, 32);
+    ctx.fillText(t, 128, 32);
+}
+
+function makeLabelSprite(text) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256; canvas.height = 64;
+    drawLabel(canvas, text);
+    const tex = new THREE.CanvasTexture(canvas);
+    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+    const sprite = new THREE.Sprite(mat);
+    sprite.renderOrder = 20;
+    sprite.userData.canvas = canvas;
+    return sprite;
+}
+
+function setData(payload) {
+    initThree();
+    if (rootGroup) { scene.remove(rootGroup); disposeTree(rootGroup); }
+    rootGroup = new THREE.Group();
+    scene.add(rootGroup);
+
+    layoutSize = payload.size || 1200;
+    nodes = payload.nodes || [];
+    fileNodes = nodes.filter((n) => !n.dir && n.path);
+    changedNodes = fileNodes.filter(isChanged);
+    byPath = new Map();
+    for (const n of fileNodes) byPath.set(n.path, n);
+    viewedSet = new Set(changedNodes.filter((n) => n.viewed).map((n) => n.path));
+    labelByPath = new Map();
+    ringIndexByPath = new Map();
+    selectedPath = null; blastSet = null;
+    hideCard(); hideTooltip();
+
+    // Directory outlines.
+    const dirs = nodes.filter((n) => n.dir && n.depth > 0);
+    if (dirs.length) {
+        const geo = new THREE.RingGeometry(0.985, 1.0, 72);
+        dirMesh = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({
+            color: PAL.dir, transparent: true, opacity: 0.55, side: THREE.DoubleSide,
+        }), dirs.length);
+        const m = new THREE.Matrix4();
+        for (let i = 0; i < dirs.length; i++) {
+            const p = worldPos(dirs[i]);
+            m.makeTranslation(p.x, p.y, dirs[i].depth * 1.5);
+            m.multiply(new THREE.Matrix4().makeScale(dirs[i].r, dirs[i].r, 1));
+            dirMesh.setMatrixAt(i, m);
+        }
+        rootGroup.add(dirMesh);
+    } else {
+        dirMesh = null;
+    }
+
+    // File bubbles.
+    if (fileNodes.length) {
+        const geo = new THREE.CircleGeometry(1, 28);
+        fileMesh = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({ color: 0xffffff }), fileNodes.length);
+        const m = new THREE.Matrix4();
+        for (let i = 0; i < fileNodes.length; i++) {
+            const p = worldPos(fileNodes[i]);
+            m.makeTranslation(p.x, p.y, p.z);
+            m.multiply(new THREE.Matrix4().makeScale(fileNodes[i].r, fileNodes[i].r, 1));
+            fileMesh.setMatrixAt(i, m);
+        }
+        rootGroup.add(fileMesh);
+    } else {
+        fileMesh = null;
+    }
+
+    // Quality / viewed rings around changed files.
+    if (changedNodes.length) {
+        const geo = new THREE.RingGeometry(1.08, 1.28, 44);
+        ringMesh = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({
+            color: 0xffffff, transparent: true, opacity: 0.95, side: THREE.DoubleSide,
+        }), changedNodes.length);
+        const m = new THREE.Matrix4();
+        for (let i = 0; i < changedNodes.length; i++) {
+            const n = changedNodes[i];
+            ringIndexByPath.set(n.path, i);
+            const p = worldPos(n);
+            m.makeTranslation(p.x, p.y, p.z + 0.4);
+            m.multiply(new THREE.Matrix4().makeScale(n.r, n.r, 1));
+            ringMesh.setMatrixAt(i, m);
+            ringMesh.setColorAt(i, new THREE.Color(PAL.dir));
+        }
+        rootGroup.add(ringMesh);
+    } else {
+        ringMesh = null;
+    }
+
+    // Import edges — quadratic curves pulled toward the center (bundling-lite).
+    adj = new Map();
+    const edges = payload.edges || [];
+    if (edges.length) {
+        const pos = [];
+        for (const e of edges) {
+            const a = nodes[e.from], b = nodes[e.to];
+            if (!a || !b) continue;
+            if (!adj.has(a.path)) adj.set(a.path, []);
+            if (!adj.has(b.path)) adj.set(b.path, []);
+            adj.get(a.path).push(b.path);
+            adj.get(b.path).push(a.path);
+            const pa = worldPos(a), pb = worldPos(b);
+            pa.z += 2; pb.z += 2;
+            const mid = pa.clone().add(pb).multiplyScalar(0.5);
+            const ctrl = mid.multiplyScalar(0.55);
+            ctrl.z = Math.max(pa.z, pb.z) + pa.distanceTo(pb) * 0.22 + 12;
+            const pts = new THREE.QuadraticBezierCurve3(pa, ctrl, pb).getPoints(16);
+            for (let i = 0; i < pts.length - 1; i++) {
+                pos.push(pts[i].x, pts[i].y, pts[i].z, pts[i + 1].x, pts[i + 1].y, pts[i + 1].z);
+            }
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+        edgeLines = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({
+            color: PAL.edge, transparent: true, opacity: 0.38,
+        }));
+        edgeLines.renderOrder = 5;
+        rootGroup.add(edgeLines);
+    } else {
+        edgeLines = null;
+    }
+
+    // One-word labels above changed bubbles.
+    labelGroup = new THREE.Group();
+    for (const n of changedNodes) {
+        const a = analysisByPath.get(n.path);
+        const text = (a && a.word) || n.name;
+        const sprite = makeLabelSprite(text);
+        const p = worldPos(n);
+        sprite.position.set(p.x, p.y, p.z + 6);
+        const wWorld = Math.max(18, Math.min(70, n.r * 2.6));
+        sprite.scale.set(wWorld, wWorld * 0.25, 1);
+        labelGroup.add(sprite);
+        labelByPath.set(n.path, sprite);
+    }
+    rootGroup.add(labelGroup);
+
+    applyColors();
+    updateProgress();
+}
+
+function weightOf(n) {
+    let w = 1;
+    const changed = isChanged(n);
+    if (filter.dimUnchanged && !changed) w = 0.2;
+    if (filter.unreviewedOnly && changed && viewedSet.has(n.path)) w = 0.15;
+    if (filter.text) {
+        const q = filter.text.toLowerCase();
+        if (n.path.toLowerCase().indexOf(q) === -1) w = Math.min(w, 0.1);
+    }
+    if (blastSet) w = blastSet.has(n.path) ? Math.max(w, 1) : Math.min(w, 0.13);
+    return w;
+}
+
+function applyColors() {
+    if (!fileMesh) return;
+    const bg = new THREE.Color(PAL.bgMix);
+    for (let i = 0; i < fileNodes.length; i++) {
+        const n = fileNodes[i];
+        let col;
+        if (isChanged(n)) {
+            const t = Math.min(1, Math.log(1 + churnOf(n)) / Math.log(500));
+            col = new THREE.Color(PAL.heatLo).lerp(new THREE.Color(PAL.heatHi), t);
+            if (viewedSet.has(n.path)) col.lerp(new THREE.Color(PAL.viewed), 0.65);
+        } else {
+            col = new THREE.Color(PAL.file);
+        }
+        const w = weightOf(n);
+        if (w < 1) col.lerp(bg, 0.85 * (1 - w));
+        fileMesh.setColorAt(i, col);
+    }
+    if (fileMesh.instanceColor) fileMesh.instanceColor.needsUpdate = true;
+    if (ringMesh) {
+        for (const [p, i] of ringIndexByPath) {
+            const a = analysisByPath.get(p);
+            let col = null;
+            if (viewedSet.has(p)) col = new THREE.Color(PAL.viewed);
+            else if (a && a.quality && QUALITY[a.quality] !== undefined) col = new THREE.Color(QUALITY[a.quality]);
+            const n = byPath.get(p);
+            const w = n ? weightOf(n) : 1;
+            if (!col) col = new THREE.Color(PAL.dir);
+            if (w < 1) col.lerp(new THREE.Color(PAL.bgMix), 0.85 * (1 - w));
+            ringMesh.setColorAt(i, col);
+        }
+        if (ringMesh.instanceColor) ringMesh.instanceColor.needsUpdate = true;
+    }
+    for (const [p, sprite] of labelByPath) {
+        const n = byPath.get(p);
+        sprite.visible = !!n && weightOf(n) > 0.5;
+    }
+    updateProgress();
+}
+
+function updateProgress() {
+    if (!progressEl) return;
+    const total = changedNodes.length;
+    if (!total) { progressEl.textContent = ''; return; }
+    let v = 0;
+    for (const n of changedNodes) if (viewedSet.has(n.path)) v++;
+    progressEl.textContent = v + '/' + total + ' reviewed';
+}
+
+function hideTooltip() { tooltipEl.style.display = 'none'; }
+function showTooltip(n, x, y) {
+    const a = analysisByPath.get(n.path);
+    let html = '<div class="t-path">' + esc(n.path) + '</div>';
+    if (isChanged(n)) {
+        html += '<div class="t-meta"><span style="color:#2ea043">+' + (n.add || 0) + '</span> <span style="color:#f85149">-' + (n.del || 0) + '</span>';
+        if (a && a.risk) html += ' · risk: ' + esc(a.risk);
+        if (a && a.quality) html += ' · ' + esc(a.quality);
+        if (viewedSet.has(n.path)) html += ' · ✓ reviewed';
+        html += '</div>';
+        if (a && a.summary) html += '<div class="t-sum">' + esc(a.summary) + '</div>';
+        if (!n.testPair) html += '<div class="t-meta">⚗ no test pair found</div>';
+        if (n.comments) html += '<div class="t-meta">💬 ' + n.comments + ' comment' + (n.comments === 1 ? '' : 's') + '</div>';
+    }
+    tooltipEl.innerHTML = html;
+    tooltipEl.style.display = 'block';
+    const rect = wrap.getBoundingClientRect();
+    let tx = x - rect.left + 14, ty = y - rect.top + 12;
+    if (tx + 430 > rect.width) tx = Math.max(4, rect.width - 434);
+    tooltipEl.style.left = tx + 'px';
+    tooltipEl.style.top = ty + 'px';
+}
+
+function hideCard() { cardEl.style.display = 'none'; }
+function showCard(n) {
+    const a = analysisByPath.get(n.path) || {};
+    let html = '<div class="c-path">' + esc(n.path) + '</div>';
+    html += '<div class="c-badges">';
+    if (isChanged(n)) html += '<span class="c-badge"><span style="color:#2ea043">+' + (n.add || 0) + '</span> <span style="color:#f85149">-' + (n.del || 0) + '</span></span>';
+    if (a.word) html += '<span class="c-badge">' + esc(a.word) + '</span>';
+    if (a.risk) html += '<span class="c-badge">risk: ' + esc(a.risk) + '</span>';
+    if (a.quality) html += '<span class="c-badge q-' + esc(a.quality) + '">' + esc(a.quality) + '</span>';
+    if (viewedSet.has(n.path)) html += '<span class="c-badge q-clean">✓ reviewed</span>';
+    html += '</div>';
+    if (a.summary) html += '<div class="c-sum">' + esc(a.summary) + '</div>';
+    if (a.flags && a.flags.length) html += '<div class="c-flags">⚑ ' + a.flags.map(esc).join('<br>⚑ ') + '</div>';
+    const deps = adj.get(n.path);
+    if (deps && deps.length) html += '<div class="c-flags">↯ linked: ' + deps.length + ' file' + (deps.length === 1 ? '' : 's') + ' (highlighted)</div>';
+    html += '<div class="c-actions">';
+    if (isChanged(n)) html += '<button data-act="diff">Diff</button>';
+    html += '<button data-act="open">Open</button>';
+    if (isChanged(n)) {
+        html += '<button data-act="viewed">' + (viewedSet.has(n.path) ? 'Unmark' : '✓ Reviewed') + '</button>';
+        html += '<button data-act="analyze">🔍 Analyze</button>';
+    }
+    html += '</div>';
+    cardEl.innerHTML = html;
+    cardEl.style.display = 'block';
+    const acts = { diff: () => bridge.jumpToDiff && bridge.jumpToDiff(n.path),
+        open: () => bridge.openFile && bridge.openFile(n.path),
+        viewed: () => toggleViewed(n.path),
+        analyze: () => bridge.analyze && bridge.analyze(n.path) };
+    for (const btn of cardEl.querySelectorAll('button')) {
+        btn.addEventListener('click', (ev) => { ev.stopPropagation(); const f = acts[btn.getAttribute('data-act')]; if (f) f(); });
+    }
+}
+
+function toggleViewed(p) {
+    const nowViewed = !viewedSet.has(p);
+    if (nowViewed) viewedSet.add(p); else viewedSet.delete(p);
+    if (bridge.setViewed) bridge.setViewed(p, nowViewed);
+    const n = byPath.get(p);
+    if (n && selectedPath === p) showCard(n);
+    applyColors();
+}
+
+function select(n) {
+    selectedPath = n ? n.path : null;
+    if (!n) { blastSet = null; hideCard(); applyColors(); return; }
+    blastSet = new Set([n.path]);
+    const queue = [n.path];
+    while (queue.length) {
+        const cur = queue.shift();
+        for (const next of adj.get(cur) || []) {
+            if (!blastSet.has(next)) { blastSet.add(next); queue.push(next); }
+        }
+    }
+    showCard(n);
+    applyColors();
+}
+
+function pick(e) {
+    if (!fileMesh || !raycaster) return null;
+    const rect = renderer.domElement.getBoundingClientRect();
+    const ndc = new THREE.Vector2(
+        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        -((e.clientY - rect.top) / rect.height) * 2 + 1
+    );
+    raycaster.setFromCamera(ndc, camera);
+    const hits = raycaster.intersectObject(fileMesh);
+    if (!hits.length) return null;
+    const id = hits[0].instanceId;
+    return (id === undefined || id === null) ? null : fileNodes[id];
+}
+
+function bindInput() {
+    const el = renderer.domElement;
+    let dragging = false, moved = 0, lastX = 0, lastY = 0;
+    el.addEventListener('pointerdown', (e) => {
+        dragging = true; moved = 0; lastX = e.clientX; lastY = e.clientY;
+        wrap.classList.add('dragging');
+        el.setPointerCapture(e.pointerId);
+    });
+    el.addEventListener('pointermove', (e) => {
+        if (dragging) {
+            const dx = e.clientX - lastX, dy = e.clientY - lastY;
+            moved += Math.abs(dx) + Math.abs(dy);
+            lastX = e.clientX; lastY = e.clientY;
+            const wpp = (camera.right - camera.left) / (camera.zoom * Math.max(1, W()));
+            camera.position.x -= dx * wpp;
+            camera.position.y += dy * wpp * 1.25;
+            hideTooltip();
+        } else {
+            const n = pick(e);
+            if (n) showTooltip(n, e.clientX, e.clientY); else hideTooltip();
+        }
+    });
+    el.addEventListener('pointerup', (e) => {
+        wrap.classList.remove('dragging');
+        if (dragging && moved < 6) {
+            const n = pick(e);
+            if (n) select(n); else select(null);
+        }
+        dragging = false;
+    });
+    el.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        camera.zoom = Math.max(0.35, Math.min(14, camera.zoom * Math.pow(1.0016, -e.deltaY)));
+        camera.updateProjectionMatrix();
+    }, { passive: false });
+    el.addEventListener('pointerleave', hideTooltip);
+}
+
+const api = {
+    setData,
+    analysis(p, result) {
+        analysisByPath.set(p, result || {});
+        const sprite = labelByPath.get(p);
+        if (sprite && result && result.word) {
+            drawLabel(sprite.userData.canvas, result.word);
+            sprite.material.map.needsUpdate = true;
+        }
+        if (selectedPath === p) { const n = byPath.get(p); if (n) showCard(n); }
+        if (ringMesh) applyColors();
+    },
+    setFilter(f) {
+        filter = { text: String(f.text || ''), unreviewedOnly: !!f.unreviewedOnly, dimUnchanged: !!f.dimUnchanged };
+        applyColors();
+    },
+    resize() {
+        if (!renderer) return;
+        renderer.setSize(W(), H());
+        updateFrustum();
+    },
+    setStale(b) { if (mapViewEl) mapViewEl.classList.toggle('stale', !!b); },
+    clearSelection() { select(null); },
+    toggleViewedSelected() { if (selectedPath) toggleViewed(selectedPath); },
+    diffSelected() { if (selectedPath && bridge.jumpToDiff) bridge.jumpToDiff(selectedPath); },
+};
+window.GitMap = api;
+window.dispatchEvent(new Event('gitmap-ready'));
 </script>
 </body>
 </html>`;

@@ -5,6 +5,7 @@ import * as os from 'os';
 import * as fsp from 'fs/promises';
 import * as crypto from 'crypto';
 import { getWebviewHtml } from './webview';
+import { buildArchMap, MapChangeInfo } from './archMap';
 
 // node-pty native module — loaded lazily so the extension still activates
 // even on platforms where the prebuilt binary is missing/incompatible.
@@ -413,6 +414,16 @@ function checkIgnored(repoRoot: string, relPath: string): Promise<boolean> {
 
 function hiddenKey(repoRoot: string): string { return `gitDiffViewer.hidden:${repoRoot}`; }
 function draftKey(repoRoot: string): string { return `gitDiffViewer.draft:${repoRoot}`; }
+function viewedKey(repoRoot: string): string { return `gitDiffViewer.mapViewed:${repoRoot}`; }
+
+function getViewed(context: vscode.ExtensionContext, repoRoot: string): string[] {
+    const list = context.workspaceState.get<string[]>(viewedKey(repoRoot), []);
+    return Array.isArray(list) ? list : [];
+}
+
+async function setViewed(context: vscode.ExtensionContext, repoRoot: string, list: string[]): Promise<void> {
+    await context.workspaceState.update(viewedKey(repoRoot), list);
+}
 function commentsKey(repoRoot: string): string { return `gitDiffViewer.comments:${repoRoot}`; }
 function autoExpandKey(repoRoot: string): string { return `gitDiffViewer.autoExpandRecent:${repoRoot}`; }
 
@@ -671,6 +682,11 @@ export function activate(context: vscode.ExtensionContext) {
     const fileAnalysisCache = new Map<string, any>();
     const FILE_ANALYSIS_CACHE_MAX = 300;
 
+    // === Code Map (experimental) ===
+    let mapRequested = false;
+    const mapEnabled = () =>
+        vscode.workspace.getConfiguration('gitDiffViewer').get<boolean>('experimentalMap', true);
+
     // === Embedded terminal sessions (xterm.js + node-pty) ===
     const ptySessions = new Map<string, PtySession>();
     const killAllPtys = () => {
@@ -819,6 +835,7 @@ export function activate(context: vscode.ExtensionContext) {
             xtermFitUri: panel.webview.asWebviewUri(vscode.Uri.joinPath(mediaRoot, 'addon-fit.js')).toString(),
             gridstackJsUri: panel.webview.asWebviewUri(vscode.Uri.joinPath(mediaRoot, 'gridstack-all.js')).toString(),
             gridstackCssUri: panel.webview.asWebviewUri(vscode.Uri.joinPath(mediaRoot, 'gridstack.min.css')).toString(),
+            threeUri: panel.webview.asWebviewUri(vscode.Uri.joinPath(mediaRoot, 'three.module.min.js')).toString(),
             editor: getEditorConfig(),
         });
 
@@ -862,6 +879,19 @@ export function activate(context: vscode.ExtensionContext) {
                     analysisGen++;
                     panel?.webview.postMessage({ type: 'archDoc', phase: 'cancelled' });
                     return;
+                case 'archMapRequest':
+                    mapRequested = true;
+                    void buildAndPostMap();
+                    return;
+                case 'mapViewed': {
+                    const p = String(msg.path || '');
+                    if (!p) return;
+                    const cur = new Set(getViewed(context, activeRepoRoot));
+                    if (msg.viewed) cur.add(p);
+                    else cur.delete(p);
+                    await setViewed(context, activeRepoRoot, Array.from(cur));
+                    return;
+                }
                 case 'openFile': {
                     const uri = vscode.Uri.file(path.join(activeRepoRoot, msg.path));
                     await vscode.window.showTextDocument(uri, { preview: false });
@@ -1779,6 +1809,44 @@ export function activate(context: vscode.ExtensionContext) {
     const openCmd = vscode.commands.registerCommand('gitDiffViewer.open', () => openPanel());
     const refreshCmd = vscode.commands.registerCommand('gitDiffViewer.refresh', () => refresh());
 
+    // Builds the Code Map payload (full tree from git, change overlay, import
+    // edges from already-loaded worktree contents) and pushes it to the webview.
+    const buildAndPostMap = async () => {
+        if (!panel || !activeRepoRoot || !mapEnabled()) return;
+        const repoRoot = activeRepoRoot;
+        try {
+            const lsOut = await gitExec(repoRoot, ['ls-files', '-z']);
+            const files = lsOut.split('\0').filter(Boolean);
+            const changes = new Map<string, MapChangeInfo>();
+            const contents = new Map<string, string>();
+            for (const c of lastChangesForAnalysis) {
+                changes.set(c.path, {
+                    additions: c.additions,
+                    deletions: c.deletions,
+                    status: c.status,
+                    untracked: c.untracked,
+                });
+                if (!c.binary && c.worktreeContent && /\.(ts|tsx|js|jsx|mjs|cjs)$/.test(c.path)) {
+                    contents.set(c.path, c.worktreeContent);
+                }
+            }
+            const commentCounts = new Map<string, number>();
+            for (const cm of getComments(context, repoRoot)) {
+                commentCounts.set(cm.file, (commentCounts.get(cm.file) || 0) + 1);
+            }
+            const payload = buildArchMap({
+                files,
+                changes,
+                viewed: new Set(getViewed(context, repoRoot)),
+                comments: commentCounts,
+                contents,
+            });
+            panel.webview.postMessage({ type: 'archMap', payload });
+        } catch (e: any) {
+            panel?.webview.postMessage({ type: 'archMap', error: String(e?.message ?? e).slice(0, 300) });
+        }
+    };
+
     // Architect Doc pipeline. Stage A: fallow static analysis (local, instant).
     // Stage B: per-file LLM summaries (pool, cache-aware). Stage C: synthesis
     // into a compact architecture overview. Any changeset change aborts and
@@ -1827,8 +1895,11 @@ export function activate(context: vscode.ExtensionContext) {
             'You summarize one git diff for a human reviewer scanning many AI-generated changes.',
             'Output STRICT JSON (no fences, no commentary):',
             '{ "summary": "<ONE line, <= 110 chars: what changed and why it matters>",',
+            '  "word": "<ONE lowercase word categorizing the change, e.g. feature|bugfix|refactor|config|docs|test|style|cleanup|deps>",',
             '  "risk": "low" | "medium" | "high",',
+            '  "quality": "clean" | "review" | "concern",',
             '  "flags": ["<up to 3 ultra-short notes on real problems; empty array if none>"] }',
+            'quality: "clean" = ship as-is, "review" = human should look, "concern" = likely defect or design smell.',
             'Be maximally terse. No filler words. Concrete over generic.',
         ].join('\n');
         const PER_FILE_DIFF_MAX = 24_000;
@@ -1860,7 +1931,9 @@ export function activate(context: vscode.ExtensionContext) {
                         const parsed = JSON.parse(stripJsonFences(raw));
                         out = {
                             summary: String(parsed?.summary ?? '').slice(0, 160),
+                            word: String(parsed?.word ?? '').trim().split(/\s+/)[0].toLowerCase().slice(0, 16),
                             risk: ['low', 'medium', 'high'].includes(String(parsed?.risk)) ? String(parsed.risk) : 'low',
+                            quality: ['clean', 'review', 'concern'].includes(String(parsed?.quality)) ? String(parsed.quality) : '',
                             flags: Array.isArray(parsed?.flags) ? parsed.flags.slice(0, 3).map((f: any) => String(f).slice(0, 120)) : [],
                         };
                         fileAnalysisCache.set(cacheKey, out);
@@ -1946,9 +2019,11 @@ export function activate(context: vscode.ExtensionContext) {
                 comments,
                 autoExpandRecent,
                 view,
+                experimentalMap: mapEnabled(),
             });
             lastChangesForAnalysis = changes;
             if (getAiConfig().autoAnalyze) void runAnalysis(changes);
+            if (mapRequested) void buildAndPostMap();
         } catch (e: any) {
             if (token !== refreshToken || !panel) return;
             panel.webview.postMessage({ type: 'error', message: e.message ?? String(e) });
