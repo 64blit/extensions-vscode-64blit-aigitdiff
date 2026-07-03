@@ -27,6 +27,10 @@ export interface MapNode {
     testPair?: boolean;
     comments?: number;
     viewed?: boolean;
+    /** dirs only: no changed files anywhere beneath */
+    quiet?: boolean;
+    /** dirs only: total file count beneath */
+    files?: number;
 }
 
 export interface MapEdge {
@@ -235,20 +239,35 @@ export function buildArchMap(input: BuildMapInput): ArchMapPayload {
         dir.children.set(path.posix.basename(f), { name: path.posix.basename(f), path: f });
     }
 
-    const toPlain = (e: TreeEntry): any => ({
-        name: e.name,
-        path: e.path,
-        isDir: !!e.children,
-        children: e.children ? Array.from(e.children.values()).map(toPlain) : undefined,
-    });
+    // Collapse single-child directory chains (src → client → components with
+    // nothing else becomes one "src/client/components" node) — kills the
+    // empty-ring nesting that wastes most of the layout.
+    const toPlain = (e: TreeEntry, isRoot?: boolean): any => {
+        let cur = e;
+        let label = e.name;
+        if (!isRoot) {
+            while (cur.children && cur.children.size === 1) {
+                const only = Array.from(cur.children.values())[0];
+                if (!only.children) break; // single child is a file — stop
+                label = label ? label + '/' + only.name : only.name;
+                cur = only;
+            }
+        }
+        return {
+            name: label,
+            path: cur.path,
+            isDir: !!cur.children,
+            children: cur.children ? Array.from(cur.children.values()).map((c) => toPlain(c)) : undefined,
+        };
+    };
 
-    const h: HierarchyNode<any> = hierarchy(toPlain(root))
+    const h: HierarchyNode<any> = hierarchy(toPlain(root, true))
         .sum((d: any) => {
             if (d.isDir) return 0;
             const ch = changes.get(d.path);
             if (!ch) return 1;
             const churn = ch.additions + ch.deletions;
-            return 2 + Math.min(30, Math.sqrt(churn) * 1.5);
+            return (2 + Math.min(30, Math.sqrt(churn) * 1.5)) * 1.6;
         })
         // Deterministic + stable: order siblings by path, never by value.
         .sort((a, b) => String(a.data.path).localeCompare(String(b.data.path)));
@@ -290,6 +309,17 @@ export function buildArchMap(input: BuildMapInput): ArchMapPayload {
         }
         nodes.push(node);
     });
+
+    // Dir context stats: total files beneath + whether any change lives there.
+    const changedPaths = Array.from(changes.keys());
+    for (const n of nodes) {
+        if (!n.dir || !n.path) continue;
+        const prefix = n.path + '/';
+        let fc = 0;
+        for (const f of files) if (f.startsWith(prefix)) fc++;
+        n.files = fc;
+        if (!changedPaths.some((c) => c === n.path || c.startsWith(prefix))) n.quiet = true;
+    }
 
     // Import edges. Whole-repo specs when the caller scanned them; changed-file
     // worktree contents as the fallback source.

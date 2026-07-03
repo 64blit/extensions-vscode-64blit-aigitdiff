@@ -1390,6 +1390,11 @@ export function getWebviewHtml(a: WebviewAssets): string {
         border: 1px solid var(--border); border-radius: 3px; padding: 2px 8px; font-size: 12px; width: 200px;
     }
     .map-topbar label { display: flex; align-items: center; gap: 4px; cursor: pointer; opacity: .85; }
+    .map-topbar button {
+        background: none; border: 1px solid var(--border); border-radius: 3px;
+        color: inherit; cursor: pointer; font-size: 11px; padding: 2px 8px;
+    }
+    .map-topbar button:hover { background: var(--expand-bg-hover, rgba(128,128,128,0.15)); }
     .map-progress { font-variant-numeric: tabular-nums; opacity: .8; }
     .map-note { opacity: .6; font-size: 11px; }
     #map-canvas-wrap { flex: 1; min-height: 0; position: relative; cursor: grab; }
@@ -1555,6 +1560,9 @@ export function getWebviewHtml(a: WebviewAssets): string {
             <input type="search" id="map-filter" placeholder="Filter filesâ¦ ( / )" autocomplete="off" spellcheck="false" />
             <label><input type="checkbox" id="map-unreviewed-cb"> Unreviewed only</label>
             <label><input type="checkbox" id="map-changed-cb" checked> Dim unchanged</label>
+            <label title="Show every file — off collapses folders with no changes into their platform"><input type="checkbox" id="map-all-cb"> All files</label>
+            <button id="map-frame" title="Frame the changeset (F)">⤢ Frame</button>
+            <button id="map-next" title="Fly to next unreviewed file (N)">▶ Next</button>
             <span class="map-progress" id="map-progress"></span>
             <span class="map-note" id="map-note"></span>
         </div>
@@ -4008,6 +4016,9 @@ export function getWebviewHtml(a: WebviewAssets): string {
             else window.GitMap.toggleViewedSelected();
         }
         else if (e.key === 'Enter') { window.GitMap.diffSelected(); }
+        else if (e.key === 'f') { window.GitMap.frameChangeset(); }
+        else if (e.key === 'n') { window.GitMap.nextUnreviewed(1); }
+        else if (e.key === 'p') { window.GitMap.nextUnreviewed(-1); }
     });
 
     const archAutoCb = document.getElementById('arch-auto-cb');
@@ -4738,6 +4749,11 @@ let renderer = null, scene = null, camera = null, raycaster = null;
 let changedMesh = null, baseMesh = null, dirMesh = null, ringMesh = null, edgeLines = null, labelGroup = null, rootGroup = null;
 let dirLabelGroup = null, dirNodes = [];
 let nodes = [], fileNodes = [], changedNodes = [], baseNodes = [];
+let lastPayloadStored = null;
+let showAllFiles = true, showAllUserSet = false, framedOnce = false;
+let camAnim = null;   // camera fly-to tween
+let glowSprites = []; // additive halos behind changed spheres
+let glowTex = null;
 let bobItems = []; // changed files gently floating
 const bobMatrix = new THREE.Matrix4();
 const bobQuat = new THREE.Quaternion();
@@ -4779,6 +4795,66 @@ function applyCamera() {
     camera.up.set(0, 0, 1);
     camera.lookAt(camTarget);
     camDirty = true;
+}
+
+function flyTo(to, dur) {
+    camAnim = {
+        from: { theta: camTheta, phi: camPhi, dist: camDist, x: camTarget.x, y: camTarget.y, z: camTarget.z },
+        to,
+        start: performance.now(),
+        dur: dur || 550,
+    };
+}
+
+function stepCamAnim(now) {
+    if (!camAnim) return;
+    const k = Math.min(1, (now - camAnim.start) / camAnim.dur);
+    const e = k < 0.5 ? 2 * k * k : -1 + (4 - 2 * k) * k; // ease in-out
+    const f = camAnim.from, t = camAnim.to;
+    camTheta = f.theta + ((t.theta !== undefined ? t.theta : f.theta) - f.theta) * e;
+    camPhi = f.phi + ((t.phi !== undefined ? t.phi : f.phi) - f.phi) * e;
+    camDist = f.dist + ((t.dist !== undefined ? t.dist : f.dist) - f.dist) * e;
+    camTarget.set(
+        f.x + ((t.x !== undefined ? t.x : f.x) - f.x) * e,
+        f.y + ((t.y !== undefined ? t.y : f.y) - f.y) * e,
+        f.z + ((t.z !== undefined ? t.z : f.z) - f.z) * e
+    );
+    applyCamera();
+    if (k >= 1) camAnim = null;
+}
+
+// Frame the changeset (or everything when the tree is clean).
+function frameChangeset() {
+    const pool = changedNodes.length ? changedNodes : fileNodes;
+    if (!pool.length || !camera) return;
+    let minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9, maxZ = 0, maxR = 0;
+    for (const n of pool) {
+        const p = worldPos(n);
+        if (p.x < minX) minX = p.x;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.y > maxY) maxY = p.y;
+        if (p.z > maxZ) maxZ = p.z;
+        if (n.r > maxR) maxR = n.r;
+    }
+    const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+    const span = Math.max(maxX - minX, maxY - minY) / 2 + maxR * 3 + 40;
+    const dist = Math.max(280, Math.min(6500, span / Math.tan(camera.fov * Math.PI / 360) * 1.15));
+    flyTo({ theta: camTheta, phi: 0.8, dist, x: cx, y: cy, z: Math.min(60, maxZ * 0.4) }, 650);
+}
+
+// Fly to the next (dir=1) / previous (dir=-1) unreviewed changed file.
+function nextUnreviewed(dir) {
+    if (!changedNodes.length) return;
+    let pool = changedNodes.filter((n) => !viewedSet.has(n.path));
+    if (!pool.length) pool = changedNodes.slice();
+    pool.sort((a, b) => a.path.localeCompare(b.path));
+    let idx = pool.findIndex((n) => n.path === selectedPath);
+    idx = idx === -1 ? (dir > 0 ? 0 : pool.length - 1) : (idx + dir + pool.length) % pool.length;
+    const n = pool[idx];
+    const p = worldPos(n);
+    select(n);
+    flyTo({ theta: camTheta, phi: Math.min(camPhi, 1.0), dist: Math.max(240, Math.min(900, n.r * 16)), x: p.x, y: p.y, z: p.z * 0.6 }, 500);
 }
 
 // Screen-space label management: hide labels whose bubble is too small on
@@ -4840,8 +4916,10 @@ function initThree() {
     bindInput();
     const loop = () => {
         frameN++;
+        const now = performance.now();
+        stepCamAnim(now);
         if (camDirty && frameN % 5 === 0) { updateLabelVisibility(); camDirty = false; }
-        animateBob(performance.now() * 0.001);
+        animateBob(now * 0.001);
         renderer.render(scene, camera);
         requestAnimationFrame(loop);
     };
@@ -4888,17 +4966,38 @@ function roundRect(ctx, x, y, w, h, r) {
 }
 
 // High-res pill label: bold name on top, accent word/stats underneath.
-function drawLabel(canvas, line1, line2, accent) {
+// plain=true drops the pill (stroked text only) — used for folder names so
+// they read as background wayfinding, not content.
+function drawLabel(canvas, line1, line2, accent, plain) {
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, 512, 128);
     const t1 = String(line1 || '').slice(0, 24);
     const t2 = String(line2 || '').slice(0, 24);
     if (!t1 && !t2) return;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    if (plain) {
+        ctx.lineWidth = 9;
+        ctx.strokeStyle = PAL.pill;
+        ctx.font = '700 42px system-ui, sans-serif';
+        if (t2) {
+            ctx.strokeText(t1, 256, 42);
+            ctx.fillStyle = PAL.label;
+            ctx.fillText(t1, 256, 42);
+            ctx.font = '600 30px system-ui, sans-serif';
+            ctx.strokeText(t2, 256, 90);
+            ctx.fillStyle = accent || PAL.labelAccent;
+            ctx.fillText(t2, 256, 90);
+        } else {
+            ctx.strokeText(t1, 256, 66);
+            ctx.fillStyle = PAL.label;
+            ctx.fillText(t1, 256, 66);
+        }
+        return;
+    }
     ctx.fillStyle = PAL.pill;
     roundRect(ctx, 2, 2, 508, 124, 30);
     ctx.fill();
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
     if (t2) {
         ctx.font = '700 44px system-ui, sans-serif';
         ctx.fillStyle = PAL.label;
@@ -4921,10 +5020,10 @@ function qualityAccent(a) {
     return PAL.labelAccent;
 }
 
-function makeLabelSprite(line1, line2, accent) {
+function makeLabelSprite(line1, line2, accent, plain) {
     const canvas = document.createElement('canvas');
     canvas.width = 512; canvas.height = 128;
-    drawLabel(canvas, line1, line2, accent);
+    drawLabel(canvas, line1, line2, accent, plain);
     const tex = new THREE.CanvasTexture(canvas);
     const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
     const sprite = new THREE.Sprite(mat);
@@ -4933,11 +5032,31 @@ function makeLabelSprite(line1, line2, accent) {
     return sprite;
 }
 
+function getGlowTexture() {
+    if (glowTex) return glowTex;
+    const c = document.createElement('canvas');
+    c.width = 128; c.height = 128;
+    const ctx = c.getContext('2d');
+    const g = ctx.createRadialGradient(64, 64, 4, 64, 64, 64);
+    g.addColorStop(0, 'rgba(255,255,255,0.85)');
+    g.addColorStop(0.35, 'rgba(255,255,255,0.28)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 128, 128);
+    glowTex = new THREE.CanvasTexture(c);
+    return glowTex;
+}
+
 function setData(payload) {
     initThree();
     if (rootGroup) { scene.remove(rootGroup); disposeTree(rootGroup); }
     rootGroup = new THREE.Group();
     scene.add(rootGroup);
+
+    lastPayloadStored = payload;
+    if (!showAllUserSet) showAllFiles = (payload.shownFiles || 0) <= 120;
+    const allCb = document.getElementById('map-all-cb');
+    if (allCb) allCb.checked = showAllFiles;
 
     layoutSize = payload.size || 1200;
     nodes = payload.nodes || [];
@@ -4951,6 +5070,29 @@ function setData(payload) {
     selectedPath = null; blastSet = null;
     hideCard(); hideTooltip();
 
+    // Quiet-zone pruning: unchanged files inside change-free directories stay
+    // collapsed into their platform (count on the label) unless "All files".
+    const dirPathSet = new Set();
+    const quietDirSet = new Set();
+    for (const n of nodes) {
+        if (n.dir && n.path) {
+            dirPathSet.add(n.path);
+            if (n.quiet) quietDirSet.add(n.path);
+        }
+    }
+    const isPruned = (n) => {
+        if (showAllFiles || isChanged(n)) return false;
+        let p = n.path;
+        for (;;) {
+            const cut = p.lastIndexOf('/');
+            if (cut === -1) return false;
+            p = p.slice(0, cut);
+            if (dirPathSet.has(p)) return quietDirSet.has(p);
+        }
+    };
+    const prunedSet = new Set();
+    for (const n of fileNodes) if (isPruned(n)) prunedSet.add(n.path);
+
     // Directory platforms: real 3D â lit cylinder plinths with a torus rim,
     // stacked by depth. Names are painted onto the platform as 3D planes.
     const dirs = nodes.filter((n) => n.dir && n.depth > 0);
@@ -4959,13 +5101,15 @@ function setData(payload) {
         const platGeo = new THREE.CylinderGeometry(1, 1, 2.4, 56);
         platGeo.rotateX(Math.PI / 2); // axis â Z (map up)
         dirMesh = new THREE.InstancedMesh(platGeo, new THREE.MeshLambertMaterial({
-            color: PAL.dir, transparent: true, opacity: 0.16,
+            color: 0xffffff, transparent: true, opacity: 0.16,
         }), dirs.length);
         const rimGeo = new THREE.TorusGeometry(1, 0.014, 8, 72);
         const dirRim = new THREE.InstancedMesh(rimGeo, new THREE.MeshBasicMaterial({
-            color: PAL.dir, transparent: true, opacity: 0.75,
+            color: 0xffffff, transparent: true, opacity: 0.75,
         }), dirs.length);
         const m = new THREE.Matrix4();
+        const dirCol = new THREE.Color();
+        const bgCol = new THREE.Color(PAL.bgMix);
         for (let i = 0; i < dirs.length; i++) {
             const d = dirs[i];
             const p = worldPos(d);
@@ -4976,19 +5120,29 @@ function setData(payload) {
             m.makeTranslation(p.x, p.y, z + 1.3);
             m.multiply(new THREE.Matrix4().makeScale(d.r, d.r, 1));
             dirRim.setMatrixAt(i, m);
+            // Deep + quiet platforms fade toward the background — less terracing.
+            dirCol.set(PAL.dir);
+            const fade = Math.min(0.75, (d.depth - 1) * 0.28 + (d.quiet ? 0.25 : 0));
+            if (fade > 0) dirCol.lerp(bgCol, fade);
+            dirMesh.setColorAt(i, dirCol);
+            dirRim.setColorAt(i, dirCol.clone().lerp(new THREE.Color(0xffffff), 0.15));
         }
+        if (dirMesh.instanceColor) dirMesh.instanceColor.needsUpdate = true;
+        if (dirRim.instanceColor) dirRim.instanceColor.needsUpdate = true;
         rootGroup.add(dirMesh);
         rootGroup.add(dirRim);
-        // Folder names float above their platform as billboards.
+        // Folder names float above their platform — plain stroked text so they
+        // read as wayfinding, with a file count when the zone is collapsed.
         dirLabelGroup = new THREE.Group();
         for (const d of dirs) {
             if (d.r < 14) continue;
-            const sprite = makeLabelSprite(d.name);
+            const collapsed = !showAllFiles && d.quiet;
+            const sprite = makeLabelSprite(d.name, collapsed && d.files ? d.files + ' files' : null, null, true);
             const p = worldPos(d);
-            sprite.position.set(p.x, p.y, d.depth * 3 + 26 + d.r * 0.12);
-            const wWorld = Math.max(24, Math.min(110, d.r * 0.85));
+            sprite.position.set(p.x, p.y, d.depth * 3 + 22 + d.r * 0.1);
+            const wWorld = Math.max(22, Math.min(95, d.r * 0.75));
             sprite.scale.set(wWorld, wWorld * 0.25, 1);
-            sprite.material.opacity = 0.92;
+            sprite.material.opacity = 0.8;
             sprite.userData.node = d;
             dirLabelGroup.add(sprite);
         }
@@ -5000,7 +5154,7 @@ function setData(payload) {
 
     // Two sphere populations: quiet lit terrain for unchanged files, bright
     // unlit (always-vivid) spheres for the changeset.
-    baseNodes = fileNodes.filter((n) => !isChanged(n));
+    baseNodes = fileNodes.filter((n) => !isChanged(n) && !prunedSet.has(n.path));
     baseMesh = null;
     changedMesh = null;
     if (baseNodes.length) {
@@ -5017,16 +5171,28 @@ function setData(payload) {
         }
         rootGroup.add(baseMesh);
     }
+    glowSprites = [];
     if (changedNodes.length) {
         const geo = new THREE.SphereGeometry(1, 24, 18);
         changedMesh = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({ color: 0xffffff }), changedNodes.length);
         const m = new THREE.Matrix4();
+        const gtex = getGlowTexture();
         for (let i = 0; i < changedNodes.length; i++) {
             const n = changedNodes[i];
             const p = worldPos(n);
             m.makeTranslation(p.x, p.y, p.z);
             m.multiply(new THREE.Matrix4().makeScale(n.r, n.r, n.r));
             changedMesh.setMatrixAt(i, m);
+            // Beacon halo behind each changed sphere.
+            const glow = new THREE.Sprite(new THREE.SpriteMaterial({
+                map: gtex, transparent: true, depthWrite: false,
+                blending: THREE.AdditiveBlending, opacity: 0.55,
+            }));
+            glow.position.copy(p);
+            glow.scale.set(n.r * 3.6, n.r * 3.6, 1);
+            glow.renderOrder = 6;
+            rootGroup.add(glow);
+            glowSprites.push(glow);
         }
         rootGroup.add(changedMesh);
     }
@@ -5066,6 +5232,8 @@ function setData(payload) {
             if (!adj.has(b.path)) adj.set(b.path, []);
             adj.get(a.path).push(b.path);
             adj.get(b.path).push(a.path);
+            // Cold wiring into pruned quiet zones is dropped (endpoint invisible).
+            if (!e.hot && (prunedSet.has(a.path) || prunedSet.has(b.path))) continue;
             const pa = worldPos(a), pb = worldPos(b);
             const mid = pa.clone().add(pb).multiplyScalar(0.5);
             const ctrl = new THREE.Vector3(mid.x * 0.7, mid.y * 0.7, Math.max(pa.z, pb.z) + pa.distanceTo(pb) * 0.18 + 10);
@@ -5122,12 +5290,19 @@ function setData(payload) {
             base: worldPos(n),
             phase: hash01(n.path) * 6.283,
             sprite: labelByPath.get(n.path) || null,
+            glow: glowSprites[i] || null,
         });
     }
     camDirty = true;
 
     applyColors();
     updateProgress();
+
+    // First delivery: frame the changeset so the user lands on the action.
+    if (!framedOnce) {
+        framedOnce = true;
+        if (changedNodes.length) frameChangeset();
+    }
 }
 
 function animateBob(t) {
@@ -5152,6 +5327,7 @@ function animateBob(t) {
             it.sprite.position.set(it.base.x, it.base.y, it.base.z + dz)
                 .addScaledVector(upv, it.n.r * 1.15 + 9);
         }
+        if (it.glow) it.glow.position.set(it.base.x, it.base.y, it.base.z + dz);
     }
     changedMesh.instanceMatrix.needsUpdate = true;
     if (ringMesh) ringMesh.instanceMatrix.needsUpdate = true;
@@ -5189,6 +5365,11 @@ function applyColors() {
             const w = weightOf(n);
             if (w < 1) col.lerp(bg, 0.85 * (1 - w));
             changedMesh.setColorAt(i, col);
+            const glow = glowSprites[i];
+            if (glow) {
+                glow.material.color.copy(col);
+                glow.material.opacity = viewedSet.has(n.path) ? 0.18 : 0.5 * Math.max(0.25, w);
+            }
         }
         if (changedMesh.instanceColor) changedMesh.instanceColor.needsUpdate = true;
     }
@@ -5356,6 +5537,7 @@ function bindInput() {
     let dragging = false, moved = 0, lastX = 0, lastY = 0, panMode = false;
     el.addEventListener('contextmenu', (e) => e.preventDefault());
     el.addEventListener('pointerdown', (e) => {
+        camAnim = null; // user takes the wheel
         dragging = true; moved = 0; lastX = e.clientX; lastY = e.clientY;
         panMode = e.button === 2 || e.shiftKey;
         wrap.classList.add('dragging');
@@ -5440,7 +5622,20 @@ const api = {
     toggleViewedPath(p) { if (p && byPath.has(p)) toggleViewed(p); },
     isViewed(p) { return viewedSet.has(p); },
     diffSelected() { if (selectedPath && bridge.showDiff) bridge.showDiff(selectedPath); },
+    frameChangeset() { frameChangeset(); },
+    nextUnreviewed(dir) { nextUnreviewed(dir || 1); },
+    setShowAll(b) {
+        showAllUserSet = true;
+        showAllFiles = !!b;
+        if (lastPayloadStored) setData(lastPayloadStored);
+    },
 };
+const mapAllCbEl = document.getElementById('map-all-cb');
+if (mapAllCbEl) mapAllCbEl.addEventListener('change', () => api.setShowAll(mapAllCbEl.checked));
+const mapFrameBtn = document.getElementById('map-frame');
+if (mapFrameBtn) mapFrameBtn.addEventListener('click', () => frameChangeset());
+const mapNextBtn = document.getElementById('map-next');
+if (mapNextBtn) mapNextBtn.addEventListener('click', () => nextUnreviewed(1));
 window.GitMap = api;
 window.dispatchEvent(new Event('gitmap-ready'));
 </script>
