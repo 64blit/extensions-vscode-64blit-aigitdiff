@@ -1913,10 +1913,17 @@ export function activate(context: vscode.ExtensionContext) {
             const cfg = vscode.workspace.getConfiguration('gitDiffViewer');
             const scanList = Array.from(new Set(files.concat(Array.from(changes.keys()))));
             const importSpecs = await scanImportSpecs(repoRoot, scanList);
+            // Review marks for files that left the changeset (committed/reverted)
+            // are stale — prune so the progress counter stays honest.
+            const viewedStored = getViewed(context, repoRoot);
+            const viewedLive = viewedStored.filter((p) => changes.has(p));
+            if (viewedLive.length !== viewedStored.length) {
+                void setViewed(context, repoRoot, viewedLive);
+            }
             const payload = buildArchMap({
                 files,
                 changes,
-                viewed: new Set(getViewed(context, repoRoot)),
+                viewed: new Set(viewedLive),
                 comments: commentCounts,
                 contents,
                 importSpecs,

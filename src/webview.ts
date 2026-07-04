@@ -1395,6 +1395,13 @@ export function getWebviewHtml(a: WebviewAssets): string {
         color: inherit; cursor: pointer; font-size: 11px; padding: 2px 8px;
     }
     .map-topbar button:hover { background: var(--expand-bg-hover, rgba(128,128,128,0.15)); }
+    .map-quality { display: flex; gap: 4px; }
+    .q-chip { border: 1px solid var(--border); border-radius: 9px; padding: 0 8px; font-size: 11px; cursor: pointer; opacity: .8; }
+    .q-chip:hover, .q-chip.on { opacity: 1; }
+    .q-chip.on { outline: 1px solid currentColor; }
+    .q-chip.q-clean { color: #2ea043; border-color: #2ea043; }
+    .q-chip.q-review { color: #d29922; border-color: #d29922; }
+    .q-chip.q-concern { color: #f85149; border-color: #f85149; }
     .map-progress { font-variant-numeric: tabular-nums; opacity: .8; }
     .map-note { opacity: .6; font-size: 11px; }
     #map-canvas-wrap { flex: 1; min-height: 0; position: relative; cursor: grab; }
@@ -1564,6 +1571,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
             <button id="map-frame" title="Frame the changeset (F)">⤢ Frame</button>
             <button id="map-next" title="Fly to next unreviewed file (N)">▶ Next</button>
             <span class="map-progress" id="map-progress"></span>
+            <span id="map-quality" class="map-quality"></span>
             <span class="map-note" id="map-note"></span>
         </div>
         <div id="map-canvas-wrap">
@@ -3787,6 +3795,10 @@ export function getWebviewHtml(a: WebviewAssets): string {
             const row = e.target.closest('.arch-file-row');
             if (!row) return;
             const p = row.getAttribute('data-path');
+            if (mapActive && window.GitMap && window.GitMap.flyToPath) {
+                window.GitMap.flyToPath(p);
+                return;
+            }
             const fileEl = contentEl.querySelector('.file[data-path="' + CSS.escape(p) + '"]');
             if (!fileEl) return;
             if (!fileEl.classList.contains('expanded')) {
@@ -4754,6 +4766,8 @@ let showAllFiles = true, showAllUserSet = false, framedOnce = false;
 let camAnim = null;   // camera fly-to tween
 let glowSprites = []; // additive halos behind changed spheres
 let glowTex = null;
+let selRing = null;   // pulsing marker on the selected node
+let lastPickAt = 0;
 let bobItems = []; // changed files gently floating
 const bobMatrix = new THREE.Matrix4();
 const bobQuat = new THREE.Quaternion();
@@ -4843,6 +4857,12 @@ function frameChangeset() {
     flyTo({ theta: camTheta, phi: 0.8, dist, x: cx, y: cy, z: Math.min(60, maxZ * 0.4) }, 650);
 }
 
+function flyToNode(n) {
+    const p = worldPos(n);
+    select(n);
+    flyTo({ theta: camTheta, phi: Math.min(camPhi, 1.0), dist: Math.max(240, Math.min(900, n.r * 16)), x: p.x, y: p.y, z: p.z * 0.6 }, 500);
+}
+
 // Fly to the next (dir=1) / previous (dir=-1) unreviewed changed file.
 function nextUnreviewed(dir) {
     if (!changedNodes.length) return;
@@ -4851,10 +4871,7 @@ function nextUnreviewed(dir) {
     pool.sort((a, b) => a.path.localeCompare(b.path));
     let idx = pool.findIndex((n) => n.path === selectedPath);
     idx = idx === -1 ? (dir > 0 ? 0 : pool.length - 1) : (idx + dir + pool.length) % pool.length;
-    const n = pool[idx];
-    const p = worldPos(n);
-    select(n);
-    flyTo({ theta: camTheta, phi: Math.min(camPhi, 1.0), dist: Math.max(240, Math.min(900, n.r * 16)), x: p.x, y: p.y, z: p.z * 0.6 }, 500);
+    flyToNode(pool[idx]);
 }
 
 // Screen-space label management: hide labels whose bubble is too small on
@@ -4920,6 +4937,13 @@ function initThree() {
         stepCamAnim(now);
         if (camDirty && frameN % 5 === 0) { updateLabelVisibility(); camDirty = false; }
         animateBob(now * 0.001);
+        if (selRing && selRing.visible) {
+            const s = 1 + Math.sin(now * 0.004) * 0.08;
+            selRing.rotation.z = now * 0.0012;
+            selRing.material.opacity = 0.65 + Math.sin(now * 0.004) * 0.25;
+            const n = selectedPath ? byPath.get(selectedPath) : null;
+            if (n) selRing.scale.set(n.r * 1.6 * s, n.r * 1.6 * s, 1);
+        }
         renderer.render(scene, camera);
         requestAnimationFrame(loop);
     };
@@ -5052,6 +5076,14 @@ function setData(payload) {
     if (rootGroup) { scene.remove(rootGroup); disposeTree(rootGroup); }
     rootGroup = new THREE.Group();
     scene.add(rootGroup);
+
+    selRing = new THREE.Mesh(
+        new THREE.TorusGeometry(1, 0.06, 8, 48),
+        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, depthWrite: false })
+    );
+    selRing.visible = false;
+    selRing.renderOrder = 15;
+    rootGroup.add(selRing);
 
     lastPayloadStored = payload;
     if (!showAllUserSet) showAllFiles = (payload.shownFiles || 0) <= 120;
@@ -5224,7 +5256,8 @@ function setData(payload) {
     const edges = payload.edges || [];
     edgeLines = null;
     if (edges.length) {
-        const hotPos = [], coldPos = [];
+        const hotPos = [], coldPos = [], hotCol = [];
+        const cFrom = new THREE.Color(PAL.edge), cTo = new THREE.Color(0xc678dd), cTmp = new THREE.Color();
         for (const e of edges) {
             const a = nodes[e.from], b = nodes[e.to];
             if (!a || !b) continue;
@@ -5241,6 +5274,13 @@ function setData(payload) {
             const dst = e.hot ? hotPos : coldPos;
             for (let i = 0; i < pts.length - 1; i++) {
                 dst.push(pts[i].x, pts[i].y, pts[i].z, pts[i + 1].x, pts[i + 1].y, pts[i + 1].z);
+                if (e.hot) {
+                    // Direction gradient: importer (cyan) -> imported (purple).
+                    cTmp.copy(cFrom).lerp(cTo, i / (pts.length - 1));
+                    hotCol.push(cTmp.r, cTmp.g, cTmp.b);
+                    cTmp.copy(cFrom).lerp(cTo, (i + 1) / (pts.length - 1));
+                    hotCol.push(cTmp.r, cTmp.g, cTmp.b);
+                }
             }
         }
         if (coldPos.length) {
@@ -5255,8 +5295,9 @@ function setData(payload) {
         if (hotPos.length) {
             const geo = new THREE.BufferGeometry();
             geo.setAttribute('position', new THREE.Float32BufferAttribute(hotPos, 3));
+            geo.setAttribute('color', new THREE.Float32BufferAttribute(hotCol, 3));
             edgeLines = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({
-                color: PAL.edge, transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending,
+                vertexColors: true, transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending,
             }));
             edgeLines.renderOrder = 5;
             rootGroup.add(edgeLines);
@@ -5342,6 +5383,10 @@ function weightOf(n) {
         const q = filter.text.toLowerCase();
         if (n.path.toLowerCase().indexOf(q) === -1) w = Math.min(w, 0.1);
     }
+    if (filter.quality) {
+        const a = analysisByPath.get(n.path);
+        if (!changed || !a || a.quality !== filter.quality) w = Math.min(w, 0.12);
+    }
     if (blastSet) w = blastSet.has(n.path) ? Math.max(w, 1) : Math.min(w, 0.13);
     return w;
 }
@@ -5406,12 +5451,29 @@ function applyColors() {
 }
 
 function updateProgress() {
-    if (!progressEl) return;
-    const total = changedNodes.length;
-    if (!total) { progressEl.textContent = ''; return; }
-    let v = 0;
-    for (const n of changedNodes) if (viewedSet.has(n.path)) v++;
-    progressEl.textContent = v + '/' + total + ' reviewed';
+    if (progressEl) {
+        const total = changedNodes.length;
+        if (!total) { progressEl.textContent = ''; }
+        else {
+            let v = 0;
+            for (const n of changedNodes) if (viewedSet.has(n.path)) v++;
+            progressEl.textContent = v + '/' + total + ' reviewed';
+        }
+    }
+    const qEl = document.getElementById('map-quality');
+    if (qEl) {
+        const counts = { clean: 0, review: 0, concern: 0 };
+        for (const n of changedNodes) {
+            const a = analysisByPath.get(n.path);
+            if (a && a.quality && counts[a.quality] !== undefined) counts[a.quality]++;
+        }
+        let html = '';
+        for (const q of ['concern', 'review', 'clean']) {
+            if (!counts[q]) continue;
+            html += '<span class="q-chip q-' + q + (filter.quality === q ? ' on' : '') + '" data-q="' + q + '">' + counts[q] + ' ' + q + '</span>';
+        }
+        qEl.innerHTML = html;
+    }
 }
 
 function hideTooltip() { tooltipEl.style.display = 'none'; }
@@ -5483,6 +5545,14 @@ function toggleViewed(p) {
 
 function select(n) {
     selectedPath = n ? n.path : null;
+    if (selRing) {
+        selRing.visible = !!n;
+        if (n) {
+            const p = worldPos(n);
+            selRing.position.copy(p);
+            selRing.scale.set(n.r * 1.6, n.r * 1.6, 1);
+        }
+    }
     if (!n) { blastSet = null; hideCard(); applyColors(); return; }
     blastSet = new Set([n.path]);
     const queue = [n.path];
@@ -5561,6 +5631,9 @@ function bindInput() {
             applyCamera();
             hideTooltip();
         } else {
+            const now = performance.now();
+            if (now - lastPickAt < 40) return;
+            lastPickAt = now;
             const n = pick(e);
             if (n) showTooltip(n, e.clientX, e.clientY); else hideTooltip();
         }
@@ -5623,6 +5696,7 @@ const api = {
     isViewed(p) { return viewedSet.has(p); },
     diffSelected() { if (selectedPath && bridge.showDiff) bridge.showDiff(selectedPath); },
     frameChangeset() { frameChangeset(); },
+    flyToPath(p) { const n = byPath.get(p); if (n) flyToNode(n); },
     nextUnreviewed(dir) { nextUnreviewed(dir || 1); },
     setShowAll(b) {
         showAllUserSet = true;
@@ -5636,6 +5710,17 @@ const mapFrameBtn = document.getElementById('map-frame');
 if (mapFrameBtn) mapFrameBtn.addEventListener('click', () => frameChangeset());
 const mapNextBtn = document.getElementById('map-next');
 if (mapNextBtn) mapNextBtn.addEventListener('click', () => nextUnreviewed(1));
+const mapQualityEl = document.getElementById('map-quality');
+if (mapQualityEl) {
+    mapQualityEl.addEventListener('click', (e) => {
+        const chip = e.target.closest('.q-chip');
+        if (!chip) return;
+        const q = chip.getAttribute('data-q');
+        filter.quality = filter.quality === q ? null : q;
+        applyColors();
+        updateProgress();
+    });
+}
 window.GitMap = api;
 window.dispatchEvent(new Event('gitmap-ready'));
 </script>
