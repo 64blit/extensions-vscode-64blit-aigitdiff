@@ -1415,7 +1415,13 @@ export function getWebviewHtml(a: WebviewAssets): string {
     .q-chip.q-concern { color: #f85149; border-color: #f85149; }
     .map-progress { font-variant-numeric: tabular-nums; opacity: .8; }
     .map-note { opacity: .6; font-size: 11px; }
-    #map-canvas-wrap { flex: 1; min-height: 0; position: relative; cursor: grab; }
+    #map-canvas-wrap { flex: 1; min-height: 0; position: relative; cursor: grab;
+        /* Deep-space backdrop — never pure black; the starfield sits on top. */
+        background: radial-gradient(120% 90% at 50% 30%, #161c28 0%, #0c1016 55%, #06080c 100%);
+    }
+    body.vscode-light #map-canvas-wrap {
+        background: radial-gradient(120% 90% at 50% 30%, #ffffff 0%, #f2f4f7 60%, #e8ebf0 100%);
+    }
     #map-canvas-wrap.dragging { cursor: grabbing; }
     #map-canvas-wrap canvas { display: block; }
     #map-tooltip {
@@ -1632,8 +1638,9 @@ export function getWebviewHtml(a: WebviewAssets): string {
             <div id="map-card"></div>
             <div id="map-legend">
                 <div class="lg-row" style="opacity:.75">ring = folder orbit · sphere = file · height = depth</div>
-                <div class="lg-row"><span class="lg-dot" style="background:#3fb950"></span> added <span class="lg-dot" style="background:#d29922"></span> modified <span class="lg-dot" style="background:#f85149"></span> deleted <span class="lg-dot" style="background:#58a6ff"></span> renamed</div>
+                <div class="lg-row"><span class="lg-dot" style="background:#3fb960"></span> added <span class="lg-dot" style="background:#e0a53c"></span> modified <span class="lg-dot" style="background:#e0455a"></span> deleted <span class="lg-dot" style="background:#4f8fe8"></span> renamed</div>
                 <div class="lg-row"><span class="lg-dot" style="border:2px solid #c678dd; width:5px; height:5px; background:transparent"></span> hub — imported by many files</div>
+                <div class="lg-row"><span class="lg-dot" style="border:2px solid #63d8c9; width:5px; height:5px; background:transparent"></span> ring appears when reviewed / AI verdict</div>
                 <div class="lg-row"><span class="lg-dot" style="background:#39c5cf"></span> imports →&nbsp; <span class="lg-dot" style="background:#ffa657"></span> imported by</div>
                 <div class="lg-row" style="opacity:.7">hover → diff peek + import lines · click → diff window</div>
                 <div class="lg-row" style="opacity:.7">drag pan · wheel zoom · Q/E rotate · dblclick folder → focus</div>

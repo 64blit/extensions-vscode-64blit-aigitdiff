@@ -32,14 +32,19 @@ const PAL = isLight ? {
     label: '#1f2328', labelAccent: '#0969da', labelDim: '#6e7781', pill: 'rgba(255,255,255,0.9)',
     addTxt: '#1a7f37', delTxt: '#cf222e',
 } : {
-    dir: 0x343b44, file: 0x4b545e, bgMix: 0x14181c,
-    viewed: 0x2ea043, edge: 0x39c5cf, edgeTo: 0xc678dd, hub: 0xc678dd, linkIn: 0xffa657,
+    dir: 0x3a4250, file: 0x4b545e, bgMix: 0x10151d,
+    viewed: 0x2ea043, edge: 0x39c5cf, edgeTo: 0xc678dd, hub: 0xc678dd, linkIn: 0xf0a05a,
     label: '#f0f6fc', labelAccent: '#7ee2eb', labelDim: '#8b949e', pill: 'rgba(8,12,16,0.78)',
     addTxt: '#7ee787', delTxt: '#ffa198',
 };
-// Sphere hue by git status. Untracked reads as added.
-const STATUS_COL = { A: 0x3fb950, '?': 0x3fb950, D: 0xf85149, R: 0x58a6ff, C: 0x58a6ff, M: 0xd29922 };
+// Sphere hue by git status. Untracked reads as added. Slightly desaturated
+// so the planets sit IN the deep-blue scene instead of on it as stickers;
+// red pushed to crimson so amber/red stay separable at 8px.
+const STATUS_COL = { A: 0x3fb960, '?': 0x3fb960, D: 0xe0455a, R: 0x4f8fe8, C: 0x4f8fe8, M: 0xe0a53c };
 const QUALITY = { clean: 0x2ea043, review: 0xd29922, concern: 0xf85149 };
+// Verdict RING hues live in the cyan family — green stays exclusive to
+// "added", so a clean ring around an amber planet can't read as "added".
+const RING_COL = { viewed: 0x63d8c9, clean: 0x7fd8d8, review: 0xd29922, concern: 0xf85149 };
 const LINK_IN = PAL.linkIn; // incoming "imported by" arcs
 // Additive glow saturates to invisible white on a light background — use
 // normal blending there, with stronger opacity to compensate.
@@ -54,6 +59,7 @@ const RAISE = 10;
 let renderer = null, scene = null, camera = null, raycaster = null;
 let changedMesh = null, baseMesh = null, ringMeshI = null, discMesh = null, rootGroup = null;
 let verdictMesh = null, hubMesh = null, hubNodes = [];
+let glowByPath = new Map(); // changed-file atmosphere sprites
 let labelGroup = null, dirLabelGroup = null, quietLabelGroup = null, dirNodes = [];
 let nodes = [], fileNodes = [], changedNodes = [], baseNodes = [];
 let lastPayloadStored = null;
@@ -79,6 +85,85 @@ let needsRender = true, labelDirty = true, lastCamMoveAt = 0, pulseStart = 0, en
 
 function W() { return wrap.clientWidth || 800; }
 function H() { return wrap.clientHeight || 500; }
+
+// Deterministic PRNG — the sky must not twinkle to a new arrangement on
+// every refresh.
+function prng(seed) {
+    let a = seed >>> 0;
+    return () => {
+        a |= 0; a = (a + 0x6D2B79F5) | 0;
+        let t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+}
+
+// Soft radial dot — shared look for stars and planet glows.
+function makeRadialTexture(size, stops) {
+    const canvas = document.createElement('canvas');
+    canvas.width = size; canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+    for (const [k, c] of stops) g.addColorStop(k, c);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, size, size);
+    return new THREE.CanvasTexture(canvas);
+}
+
+// The sky: a still starfield plus a few vast nebula washes, far behind the
+// board. Built once, never rebuilt with setData. Dark theme only — the
+// light theme stays clean paper.
+function buildSky() {
+    if (isLight) return;
+    const rand = prng(20260813);
+    const starTex = makeRadialTexture(32, [[0, 'rgba(255,255,255,1)'], [0.4, 'rgba(255,255,255,0.8)'], [1, 'rgba(255,255,255,0)']]);
+    const tints = [0xffffff, 0xcfe4ff, 0xffe9c9, 0x9fd8e0];
+    const makeLayer = (count, rMin, rSpan, size, opacity) => {
+        const pos = new Float32Array(count * 3);
+        const col = new Float32Array(count * 3);
+        const c = new THREE.Color();
+        for (let i = 0; i < count; i++) {
+            const r = rMin + rand() * rSpan;
+            const th = rand() * Math.PI * 2;
+            const ph = Math.acos(2 * rand() - 1);
+            pos[i * 3] = r * Math.sin(ph) * Math.cos(th);
+            pos[i * 3 + 1] = r * Math.sin(ph) * Math.sin(th);
+            pos[i * 3 + 2] = r * Math.cos(ph);
+            c.set(tints[Math.floor(rand() * tints.length)]).multiplyScalar(0.35 + rand() * 0.65);
+            col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+        geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+        const mat = new THREE.PointsMaterial({
+            map: starTex, size, vertexColors: true, transparent: true, opacity,
+            depthWrite: false, sizeAttenuation: true, blending: THREE.AdditiveBlending,
+        });
+        mat.fog = false; // stars live beyond the fog
+        const pts = new THREE.Points(geo, mat);
+        pts.renderOrder = -2;
+        scene.add(pts);
+    };
+    makeLayer(1900, 5200, 3600, 22, 0.7);  // fine dust
+    makeLayer(420, 4800, 3200, 44, 0.85);  // mid stars
+    makeLayer(90, 4600, 3000, 78, 0.95);   // brights
+    // Nebulae: huge soft washes of blue-violet, present but never loud.
+    const nebulaSpecs = [
+        { color: '59,47,107', x: -2600, y: 1800, z: -2200, s: 7400 },
+        { color: '22,50,79', x: 3000, y: -1400, z: -2600, s: 6600 },
+        { color: '58,42,85', x: 600, y: 2600, z: -3000, s: 5600 },
+    ];
+    for (const n of nebulaSpecs) {
+        const tex = makeRadialTexture(256, [[0, 'rgba(' + n.color + ',0.6)'], [0.5, 'rgba(' + n.color + ',0.22)'], [1, 'rgba(' + n.color + ',0)']]);
+        const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 0.24, depthWrite: false, blending: THREE.AdditiveBlending });
+        mat.fog = false;
+        const sp = new THREE.Sprite(mat);
+        sp.position.set(n.x, n.y, n.z);
+        sp.scale.set(n.s, n.s, 1);
+        sp.renderOrder = -3;
+        scene.add(sp);
+    }
+}
 function esc(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
@@ -389,7 +474,9 @@ function updateLabelVisibility() {
             + m.screenR * 0.01;
         items.push({ sprite, sx: m.sx, sy: m.sy, w, h: 26, pri });
     };
-    if (labelGroup) for (const s of labelGroup.children) collect(s, 10, 220);
+    // 14px: at overview zoom the pills are unreadable clutter — folder names
+    // carry the wayfinding until you're close enough to read file names.
+    if (labelGroup) for (const s of labelGroup.children) collect(s, 14, 220);
     if (dirLabelGroup) for (const s of dirLabelGroup.children) collect(s, 15, 100);
 
     // Unchanged files: name appears once the node is comfortably readable.
@@ -454,13 +541,21 @@ function initThree() {
     renderer.setSize(W(), H());
     wrap.insertBefore(renderer.domElement, tooltipEl);
     scene = new THREE.Scene();
-    scene.fog = new THREE.Fog(PAL.bgMix, 2600, 9000);
+    // Tighter fog = aerial perspective: far orbits recede into the blue
+    // instead of floating at full strength.
+    scene.fog = isLight ? new THREE.Fog(PAL.bgMix, 2400, 8200) : new THREE.Fog(0x0b1120, 1600, 6500);
     camera = new THREE.PerspectiveCamera(50, W() / Math.max(1, H()), 2, 14000);
     applyCamera();
-    scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-    const sun = new THREE.DirectionalLight(0xffffff, 0.9);
+    // Lower ambient + a sky/ground hemisphere tint gives the spheres shape
+    // instead of the old flat wash.
+    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+    scene.add(isLight
+        ? new THREE.HemisphereLight(0xffffff, 0xd8dce2, 0.5)
+        : new THREE.HemisphereLight(0x8fa3c7, 0x0a0c10, 0.55));
+    const sun = new THREE.DirectionalLight(0xffffff, 1.1);
     sun.position.set(-600, -900, 1300);
     scene.add(sun);
+    buildSky();
     raycaster = new THREE.Raycaster();
     bindInput();
     const loop = () => {
@@ -669,7 +764,7 @@ function setData(payload) {
             const geo = new THREE.BufferGeometry();
             geo.setAttribute('position', new THREE.Float32BufferAttribute(stemPos, 3));
             const stems = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({
-                color: PAL.dir, transparent: true, opacity: 0.18, depthWrite: false,
+                color: PAL.dir, transparent: true, opacity: 0.12, depthWrite: false,
             }));
             stems.renderOrder = 2;
             rootGroup.add(stems);
@@ -710,17 +805,34 @@ function setData(payload) {
         }
         rootGroup.add(baseMesh);
     }
+    glowByPath = new Map();
     if (changedNodes.length) {
         const geo = new THREE.SphereGeometry(1, 20, 15);
         changedMesh = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({ color: 0xffffff }), changedNodes.length);
         const m = new THREE.Matrix4();
+        // Soft status-tinted atmosphere behind every changed planet — the
+        // changeset glows, the rest of the repo doesn't.
+        // Soft falloff — a gas halo, not an opaque disc.
+        const glowTex = makeRadialTexture(128, [[0, 'rgba(255,255,255,0.55)'], [0.3, 'rgba(255,255,255,0.2)'], [0.7, 'rgba(255,255,255,0.05)'], [1, 'rgba(255,255,255,0)']]);
+        const glowGroup = new THREE.Group();
         for (let i = 0; i < changedNodes.length; i++) {
             const n = changedNodes[i];
             const p = worldPos(n);
             m.makeTranslation(p.x, p.y, p.z);
             m.multiply(new THREE.Matrix4().makeScale(n.r, n.r, n.r));
             changedMesh.setMatrixAt(i, m);
+            const gMat = new THREE.SpriteMaterial({
+                map: glowTex, transparent: true, depthWrite: false, blending: GLOW_BLEND,
+                color: statusColor(n), opacity: isLight ? 0.2 : 0.42,
+            });
+            const g = new THREE.Sprite(gMat);
+            g.position.copy(p);
+            g.scale.set(n.r * 2.4, n.r * 2.4, 1);
+            g.renderOrder = 3;
+            glowGroup.add(g);
+            glowByPath.set(n.path, g);
         }
+        rootGroup.add(glowGroup);
         rootGroup.add(changedMesh);
     }
 
@@ -912,18 +1024,41 @@ function applyColors() {
         if (baseMesh.instanceColor) baseMesh.instanceColor.needsUpdate = true;
     }
     if (verdictMesh) {
+        // A ring is a STATEMENT — it appears only when there is a verdict
+        // (✓ reviewed or an AI quality call). Undecided files stay bare.
+        const m = new THREE.Matrix4();
         for (const [p, i] of verdictIndexByPath) {
             const a = analysisByPath.get(p);
             let col = null;
-            if (viewedSet.has(p)) col = new THREE.Color(PAL.viewed);
-            else if (a && a.quality && QUALITY[a.quality] !== undefined) col = new THREE.Color(QUALITY[a.quality]);
+            if (viewedSet.has(p)) col = new THREE.Color(RING_COL.viewed);
+            else if (a && a.quality && RING_COL[a.quality] !== undefined) col = new THREE.Color(RING_COL[a.quality]);
             const n = byPath.get(p);
+            const wp = n ? worldPos(n) : null;
+            if (wp) {
+                const s = col && n ? n.r : 0.0001; // scale ~0 hides the instance
+                m.makeTranslation(wp.x, wp.y, wp.z);
+                m.multiply(new THREE.Matrix4().makeScale(s, s, 1));
+                verdictMesh.setMatrixAt(i, m);
+            }
             const w = n ? weightOf(n) : 1;
             if (!col) col = new THREE.Color(PAL.dir);
             if (w < 1) col.lerp(new THREE.Color(PAL.bgMix), 0.85 * (1 - w));
             verdictMesh.setColorAt(i, col);
         }
+        verdictMesh.instanceMatrix.needsUpdate = true;
         if (verdictMesh.instanceColor) verdictMesh.instanceColor.needsUpdate = true;
+    }
+    // Planet glows breathe with the same attention weights. The selected
+    // node's own glow steps back so the selection ring + hub halo stay
+    // legible instead of stacking into a 5-color collision.
+    for (const [p, sprite] of glowByPath) {
+        const n = byPath.get(p);
+        if (!n) continue;
+        const w = weightOf(n);
+        let base = isLight ? 0.2 : 0.42;
+        if (viewedSet.has(p)) base *= 0.4;
+        if (p === selectedPath) base *= 0.3;
+        sprite.material.opacity = base * Math.max(0.12, w);
     }
     for (const [p, sprite] of labelByPath) {
         const n = byPath.get(p);
@@ -1074,7 +1209,17 @@ function showLinks(p) {
     if (!centre) { needsRender = true; return; }
     const pos = [], col = [];
     const cA = new THREE.Color(), cB = new THREE.Color(), cTmp = new THREE.Color();
-    const arc = (from, to, fromCol, toCol) => {
+    const bgFade = new THREE.Color(PAL.bgMix);
+    // Arcs fade out over the last 30% into the shared centre node — 30 lines
+    // converging at full strength is a white blowout that buries the very
+    // sphere the user is looking at.
+    const vertColor = (t, centreAtEnd) => {
+        cTmp.copy(cA).lerp(cB, t);
+        const dCentre = centreAtEnd ? 1 - t : t;
+        if (dCentre < 0.3) cTmp.lerp(bgFade, ((0.3 - dCentre) / 0.3) * 0.85);
+        col.push(cTmp.r, cTmp.g, cTmp.b);
+    };
+    const arc = (from, to, fromCol, toCol, centreAtEnd) => {
         if (!from || !to) return;
         const pa = worldPos(from), pb = worldPos(to);
         pa.z += from.r; pb.z += to.r;
@@ -1084,20 +1229,18 @@ function showLinks(p) {
         cA.set(fromCol); cB.set(toCol);
         for (let i = 0; i < pts.length - 1; i++) {
             pos.push(pts[i].x, pts[i].y, pts[i].z, pts[i + 1].x, pts[i + 1].y, pts[i + 1].z);
-            cTmp.copy(cA).lerp(cB, i / (pts.length - 1));
-            col.push(cTmp.r, cTmp.g, cTmp.b);
-            cTmp.copy(cA).lerp(cB, (i + 1) / (pts.length - 1));
-            col.push(cTmp.r, cTmp.g, cTmp.b);
+            vertColor(i / (pts.length - 1), centreAtEnd);
+            vertColor((i + 1) / (pts.length - 1), centreAtEnd);
         }
     };
-    for (const t of outAdj.get(p) || []) arc(centre, byPath.get(t), PAL.edge, PAL.edgeTo);
-    for (const s of inAdj.get(p) || []) arc(byPath.get(s), centre, LINK_IN, LINK_IN);
+    for (const t of outAdj.get(p) || []) arc(centre, byPath.get(t), PAL.edge, PAL.edgeTo, false);
+    for (const s of inAdj.get(p) || []) arc(byPath.get(s), centre, LINK_IN, LINK_IN, true);
     if (!pos.length) { needsRender = true; return; }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
     geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
     linkLines = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({
-        vertexColors: true, transparent: true, opacity: 0.95, depthWrite: false, depthTest: false,
+        vertexColors: true, transparent: true, opacity: 0.55, depthWrite: false, depthTest: false,
         blending: GLOW_BLEND,
     }));
     linkLines.renderOrder = 12;

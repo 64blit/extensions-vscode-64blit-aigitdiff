@@ -333,11 +333,13 @@ export function buildArchMap(input: BuildMapInput): ArchMapPayload {
     };
     const plainRoot = toPlain(root, 0, true);
 
-    // Sphere radius in layout units — churn grows the planet.
+    // Sphere radius in layout units — churn grows the planet, capped so a
+    // monster diff can't dominate the frame (~2.8x a small change; the
+    // renderer's glow carries the rest of the "big" signal).
     const sphereR = (p: string): number => {
         const ch = changes.get(p);
         if (!ch) return 3;
-        return 5 + Math.min(14, Math.sqrt(ch.additions + ch.deletions) * 1.1);
+        return 5 + Math.min(9, Math.sqrt(ch.additions + ch.deletions));
     };
 
     // Ring radius each folder needs so its spheres fit around the orbit.
