@@ -1,7 +1,12 @@
 // Code Map — pure layout + graph module. No vscode imports so it stays
-// testable from plain node. Positions come from d3 circle-packing, which
-// keeps the layout deterministic for a given file list (children sorted by
-// path, not by value, so bubbles don't jump as churn changes).
+// testable from plain node.
+//
+// v2 "orbital" layout: every folder is a horizontal ring (an orbit) floating
+// at a height derived from its depth; the folder's files are spheres resting
+// on the ring's circumference, spaced by their size. Child folders pack
+// inside the parent's boundary circle, so nesting reads as orbits within
+// orbits. d3 circle-packing places the rings (children sorted by path, not
+// value, so the board doesn't jump as churn changes).
 import { hierarchy, pack, HierarchyNode } from 'd3-hierarchy';
 import * as path from 'path';
 
@@ -20,7 +25,15 @@ export interface MapNode {
     depth: number;
     x: number;
     y: number;
+    /** height of the node's orbit plane (layout units, 0 = root plane) */
+    z: number;
+    /** files: sphere radius · dirs: orbit ring radius (0 = no direct files) */
     r: number;
+    /** dirs only: packed boundary circle radius (ring + subfolders) */
+    br?: number;
+    /** dirs only: boundary circle centre — may differ from the ring centre */
+    bx?: number;
+    by?: number;
     add?: number;
     del?: number;
     status?: string;
@@ -31,6 +44,10 @@ export interface MapNode {
     quiet?: boolean;
     /** dirs only: total file count beneath */
     files?: number;
+    /** files: how many files import this one (scoped repo, pre-truncation) */
+    inDeg?: number;
+    /** files: imported often enough to be structural — worth a distinct look */
+    hub?: boolean;
 }
 
 export interface MapEdge {
@@ -41,7 +58,7 @@ export interface MapEdge {
 }
 
 export interface ArchMapPayload {
-    v: 1;
+    v: 2;
     size: number;
     nodes: MapNode[];
     edges: MapEdge[];
@@ -50,10 +67,19 @@ export interface ArchMapPayload {
     truncated: boolean;
     changedCount: number;
     root: string;
+    maxDepth: number;
 }
 
 const MAX_FILES = 3000;
 const LAYOUT_SIZE = 1200;
+
+// Orbit tuning (layout units, pre-pack — everything rescales together).
+const RING_GAP = 4;    // arc gap between neighbouring spheres
+const RING_PAD = 8;    // clearance between the ring line and its packed circle
+const MIN_RING = 10;   // a one-file folder still gets a visible orbit
+const Z_STEP = 30;     // orbit height per folder depth
+const Z_JITTER = 16;   // deterministic per-folder wobble so planes never merge
+const HUB_MIN_IN = 4;  // imported-by count that makes a file a hub
 
 interface TreeEntry {
     name: string;
@@ -156,9 +182,16 @@ export function globToRegExp(glob: string): RegExp {
         const c = glob[i];
         if (c === '*') {
             if (glob[i + 1] === '*') {
-                // Collapse '**/' and '**' to "anything".
-                re += '.*';
-                i += glob[i + 2] === '/' ? 3 : 2;
+                if (glob[i + 2] === '/') {
+                    // '**/' = zero or more WHOLE segments — never a partial
+                    // one, or '**/media/**' would swallow 'multimedia/'.
+                    re += '(?:[^/]+/)*';
+                    i += 3;
+                } else {
+                    // Trailing/bare '**' = anything.
+                    re += '.*';
+                    i += 2;
+                }
             } else {
                 re += '[^/]*';
                 i++;
@@ -190,6 +223,37 @@ export function buildExcluder(patterns: string[]): (p: string) => boolean {
     };
 }
 
+// Deterministic 0..1 from a path — used for orbit start angles and height
+// wobble, so the board looks organic yet never moves between builds.
+export function hash01(s: string): number {
+    let h = 2166136261;
+    for (let i = 0; i < s.length; i++) {
+        h ^= s.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+    }
+    return ((h >>> 0) % 100000) / 100000;
+}
+
+// Plain collapsed tree node (single-child directory chains folded).
+interface PlainDir {
+    name: string;
+    path: string;
+    depth: number;
+    files: string[];   // direct file paths, sorted
+    dirs: PlainDir[];
+}
+
+// Pack-hierarchy node: dirs carry children; every dir with direct files gets
+// one synthetic "ring" leaf that reserves the disc its orbit needs.
+interface PackDatum {
+    kind: 'dir' | 'ring';
+    path: string;
+    name?: string;
+    value?: number;
+    ringR?: number;
+    children?: PackDatum[];
+}
+
 export function buildArchMap(input: BuildMapInput): ArchMapPayload {
     const { viewed, comments, contents } = input;
     const scopeRoot = (input.root || '').replace(/^\/+|\/+$/g, '');
@@ -200,8 +264,11 @@ export function buildArchMap(input: BuildMapInput): ArchMapPayload {
     let changes = input.changes;
     let scopedFiles = input.files.filter(keep);
     let scopedChanges = new Map(Array.from(changes.entries()).filter(([p]) => keep(p)));
-    // Safety: a root that matches nothing falls back to unscoped.
+    // Safety: a root that matches nothing falls back to unscoped — and the
+    // payload must SAY so, or the UI shows a scope that isn't applied.
+    let effectiveRoot = scopeRoot;
     if (scopeRoot && scopedFiles.length === 0 && scopedChanges.size === 0) {
+        effectiveRoot = '';
         scopedFiles = input.files.filter((p) => !excluded(p));
         scopedChanges = new Map(Array.from(changes.entries()).filter(([p]) => !excluded(p)));
     }
@@ -240,9 +307,9 @@ export function buildArchMap(input: BuildMapInput): ArchMapPayload {
     }
 
     // Collapse single-child directory chains (src → client → components with
-    // nothing else becomes one "src/client/components" node) — kills the
-    // empty-ring nesting that wastes most of the layout.
-    const toPlain = (e: TreeEntry, isRoot?: boolean): any => {
+    // nothing else becomes one "src/client/components" node), then split each
+    // dir into direct files + subdirs.
+    const toPlain = (e: TreeEntry, depth: number, isRoot?: boolean): PlainDir => {
         let cur = e;
         let label = e.name;
         if (!isRoot) {
@@ -253,62 +320,158 @@ export function buildArchMap(input: BuildMapInput): ArchMapPayload {
                 cur = only;
             }
         }
+        const kids = cur.children ? Array.from(cur.children.values()) : [];
         return {
             name: label,
             path: cur.path,
-            isDir: !!cur.children,
-            children: cur.children ? Array.from(cur.children.values()).map((c) => toPlain(c)) : undefined,
+            depth,
+            files: kids.filter((c) => !c.children).map((c) => c.path).sort(),
+            dirs: kids.filter((c) => !!c.children)
+                .sort((a, b) => a.path.localeCompare(b.path))
+                .map((c) => toPlain(c, depth + 1)),
         };
     };
+    const plainRoot = toPlain(root, 0, true);
 
-    const h: HierarchyNode<any> = hierarchy(toPlain(root, true))
-        .sum((d: any) => {
-            if (d.isDir) return 0;
-            const ch = changes.get(d.path);
-            if (!ch) return 1;
-            const churn = ch.additions + ch.deletions;
-            return (2 + Math.min(30, Math.sqrt(churn) * 1.5)) * 1.6;
-        })
-        // Deterministic + stable: order siblings by path, never by value.
-        .sort((a, b) => String(a.data.path).localeCompare(String(b.data.path)));
+    // Sphere radius in layout units — churn grows the planet.
+    const sphereR = (p: string): number => {
+        const ch = changes.get(p);
+        if (!ch) return 3;
+        return 5 + Math.min(14, Math.sqrt(ch.additions + ch.deletions) * 1.1);
+    };
 
-    pack<any>().size([LAYOUT_SIZE, LAYOUT_SIZE]).padding(3)(h as any);
+    // Ring radius each folder needs so its spheres fit around the orbit.
+    const ringNeed = (filePaths: string[]): number => {
+        let arc = 0;
+        for (const f of filePaths) arc += 2 * sphereR(f) + RING_GAP;
+        return Math.max(MIN_RING, arc / (2 * Math.PI));
+    };
+
+    // Pack hierarchy: dirs are containers, ring leaves reserve orbit space.
+    const ringRByDir = new Map<string, number>();
+    const toPack = (d: PlainDir): PackDatum => {
+        const children: PackDatum[] = d.dirs.map(toPack);
+        if (d.files.length) {
+            const rr = ringNeed(d.files);
+            ringRByDir.set(d.path, rr);
+            children.push({ kind: 'ring', path: d.path, value: Math.pow(rr + RING_PAD, 2) });
+        }
+        return { kind: 'dir', path: d.path, name: d.name, children };
+    };
+    const packRoot = toPack(plainRoot);
+
+    const h: HierarchyNode<PackDatum> = hierarchy(packRoot)
+        .sum((d) => (d.kind === 'ring' ? d.value || 0 : 0))
+        // Deterministic + stable: order siblings by path/kind, never by value.
+        .sort((a, b) =>
+            (a.data.path + (a.data.kind === 'ring' ? ' ring' : ''))
+                .localeCompare(b.data.path + (b.data.kind === 'ring' ? ' ring' : '')));
+
+    pack<PackDatum>().size([LAYOUT_SIZE, LAYOUT_SIZE]).padding(6)(h as any);
+
+    // Where each dir's orbit landed. Pack scales all radii by one factor k —
+    // recover it from any ring leaf so sphere sizes stay in step.
+    interface RingSpot { cx: number; cy: number; r: number; k: number }
+    const ringByDir = new Map<string, RingSpot>();
+    const dirCircle = new Map<string, { x: number; y: number; r: number; depth: number; name: string }>();
+    h.each((n: any) => {
+        const d: PackDatum = n.data;
+        if (d.kind === 'ring') {
+            const need = ringRByDir.get(d.path) || MIN_RING;
+            const k = n.r / (need + RING_PAD);
+            ringByDir.set(d.path, { cx: n.x, cy: n.y, r: k * need, k });
+        } else {
+            dirCircle.set(d.path, { x: n.x, y: n.y, r: n.r, depth: n.depth, name: d.name || '' });
+        }
+    });
+
+    // Orbit heights: depth climbs, a hashed wobble keeps sibling planes from
+    // fusing into one visual slab.
+    const dirZ = (p: string, depth: number): number =>
+        depth * Z_STEP + (p ? (hash01(p) - 0.5) * Z_JITTER : 0);
 
     const nodes: MapNode[] = [];
     const idByPath = new Map<string, number>();
-    h.each((n: any) => {
-        if (!n.data.path && n.depth === 0) {
-            // Root circle — keep as an invisible anchor (id 0).
-            nodes.push({ id: nodes.length, path: '', name: '(root)', dir: true, depth: 0, x: n.x, y: n.y, r: n.r });
-            return;
-        }
-        const id = nodes.length;
-        const isDir = !!n.data.isDir;
-        const node: MapNode = {
-            id,
-            path: n.data.path,
-            name: n.data.name,
-            dir: isDir,
-            depth: n.depth,
-            x: Math.round(n.x * 100) / 100,
-            y: Math.round(n.y * 100) / 100,
-            r: Math.round(n.r * 100) / 100,
-        };
-        if (!isDir) {
-            const ch = changes.get(n.data.path);
-            if (ch) {
-                node.add = ch.additions;
-                node.del = ch.deletions;
-                node.status = ch.untracked ? '?' : ch.status;
-                node.testPair = findTestPair(n.data.path, fileSet);
-                node.viewed = viewed.has(n.data.path);
-            }
-            const c = comments.get(n.data.path);
-            if (c) node.comments = c;
-            idByPath.set(n.data.path, id);
-        }
-        nodes.push(node);
+    let maxDepth = 0;
+
+    // Root anchor (id 0) — invisible, keeps ids stable for the renderer.
+    const rootCircle = dirCircle.get('')!;
+    nodes.push({
+        id: 0, path: '', name: '(root)', dir: true, depth: 0,
+        x: rootCircle.x, y: rootCircle.y, z: 0,
+        r: ringByDir.get('') ? ringByDir.get('')!.r : 0,
+        br: rootCircle.r, bx: rootCircle.x, by: rootCircle.y,
     });
+    if (ringByDir.get('')) {
+        const rs = ringByDir.get('')!;
+        nodes[0].x = rs.cx;
+        nodes[0].y = rs.cy;
+    }
+
+    // Emit dirs + their files, walking the collapsed tree (deterministic).
+    const emit = (d: PlainDir) => {
+        const circ = dirCircle.get(d.path);
+        const ring = ringByDir.get(d.path);
+        const z = dirZ(d.path, d.depth);
+        if (d.depth > 0 && circ) {
+            maxDepth = Math.max(maxDepth, d.depth);
+            const node: MapNode = {
+                id: nodes.length,
+                path: d.path,
+                name: d.name,
+                dir: true,
+                depth: d.depth,
+                x: ring ? ring.cx : circ.x,
+                y: ring ? ring.cy : circ.y,
+                z: Math.round(z * 100) / 100,
+                r: ring ? Math.round(ring.r * 100) / 100 : 0,
+                br: Math.round(circ.r * 100) / 100,
+                bx: Math.round(circ.x * 100) / 100,
+                by: Math.round(circ.y * 100) / 100,
+            };
+            nodes.push(node);
+        }
+        if (ring && d.files.length) {
+            // Spread spheres around the orbit by their arc share; the start
+            // angle is hashed so sibling rings don't all begin at 3 o'clock.
+            let arcTotal = 0;
+            for (const f of d.files) arcTotal += 2 * sphereR(f) + RING_GAP;
+            const start = hash01(d.path || '(root)') * 2 * Math.PI;
+            let cum = 0;
+            for (const f of d.files) {
+                const w = 2 * sphereR(f) + RING_GAP;
+                const a = start + 2 * Math.PI * ((cum + w / 2) / arcTotal);
+                cum += w;
+                const rWorld = Math.max(1.4, Math.min(24, ring.k * sphereR(f)));
+                const id = nodes.length;
+                const node: MapNode = {
+                    id,
+                    path: f,
+                    name: path.posix.basename(f),
+                    dir: false,
+                    depth: d.depth + 1,
+                    x: Math.round((ring.cx + ring.r * Math.cos(a)) * 100) / 100,
+                    y: Math.round((ring.cy + ring.r * Math.sin(a)) * 100) / 100,
+                    z: Math.round(z * 100) / 100,
+                    r: Math.round(rWorld * 100) / 100,
+                };
+                const ch = changes.get(f);
+                if (ch) {
+                    node.add = ch.additions;
+                    node.del = ch.deletions;
+                    node.status = ch.untracked ? '?' : ch.status;
+                    node.testPair = findTestPair(f, fileSet);
+                    node.viewed = viewed.has(f);
+                }
+                const c = comments.get(f);
+                if (c) node.comments = c;
+                idByPath.set(f, id);
+                nodes.push(node);
+            }
+        }
+        for (const sub of d.dirs) emit(sub);
+    };
+    emit(plainRoot);
 
     // Dir context stats: total files beneath + whether any change lives there.
     const changedPaths = Array.from(changes.keys());
@@ -331,24 +494,38 @@ export function buildArchMap(input: BuildMapInput): ArchMapPayload {
         if (!specsByPath.has(p)) specsByPath.set(p, extractImportSpecs(content));
     }
     let edges: MapEdge[] = [];
-    const seen = new Set<string>();
+    const seenPair = new Set<string>();
+    const inDeg = new Map<string, number>();
+    // Resolve against the PRE-truncation universe so hub identity is stable
+    // on huge repos — a file doesn't stop being a hub because its importers
+    // fell past the MAX_FILES cap. Edges still only connect visible nodes.
+    const fullFileSet = truncated ? new Set(allFiles) : fileSet;
     for (const [p, specs] of specsByPath) {
-        const fromId = idByPath.get(p);
-        if (fromId === undefined) continue;
+        if (!fullFileSet.has(p)) continue; // importer outside scope
         for (const spec of specs) {
-            const target = resolveImport(p, spec, fileSet);
-            if (!target) continue;
+            const target = resolveImport(p, spec, fullFileSet);
+            if (!target || target === p) continue;
+            const key = p + '>' + target;
+            if (seenPair.has(key)) continue;
+            seenPair.add(key);
+            inDeg.set(target, (inDeg.get(target) || 0) + 1);
+            const fromId = idByPath.get(p);
             const toId = idByPath.get(target);
-            if (toId === undefined || toId === fromId) continue;
-            const key = fromId + '>' + toId;
-            if (seen.has(key)) continue;
-            seen.add(key);
+            if (fromId === undefined || toId === undefined) continue;
             edges.push({
                 from: fromId,
                 to: toId,
                 hot: changes.has(p) || changes.has(target) || undefined,
             });
         }
+    }
+    // Hub marking — counted over ALL resolved imports, before any edge cap,
+    // so a heavily-imported file stays a hub even when its edges are culled.
+    for (const [p, deg] of inDeg) {
+        const id = idByPath.get(p);
+        if (id === undefined) continue;
+        nodes[id].inDeg = deg;
+        if (deg >= HUB_MIN_IN) nodes[id].hub = true;
     }
     // Hairball guard — hot edges always survive.
     const MAX_EDGES = 900;
@@ -359,7 +536,7 @@ export function buildArchMap(input: BuildMapInput): ArchMapPayload {
     }
 
     return {
-        v: 1,
+        v: 2,
         size: LAYOUT_SIZE,
         nodes,
         edges,
@@ -367,6 +544,7 @@ export function buildArchMap(input: BuildMapInput): ArchMapPayload {
         shownFiles: files.length,
         truncated,
         changedCount: changes.size,
-        root: scopeRoot,
+        root: effectiveRoot,
+        maxDepth,
     };
 }

@@ -15,6 +15,18 @@ Works in VS Code and Antigravity.
 - Optional AI commit message generation using OpenRouter (Grok 4.1 fast)
 - An embedded terminal tab for running git commands without leaving the panel
 
+## Code Map (3D)
+
+Toolbar `◉ Map` switches to an orbital view of the repo:
+
+- Every folder is a ring (orbit) floating at a height set by its depth; its files are spheres sitting on the ring. Subfolders nest inside — orbits within orbits.
+- Sphere color = git status (green added, amber modified, red deleted, blue renamed). Changed files float above their orbit with name + churn labels.
+- Violet halo = hub: a file imported by 4 or more others.
+- Import paths draw as arcs. Hover a sphere to light up its own arcs — cyan/purple outgoing, amber incoming — and to peek at its first diff hunk right in the tooltip.
+- Click a changed sphere to open the diff in a floating window anchored to it. Approve/reject hunks, stage, comment — all without leaving the map.
+- Add notes in the panel and hit "Analyze with notes" — the AI review reads them and responds to each one.
+- Controls: drag = pan, wheel = zoom, Q/E = rotate 90°, double-click a folder = focus it, `f` = frame the changeset, `n`/`p` = next/previous unreviewed, `v` = mark reviewed, Esc = close.
+
 ## Install
 
 From the VS Code marketplace: search for "Git Diff Viewer" by `64blit`.

@@ -897,6 +897,7 @@ export function activate(context: vscode.ExtensionContext) {
             gridstackJsUri: panel.webview.asWebviewUri(vscode.Uri.joinPath(mediaRoot, 'gridstack-all.js')).toString(),
             gridstackCssUri: panel.webview.asWebviewUri(vscode.Uri.joinPath(mediaRoot, 'gridstack.min.css')).toString(),
             threeUri: panel.webview.asWebviewUri(vscode.Uri.joinPath(mediaRoot, 'three.module.min.js')).toString(),
+            mapJsUri: panel.webview.asWebviewUri(vscode.Uri.joinPath(mediaRoot, 'map.js')).toString(),
             editor: getEditorConfig(),
         });
 
@@ -1559,10 +1560,24 @@ export function activate(context: vscode.ExtensionContext) {
                         '- Only flag genuine problems. Empty array is fine if the diff is solid.',
                         '- Prefer fewer, higher-quality findings over noise. Skip nits unless severity allows it.',
                         '- Anchor each finding to the most relevant LINE in the diff (use the new-side line number for added/context, old-side for deleted).',
+                        '- A finding that answers a file-level reviewer note and has no natural line anchor may use lineNum 0 with an empty lineText.',
                         '- "lineText" must be the exact source line as it appears in the diff (without the leading + - or space character).',
                         '- "comment" should give the WHY and a concrete, copy-pasteable suggested change when possible.',
                     ].join('\n');
-                    const userPrompt = `Language: ${language}\nFile: ${filePath}\n\nDiff:\n${diff}${truncated ? '\n\n[diff truncated for length]' : ''}`;
+                    // Reviewer notes (human comments on this file, incl. the
+                    // map panel's file-level notes at line 0) ride along so
+                    // the model addresses what the reviewer actually asked.
+                    const reviewerNotes = getComments(context, activeRepoRoot)
+                        .filter((c) => c.file === filePath && !c.aiGenerated)
+                        // Newest-last so slice(-20) keeps the note the user
+                        // just typed; collapse newlines so a note can't
+                        // escape the bullet list and pose as instructions.
+                        .map((c) => `- ${c.lineNum > 0 ? `[line ${c.lineNum}] ` : ''}${String(c.body).replace(/\s+/g, ' ')}`.slice(0, 500))
+                        .slice(-20);
+                    const notesBlock = reviewerNotes.length
+                        ? `\n\nReviewer notes — address each one explicitly in your findings:\n${reviewerNotes.join('\n')}`
+                        : '';
+                    const userPrompt = `Language: ${language}\nFile: ${filePath}\n\nDiff:\n${diff}${truncated ? '\n\n[diff truncated for length]' : ''}${notesBlock}`;
                     try {
                         const rawContent = await openRouterChat(r.key, {
                             model: getAiConfig().analysisModel,
@@ -1604,7 +1619,10 @@ export function activate(context: vscode.ExtensionContext) {
                             .map((it): InlineComment | null => {
                                 const sev = String(it.severity || 'minor').toLowerCase();
                                 const lineNum = Number(it.lineNum);
-                                if (!Number.isFinite(lineNum) || lineNum < 1) return null;
+                                // lineNum 0 is a FILE-level finding — the model
+                                // answers file-level reviewer notes that way; it
+                                // renders in the map panel's notes strip.
+                                if (!Number.isFinite(lineNum) || lineNum < 0) return null;
                                 const side: 'left' | 'right' = it.side === 'left' ? 'left' : 'right';
                                 const title = String(it.title || '').trim();
                                 const body = String(it.comment || '').trim();

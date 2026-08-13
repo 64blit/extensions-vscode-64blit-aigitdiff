@@ -8,6 +8,8 @@ interface WebviewAssets {
     gridstackJsUri: string;
     gridstackCssUri: string;
     threeUri: string;
+    /** the Code Map renderer module (media/map.js) */
+    mapJsUri: string;
     editor: {
         fontFamily: string;
         fontSize: number;
@@ -60,7 +62,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
 <script src="${a.gridstackJsUri}"></script>
 <style>
     :root {
-        /* Editor settings injected by the extension â see buildEditorVars().
+        /* Editor settings injected by the extension — see buildEditorVars().
            These can be live-updated via the editorConfig message. */
         ${editorVars}
 
@@ -99,7 +101,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         --recent-fg: #58a6ff;
         --recent-border: rgba(56, 139, 253, 0.4);
 
-        /* Highlight tokens â bright for dark bg */
+        /* Highlight tokens — bright for dark bg */
         --hl-comment: #00ffff;
         --hl-keyword: #ff2ad4;
         --hl-string: #00ff66;
@@ -116,7 +118,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         --hl-addition: #66ff77;
     }
 
-    /* === Light theme overrides â readable on white === */
+    /* === Light theme overrides — readable on white === */
     body.vscode-light, body.vscode-high-contrast-light {
         --diff-fg: #1f2328;
         --add-bg: rgba(46, 160, 67, 0.18);
@@ -152,7 +154,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         --recent-fg: #0969da;
         --recent-border: rgba(9, 105, 218, 0.4);
 
-        /* Highlight tokens â GitHub Primer Light */
+        /* Highlight tokens — GitHub Primer Light */
         --hl-comment: #6e7781;
         --hl-keyword: #cf222e;
         --hl-string: #0a3069;
@@ -282,7 +284,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     .commit-key-status.ok { color: #3fb950; }
     .commit-key-status.error { color: var(--vscode-errorForeground, #f85149); }
 
-    /* Floating Generate (â¨) + key (â) buttons inside the textarea. */
+    /* Floating Generate (✨) + key (⚙) buttons inside the textarea. */
     .commit-msg-container {
         position: relative;
         flex: 1;
@@ -446,7 +448,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         border: 1px solid var(--action-rejected-border);
     }
 
-    /* Comment affordance â a "+" button appears in the line-num gutter on row hover. */
+    /* Comment affordance — a "+" button appears in the line-num gutter on row hover. */
     .diff-table tr.code-row { position: relative; }
     .diff-table tr.code-row td.num { position: relative; }
     .diff-table tr.code-row .add-comment {
@@ -670,7 +672,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     .files { padding: 8px; display: flex; flex-direction: column; gap: 6px; }
     .empty { padding: 32px; text-align: center; opacity: 0.7; }
 
-    /* Multi-column grid view â gridstack handles per-cell drag/resize/reorder.
+    /* Multi-column grid view — gridstack handles per-cell drag/resize/reorder.
        Cells are absolutely positioned by gridstack, so we don't lay them out
        ourselves; just style the inner content box. */
     .files.grid-mode .grid-stack-item-content {
@@ -725,7 +727,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         flex-wrap: wrap;
         justify-content: flex-start;
     }
-    /* GridStack visual touch-ups â make the resize handle a bit more obvious
+    /* GridStack visual touch-ups — make the resize handle a bit more obvious
        by using the editor foreground color and rounding the corners. */
     .grid-stack > .grid-stack-item > .ui-resizable-handle {
         background-color: rgba(128, 128, 128, 0.25);
@@ -767,6 +769,15 @@ export function getWebviewHtml(a: WebviewAssets): string {
         flex: 1; font-family: var(--diff-mono);
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
+    /* Filename first-class: bold name, dimmed folder prefix. */
+    .file-header .path .p-dir { opacity: 0.55; font-weight: 400; font-size: 11px; }
+    .file-header .path .p-name { font-weight: 700; font-size: 13px; }
+    /* Status stripe on the header's left edge — same color language as the
+       Code Map: green added, amber modified, red deleted, blue renamed. */
+    .file.st-A > .file-header { border-left: 3px solid #3fb950; }
+    .file.st-M > .file-header, .file.st-T > .file-header { border-left: 3px solid #d29922; }
+    .file.st-D > .file-header, .file.st-U > .file-header { border-left: 3px solid #f85149; }
+    .file.st-R > .file-header, .file.st-C > .file-header { border-left: 3px solid #58a6ff; }
     .badge {
         font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 8px;
         text-transform: uppercase; letter-spacing: 0.5px;
@@ -812,7 +823,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         background: var(--hunk-bg); border-bottom: 1px solid var(--border);
     }
 
-    /* Brief outline pulse on the hunk we just navigated to â fades after ~1s. */
+    /* Brief outline pulse on the hunk we just navigated to — fades after ~1s. */
     @keyframes hunk-flash-fade {
         0% { box-shadow: 0 0 0 2px var(--expand-fg, #58a6ff) inset; }
         100% { box-shadow: 0 0 0 2px transparent inset; }
@@ -838,7 +849,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         opacity: 1 !important;
     }
 
-    /* Strict 50/50 split â no horizontal scroll, lines always wrap inside the cell. */
+    /* Strict 50/50 split — no horizontal scroll, lines always wrap inside the cell. */
     .diff-scroll {
         overflow: hidden;
         background: var(--vscode-editor-background);
@@ -906,7 +917,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
        col.code default is "calc(50% - 60px)" sized for the 4-col split. */
     .diff-table.vertical colgroup col.code { width: calc(100% - 60px); }
 
-    /* Intra-line diff highlight â bolds the differing substring on each side
+    /* Intra-line diff highlight — bolds the differing substring on each side
        of a changed line pair (computed via prefix/suffix common-text
        detection in JS). Subtle yellow tint draws the eye without overwhelming
        the surrounding hljs colors. */
@@ -944,7 +955,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
 
     .file.hidden-by-search { display: none; }
 
-    /* Approve All button accent â green to match the per-hunk approve. */
+    /* Approve All button accent — green to match the per-hunk approve. */
     .file-actions .approve-all-btn {
         color: var(--add-line);
         border-color: rgba(0, 255, 100, 0.5);
@@ -1075,7 +1086,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     }
     #term-panel .term-pane.active { display: block; }
 
-    /* Diff review panel â bottom drawer, separate from terminal panel. */
+    /* Diff review panel — bottom drawer, separate from terminal panel. */
     #review-panel {
         position: fixed;
         left: 0; right: 0; bottom: 0;
@@ -1338,7 +1349,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         font-variant-numeric: tabular-nums;
     }
 
-    /* Architect Doc â expandable change-review section at the top. */
+    /* Architect Doc — expandable change-review section at the top. */
     .arch-doc { border-bottom: 1px solid var(--border); background: var(--vscode-sideBar-background, rgba(128,128,128,0.04)); }
     .arch-bar { display: flex; align-items: center; gap: 8px; padding: 5px 12px; cursor: pointer; user-select: none; font-size: 12px; }
     .arch-caret { opacity: .7; width: 10px; flex: none; }
@@ -1374,7 +1385,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     .arch-note.risk-medium { color: #d29922; }
     .arch-doc.stale .arch-body, .arch-doc.stale .arch-tldr { opacity: .45; }
 
-    /* Code Map â three.js circle-packed repo view. */
+    /* Code Map — three.js circle-packed repo view. */
     #map-view { display: none; position: relative; flex: 1; min-height: 0; overflow: hidden; }
     body.map-mode { display: flex; flex-direction: column; overflow: hidden; }
     body.map-mode > * { flex: none; }
@@ -1418,6 +1429,24 @@ export function getWebviewHtml(a: WebviewAssets): string {
     #map-tooltip .t-path { font-family: var(--diff-mono, monospace); font-size: 11px; opacity: .65; margin-top: 1px; }
     #map-tooltip .t-sum { margin-top: 6px; font-size: 13px; opacity: .95; white-space: normal; }
     #map-tooltip .t-meta { margin-top: 5px; font-size: 12px; opacity: .75; }
+    /* Hover diff window — the hunk living at the slab under the cursor. */
+    #map-tooltip .t-hunk {
+        margin-top: 7px; border: 1px solid var(--border); border-radius: 4px; overflow: hidden;
+        font-family: var(--diff-mono, monospace); font-size: 11px; line-height: 1.45;
+        background: var(--vscode-editor-background, #1e1e1e);
+    }
+    #map-tooltip .t-hunk .th-head {
+        padding: 2px 7px; font-size: 10px; opacity: .7;
+        background: var(--expand-bg-hover, rgba(128,128,128,0.12));
+    }
+    #map-tooltip .t-hunk .th-line { padding: 0 7px; white-space: pre; overflow: hidden; text-overflow: ellipsis; }
+    #map-tooltip .t-hunk .th-add { background: rgba(46,160,67,0.18); color: #7ee787; }
+    #map-tooltip .t-hunk .th-del { background: rgba(248,81,73,0.18); color: #ffa198; }
+    #map-tooltip .t-hunk .th-ctx { opacity: .55; }
+    /* Light theme: the dark-theme diff colors are unreadable on white. */
+    body.vscode-light #map-tooltip .t-hunk .th-add { background: rgba(46,160,67,0.12); color: #1a7f37; }
+    body.vscode-light #map-tooltip .t-hunk .th-del { background: rgba(248,81,73,0.12); color: #cf222e; }
+    #map-tooltip .t-hunk .th-more { padding: 1px 7px; font-size: 10px; opacity: .55; }
     #map-card {
         position: absolute; top: 10px; right: 10px; width: 330px; z-index: 41; display: none;
         background: var(--vscode-sideBar-background, #1f1f1f);
@@ -1443,6 +1472,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         background: var(--vscode-sideBar-background, rgba(30,30,30,0.9));
         border: 1px solid var(--border); border-radius: 5px; padding: 6px 10px; opacity: .92;
         display: flex; flex-direction: column; gap: 3px;
+        pointer-events: none; /* never a dead-zone — panning/picking pass through */
     }
     #map-legend .lg-row { display: flex; align-items: center; gap: 6px; }
     #map-legend .lg-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; display: inline-block; }
@@ -1454,51 +1484,74 @@ export function getWebviewHtml(a: WebviewAssets): string {
     .map-topbar #map-root { width: 110px; background: var(--vscode-input-background, #1e1e1e); color: inherit;
         border: 1px solid var(--border); border-radius: 3px; padding: 2px 8px; font-size: 12px;
         font-family: var(--diff-mono, monospace); }
-    /* In-map diff drawer â review the file without leaving the map. */
-    #map-diff {
-        position: absolute; top: 0; right: 0; bottom: 0; width: 52%; min-width: 420px; max-width: 900px;
+    /* Anchored diff panel — a floating window glued to the clicked sphere.
+       map.js repositions it every rendered frame; the connector line ties it
+       back to its planet. */
+    #map-connector { position: absolute; inset: 0; display: none; pointer-events: none; z-index: 44; }
+    #map-connector line { stroke: var(--vscode-focusBorder, #58a6ff); stroke-width: 1.5; stroke-dasharray: 5 4; opacity: .8; }
+    #map-panel {
+        position: absolute; left: 40px; top: 40px;
+        width: clamp(280px, 46vw, 480px); max-width: calc(100% - 16px); max-height: 68%;
         display: none; flex-direction: column; z-index: 45;
-        background: var(--vscode-editor-background);
-        border-left: 1px solid var(--border);
-        box-shadow: -8px 0 26px rgba(0,0,0,0.45);
+        background: var(--vscode-editor-background, #1e1e1e);
+        border: 1px solid var(--vscode-focusBorder, #58a6ff); border-radius: 8px;
+        box-shadow: 0 10px 34px rgba(0,0,0,0.5);
+        overflow: hidden;
     }
-    #map-diff.open { display: flex; }
-    #map-diff .md-bar {
-        display: flex; align-items: center; gap: 8px; padding: 6px 10px; flex: none;
+    #map-panel.open { display: flex; }
+    #map-panel .mp-bar {
+        display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 6px 10px; flex: none;
         border-bottom: 1px solid var(--border);
         background: var(--vscode-sideBar-background, rgba(128,128,128,0.05));
     }
-    #map-diff .md-path { font-family: var(--diff-mono, monospace); font-size: 11px; flex: 1; min-width: 0;
+    #map-panel .mp-path { font-family: var(--diff-mono, monospace); font-size: 11px; flex: 1; min-width: 0;
         overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    #map-diff .md-actions { display: flex; gap: 5px; }
-    #map-diff .md-actions button {
+    #map-panel .mp-actions { display: flex; gap: 5px; }
+    #map-panel .mp-actions button, #map-panel .mp-note-actions button {
         background: none; border: 1px solid var(--border); border-radius: 3px;
         color: inherit; cursor: pointer; font-size: 11px; padding: 2px 9px;
     }
-    #map-diff .md-actions button:hover { background: var(--expand-bg-hover, rgba(128,128,128,0.15)); }
-    #map-diff .md-body { flex: 1; overflow: auto; padding: 8px; }
-    #map-diff .md-body .file { border: 1px solid var(--border); border-radius: 6px; }
+    #map-panel .mp-actions button:hover, #map-panel .mp-note-actions button:hover { background: var(--expand-bg-hover, rgba(128,128,128,0.15)); }
+    #map-panel .mp-body { flex: 1; overflow: auto; padding: 8px; min-height: 80px; }
+    #map-panel .mp-body .file { border: 1px solid var(--border); border-radius: 6px; }
+    /* Notes: review remarks stored on the file and sent with AI analysis. */
+    #map-panel .mp-notes { flex: none; border-top: 1px solid var(--border); padding: 6px 10px 8px;
+        background: var(--vscode-sideBar-background, rgba(128,128,128,0.04)); }
+    #map-panel .mp-notes-list { max-height: 110px; overflow: auto; }
+    #map-panel .mp-note { display: flex; gap: 6px; align-items: baseline; font-size: 11.5px; padding: 2px 0; }
+    #map-panel .mp-note .n-body { flex: 1; min-width: 0; white-space: pre-wrap; word-break: break-word; }
+    #map-panel .mp-note .n-line { opacity: .55; font-family: var(--diff-mono, monospace); font-size: 10px; flex: none; }
+    #map-panel .mp-note .n-del { opacity: .5; cursor: pointer; border: none; background: none; color: inherit; flex: none; }
+    #map-panel .mp-note .n-del:hover { opacity: 1; }
+    #map-panel .mp-note.ai .n-body { opacity: .85; }
+    #map-panel .mp-note-compose textarea {
+        width: 100%; box-sizing: border-box; resize: vertical; margin-top: 4px;
+        background: var(--vscode-input-background, #1e1e1e); color: inherit;
+        border: 1px solid var(--border); border-radius: 4px; padding: 4px 7px; font-size: 12px;
+        font-family: inherit;
+    }
+    #map-panel .mp-note-actions { display: flex; gap: 6px; margin-top: 4px; justify-content: flex-end; }
 </style>
 </head>
 <body>
     <div class="toolbar">
         <div class="meta">
-            <div class="branch" id="branch">â</div>
-            <div class="repo" id="repo">Loadingâ¦</div>
+            <div class="branch" id="branch">—</div>
+            <div class="repo" id="repo">Loading…</div>
         </div>
-        <input type="search" id="search" placeholder="Filter filesâ¦" />
+        <input type="search" id="search" placeholder="Filter files…" />
         <button id="expand-all" title="Expand all files">Expand All</button>
         <button id="collapse-all" title="Collapse all files">Collapse All</button>
         <button id="toggle-all" title="Show / hide all changes">Hide All</button>
         <label class="toolbar-toggle" id="auto-expand-toggle" title="Sort by last modified and auto-expand the most recent file">
             <input type="checkbox" id="auto-expand-cb"> Auto-expand recent
         </label>
-        <button id="refresh" title="Refresh">â» Refresh</button>
+        <button id="refresh" title="Refresh">↻ Refresh</button>
         <button id="grid-size-toggle" title="Cycle default tile width (sm / md / lg)">Size: md</button>
-        <button id="grid-reset" title="Reset grid layout â clears all custom positions/sizes back to defaults">â³ Reset Layout</button>
-        <button id="diff-orient-toggle" title="Switch diff layout between side-by-side and unified top/bottom">â Side-by-side</button>
-        <button id="review-all-btn" title="Run senior-architect review across all changed files (OpenRouter model, configurable)">ð§  Review All</button>
-        <button id="map-toggle" title="Code Map â bubble view of the repo with change heat and review progress" style="display:none">â Map</button>
+        <button id="grid-reset" title="Reset grid layout — clears all custom positions/sizes back to defaults">⟳ Reset Layout</button>
+        <button id="diff-orient-toggle" title="Switch diff layout between side-by-side and unified top/bottom">↔ Side-by-side</button>
+        <button id="review-all-btn" title="Run senior-architect review across all changed files (OpenRouter model, configurable)">🧠 Review All</button>
+        <button id="map-toggle" title="Code Map — bubble view of the repo with change heat and review progress" style="display:none">◉ Map</button>
         <span id="hidden-pill" class="hidden-pill" title="Click to manage hidden files">
             <span id="hidden-count">0</span> hidden
         </span>
@@ -1507,10 +1560,10 @@ export function getWebviewHtml(a: WebviewAssets): string {
     <div class="commit-bar">
         <div class="commit-msg-wrap">
             <div class="commit-msg-container">
-                <textarea id="commit-msg" title="â/Ctrl+Enter â stage all, commit, push. Empty? Generate a message AND ship it. â/Ctrl+Shift+Enter â push only." placeholder="Commit message â â+Enter to stage+commit+push (empty? generates AND ships)"></textarea>
+                <textarea id="commit-msg" title="⌘/Ctrl+Enter — stage all, commit, push. Empty? Generate a message AND ship it. ⌘/Ctrl+Shift+Enter — push only." placeholder="Commit message — ⌘+Enter to stage+commit+push (empty? generates AND ships)"></textarea>
                 <div class="commit-msg-floating">
-                    <button id="commit-generate" title="Generate commit message from diff (OpenRouter model, configurable)">â¨</button>
-                    <button id="commit-key-toggle" title="Set / change OpenRouter API key">â</button>
+                    <button id="commit-generate" title="Generate commit message from diff (OpenRouter model, configurable)">✨</button>
+                    <button id="commit-key-toggle" title="Set / change OpenRouter API key">⚙</button>
                 </div>
             </div>
             <div id="commit-key-row" class="commit-key-row" style="display:none;">
@@ -1524,22 +1577,22 @@ export function getWebviewHtml(a: WebviewAssets): string {
         <div class="commit-actions">
             <label><input type="checkbox" id="amend"> Amend last commit</label>
             <button id="stage-all-only-btn" class="secondary" title="git add --all">Stage All</button>
-            <button id="commit-btn" title="Commit currently staged files (â/Ctrl+Enter)">Commit Staged</button>
-            <button id="commit-push-btn" class="secondary" title="git push (â/Ctrl+Shift+Enter)">Push</button>
+            <button id="commit-btn" title="Commit currently staged files (⌘/Ctrl+Enter)">Commit Staged</button>
+            <button id="commit-push-btn" class="secondary" title="git push (⌘/Ctrl+Shift+Enter)">Push</button>
             <span id="commit-status" class="commit-status"></span>
         </div>
     </div>
     <div id="arch-doc" class="arch-doc">
         <div class="arch-bar" id="arch-bar" role="button" aria-expanded="false" title="Expand / collapse change review">
-            <span class="arch-caret" id="arch-caret">â¸</span>
-            <span class="arch-title">ð Change Review</span>
+            <span class="arch-caret" id="arch-caret">▸</span>
+            <span class="arch-title">🏛 Change Review</span>
             <span class="arch-tldr" id="arch-tldr"></span>
             <span class="arch-status" id="arch-status"></span>
             <label class="arch-auto" title="Run AI per-file summaries and the architecture overview automatically when changes appear"><input type="checkbox" id="arch-auto-cb"> AI</label>
-            <span id="ai-usage" class="arch-usage" title="Session AI usage: input / output tokens Â· cost (set prices: gitDiffViewer.priceInputPerM / priceOutputPerM)"></span>
+            <span id="ai-usage" class="arch-usage" title="Session AI usage: input / output tokens · cost (set prices: gitDiffViewer.priceInputPerM / priceOutputPerM)"></span>
             <span class="arch-actions">
-                <button id="arch-rerun" title="Re-run change analysis now">â³</button>
-                <button id="arch-cancel" title="Cancel running analysis" style="display:none">â</button>
+                <button id="arch-rerun" title="Re-run change analysis now">⟳</button>
+                <button id="arch-cancel" title="Cancel running analysis" style="display:none">✕</button>
             </span>
         </div>
         <div class="arch-body" id="arch-body" style="display:none">
@@ -1557,14 +1610,14 @@ export function getWebviewHtml(a: WebviewAssets): string {
         <div id="hidden-rows"></div>
     </div>
     <div id="content" class="files">
-        <div class="empty">Loadingâ¦</div>
+        <div class="empty">Loading…</div>
     </div>
     <div id="map-view" aria-label="Code Map">
         <div class="map-topbar">
             <label title="Scope the map to a folder (e.g. src). Empty = whole repo.">Root
                 <input type="text" id="map-root" placeholder="whole repo" autocomplete="off" spellcheck="false" />
             </label>
-            <input type="search" id="map-filter" placeholder="Filter filesâ¦ ( / )" autocomplete="off" spellcheck="false" />
+            <input type="search" id="map-filter" placeholder="Filter files… ( / )" autocomplete="off" spellcheck="false" />
             <label><input type="checkbox" id="map-unreviewed-cb"> Unreviewed only</label>
             <label><input type="checkbox" id="map-changed-cb" checked> Dim unchanged</label>
             <label title="Show every file — off collapses folders with no changes into their platform"><input type="checkbox" id="map-all-cb"> All files</label>
@@ -1578,46 +1631,56 @@ export function getWebviewHtml(a: WebviewAssets): string {
             <div id="map-tooltip"></div>
             <div id="map-card"></div>
             <div id="map-legend">
-                <div class="lg-row"><span class="lg-dot" style="background:#2ea043"></span> clean</div>
-                <div class="lg-row"><span class="lg-dot" style="background:#d29922"></span> review Â· pre-analysis heat</div>
-                <div class="lg-row"><span class="lg-dot" style="background:#f85149"></span> concern Â· high churn</div>
-                <div class="lg-row"><span class="lg-dot" style="background:#3d444d"></span> unchanged</div>
-                <div class="lg-row"><span class="lg-dot" style="background:#2ea043"></span> reviewed â</div>
-                <div class="lg-row"><span class="lg-dot" style="border:2px solid #f85149; width:5px; height:5px; background:transparent"></span> quality ring</div>
-                <div class="lg-row" style="opacity:.7">click bubble â card Â· Enter â diff Â· v â viewed</div>
+                <div class="lg-row" style="opacity:.75">ring = folder orbit · sphere = file · height = depth</div>
+                <div class="lg-row"><span class="lg-dot" style="background:#3fb950"></span> added <span class="lg-dot" style="background:#d29922"></span> modified <span class="lg-dot" style="background:#f85149"></span> deleted <span class="lg-dot" style="background:#58a6ff"></span> renamed</div>
+                <div class="lg-row"><span class="lg-dot" style="border:2px solid #c678dd; width:5px; height:5px; background:transparent"></span> hub — imported by many files</div>
+                <div class="lg-row"><span class="lg-dot" style="background:#39c5cf"></span> imports →&nbsp; <span class="lg-dot" style="background:#ffa657"></span> imported by</div>
+                <div class="lg-row" style="opacity:.7">hover → diff peek + import lines · click → diff window</div>
+                <div class="lg-row" style="opacity:.7">drag pan · wheel zoom · Q/E rotate · dblclick folder → focus</div>
             </div>
             <div id="map-empty"></div>
-            <div id="map-diff">
-                <div class="md-bar">
-                    <span class="md-path" id="map-diff-path"></span>
-                    <span class="md-actions">
-                        <button id="map-diff-viewed">â Reviewed</button>
-                        <button id="map-diff-grid" title="Open in grid view">â¤ Grid</button>
-                        <button id="map-diff-close" title="Close (Esc)">â</button>
+            <svg id="map-connector" aria-hidden="true"><line id="map-connector-line" /></svg>
+            <div id="map-panel">
+                <div class="mp-bar">
+                    <span class="mp-path" id="map-panel-path"></span>
+                    <span class="mp-actions">
+                        <button id="map-panel-viewed">✓ Reviewed</button>
+                        <button id="map-panel-grid" title="Open in grid view">▤ Grid</button>
+                        <button id="map-panel-close" title="Close (Esc)">✕</button>
                     </span>
                 </div>
-                <div class="md-body files" id="map-diff-body"></div>
+                <div class="mp-body files" id="map-panel-body"></div>
+                <div class="mp-notes">
+                    <div class="mp-notes-list" id="map-panel-notes-list"></div>
+                    <div class="mp-note-compose">
+                        <textarea id="map-note-input" rows="2" placeholder="Note for the AI review… (Ctrl+Enter to add)"></textarea>
+                        <div class="mp-note-actions">
+                            <button id="map-note-save" title="Save this note on the file">💬 Add note</button>
+                            <button id="map-note-ai" title="Re-run AI analysis on this diff — saved notes are sent along">🔍 Analyze with notes</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
     <div id="find-status" class="find-status" role="status"></div>
     <div id="find-bar" class="find-bar" role="search">
-        <input type="search" id="find-input" placeholder="Find in diffsâ¦" autocomplete="off" spellcheck="false" />
+        <input type="search" id="find-input" placeholder="Find in diffs…" autocomplete="off" spellcheck="false" />
         <span id="find-count" class="find-count">0 / 0</span>
         <label id="find-case" title="Match case"><input type="checkbox" id="find-case-cb"> Aa</label>
-        <button id="find-prev" title="Previous match (Shift+Enter)">â</button>
-        <button id="find-next" title="Next match (Enter)">â</button>
-        <button id="find-close" title="Close (Esc)">â</button>
+        <button id="find-prev" title="Previous match (Shift+Enter)">↑</button>
+        <button id="find-next" title="Next match (Enter)">↓</button>
+        <button id="find-close" title="Close (Esc)">✕</button>
     </div>
-    <div id="term-launcher" title="Show embedded terminals">â² Terminals (<span id="term-launcher-count">0</span>)</div>
+    <div id="term-launcher" title="Show embedded terminals">▲ Terminals (<span id="term-launcher-count">0</span>)</div>
     <div id="review-panel" role="region" aria-label="Diff review">
         <div class="review-resize" id="review-resize" title="Drag to resize"></div>
         <div class="review-bar">
-            <div class="review-title">ð§  Diff review <span id="review-status" class="review-status"></span></div>
+            <div class="review-title">🧠 Diff review <span id="review-status" class="review-status"></span></div>
             <div class="review-controls">
                 <button id="review-copy" title="Copy review markdown to clipboard">Copy</button>
-                <button id="review-min" title="Minimize">â</button>
-                <button id="review-close" title="Close">â</button>
+                <button id="review-min" title="Minimize">─</button>
+                <button id="review-close" title="Close">✕</button>
             </div>
         </div>
         <div class="review-body" id="review-body"></div>
@@ -1627,9 +1690,9 @@ export function getWebviewHtml(a: WebviewAssets): string {
         <div class="term-bar">
             <div class="term-tabs" id="term-tabs"></div>
             <div class="term-controls">
-                <button id="term-new" title="New shell terminal">ï¼</button>
-                <button id="term-min" title="Minimize">â</button>
-                <button id="term-close" title="Close all terminals">â</button>
+                <button id="term-new" title="New shell terminal">＋</button>
+                <button id="term-min" title="Minimize">─</button>
+                <button id="term-close" title="Close all terminals">✕</button>
             </div>
         </div>
         <div class="term-body" id="term-body"></div>
@@ -1641,9 +1704,9 @@ export function getWebviewHtml(a: WebviewAssets): string {
                 <label for="ai-target">Target:</label>
                 <select id="ai-target">
                     <optgroup label="Embedded (in this panel)">
-                        <option value="embedded-claude">ð¤ Claude â embedded terminal</option>
-                        <option value="embedded-gemini">â¨ Gemini â embedded terminal</option>
-                        <option value="embedded-shell">$ Shell â embedded terminal</option>
+                        <option value="embedded-claude">🤖 Claude — embedded terminal</option>
+                        <option value="embedded-gemini">✨ Gemini — embedded terminal</option>
+                        <option value="embedded-shell">$ Shell — embedded terminal</option>
                     </optgroup>
                     <optgroup label="External">
                         <option value="antigravity">Antigravity (built-in chat)</option>
@@ -1653,7 +1716,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
                 </select>
                 <span style="opacity: 0.65; font-size: 11px;">Prompt is also copied to your clipboard.</span>
             </div>
-            <textarea id="ai-message" placeholder="Prompt to sendâ¦"></textarea>
+            <textarea id="ai-message" placeholder="Prompt to send…"></textarea>
             <div class="ai-actions">
                 <button id="ai-cancel">Cancel</button>
                 <button id="ai-send" class="primary">Send</button>
@@ -1700,7 +1763,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     const autoExpandToggle = document.getElementById('auto-expand-toggle');
     const gridSizeBtn = document.getElementById('grid-size-toggle');
     const gridResetBtn = document.getElementById('grid-reset');
-    // Stack mode was removed â grid is the only layout. Kept as a const so
+    // Stack mode was removed — grid is the only layout. Kept as a const so
     // downstream guards (renderFile wrap, gridstack init, etc.) keep working
     // without a sweep through every call site.
     const gridMode = true;
@@ -1710,13 +1773,13 @@ export function getWebviewHtml(a: WebviewAssets): string {
 
     // Per-file GridStack layout (path -> { x, y, w, h } in grid units).
     // Persisted via vscode.setState so a panel reload preserves the user's
-    // tile arrangement. w/h are column/row counts, not pixels â GridStack
+    // tile arrangement. w/h are column/row counts, not pixels — GridStack
     // converts via its column count + cellHeight.
     const persistedState = (typeof vscode.getState === 'function' && vscode.getState()) || {};
     const fileGridLayout = (persistedState && persistedState.fileGridLayout) || {};
     const GRID_COLUMN_COUNT = 12;
     const GRID_CELL_HEIGHT = 60;       // px per row unit
-    const GRID_DEFAULT_H = 12;         // ~720px tall â bigger so a tile shows several hunks
+    const GRID_DEFAULT_H = 12;         // ~720px tall — bigger so a tile shows several hunks
     const GRID_MIN_H = 6;              // floor at ~360px so tiles stay readable
     const GRID_MIN_W = 3;              // floor at ~25% width
     const GRID_DEFAULT_W = { sm: 4, md: 6, lg: 12 };
@@ -1732,7 +1795,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     }
     function captureGridLayout() {
         if (!gridStack) return;
-        // grid.save(false) returns a serializable layout (no DOM content) â
+        // grid.save(false) returns a serializable layout (no DOM content) —
         // safer than reaching into grid.engine.nodes directly.
         let items;
         try { items = gridStack.save(false) || []; } catch (e) { return; }
@@ -1825,7 +1888,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     function refreshGridSizeBtn() {
         if (!gridSizeBtn) return;
         gridSizeBtn.textContent = 'Size: ' + gridSize;
-        gridSizeBtn.title = 'Default tile width (cycle sm â md â lg). Currently: ' + gridSize;
+        gridSizeBtn.title = 'Default tile width (cycle sm → md → lg). Currently: ' + gridSize;
     }
 
     function applyViewSettings(v) {
@@ -1837,7 +1900,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         if (v.gridSize === 'sm' || v.gridSize === 'md' || v.gridSize === 'lg') {
             gridSize = v.gridSize;
         }
-        // viewMode is no longer honored â stack mode was removed. Always grid.
+        // viewMode is no longer honored — stack mode was removed. Always grid.
         contentEl.classList.add('grid-mode');
         refreshGridSizeBtn();
     }
@@ -1866,13 +1929,13 @@ export function getWebviewHtml(a: WebviewAssets): string {
         gridStack.on('resizestop dragstop', () => captureGridLayout());
     }
 
-    // Reset grid layout â wipe persisted positions/sizes and rerender so
+    // Reset grid layout — wipe persisted positions/sizes and rerender so
     // gridstack auto-places every tile at its default size.
     function resetGridLayout() {
         const keys = Object.keys(fileGridLayout);
         if (!keys.length) {
             // Nothing persisted, but a current GridStack instance may still
-            // be holding modified positions from this session â destroy it
+            // be holding modified positions from this session — destroy it
             // and rerender so defaults apply.
             teardownGridStack();
             rerenderFromLast();
@@ -1908,7 +1971,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     function applyVerticalDiff() {
         document.body.classList.toggle('diff-vertical', verticalDiff);
         if (diffOrientBtn) {
-            diffOrientBtn.textContent = verticalDiff ? 'â Top/Bottom' : 'â Side-by-side';
+            diffOrientBtn.textContent = verticalDiff ? '↕ Top/Bottom' : '↔ Side-by-side';
             diffOrientBtn.title = verticalDiff
                 ? 'Switch diff layout to side-by-side'
                 : 'Switch diff layout to unified top/bottom';
@@ -1927,7 +1990,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
             applyVerticalDiff();
             persistVerticalDiff();
             // The two layouts emit different markup from renderHunk, so we
-            // need a full re-render â toggling a class isn't enough.
+            // need a full re-render — toggling a class isn't enough.
             rerenderFromLast();
         });
     }
@@ -2036,7 +2099,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
             if (c === '+') currentHunk.rows.push({ kind: 'add', text });
             else if (c === '-') currentHunk.rows.push({ kind: 'del', text });
             else if (c === ' ') currentHunk.rows.push({ kind: 'ctx', text });
-            else if (c === '\\\\') { /* "\\ No newline at end of file" â skip */ }
+            else if (c === '\\\\') { /* "\\ No newline at end of file" — skip */ }
         }
         pushSection();
         return sections;
@@ -2084,7 +2147,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
 
     /**
      * Compute per-line intra-diff ranges for a pair of changed lines.
-     * Uses common-prefix + common-suffix detection â O(n), no DP table â to
+     * Uses common-prefix + common-suffix detection — O(n), no DP table — to
      * find the smallest substring on each side that actually differs. Returns
      * { aStart, aEnd, bStart, bEnd } where [Start, End) on each string is the
      * differing range, or null when the lines are identical / one is empty.
@@ -2153,7 +2216,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     /**
      * Build per-row highlighted HTML for one side of a hunk by joining all the side's
      * code into a single block, highlighting once, and slicing back to lines.
-     * (Hunk-only fallback â used when full-file content isn't available.)
+     * (Hunk-only fallback — used when full-file content isn't available.)
      */
     function highlightSide(pairs, side, language) {
         const indices = [];
@@ -2207,7 +2270,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
                 right: change.indexContent, rightVersion: 'index',
             };
         }
-        // unstaged section: index â worktree
+        // unstaged section: index → worktree
         return {
             left: change.indexContent, leftVersion: 'index',
             right: change.worktreeContent, rightVersion: 'worktree',
@@ -2230,7 +2293,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
             const idx = (typeof num === 'number' ? num : parseInt(num, 10)) - 1;
             if (idx < 0 || idx >= fullLines.length) return escapeHtml(text || '');
             // Defensive: if the displayed text doesn't match the base file line
-            // (rare â file changed mid-render), fall back to escaped raw text
+            // (rare — file changed mid-render), fall back to escaped raw text
             // so users don't see HTML for a wrong line.
             // Stripping highlight tags to compare would be costly, so just trust
             // the line-number mapping; mismatches happen for at most one render.
@@ -2255,7 +2318,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
 
     function truncateText(s, n) {
         const flat = (s || '').replace(/\\s+/g, ' ').trim();
-        return flat.length > n ? flat.slice(0, n - 1) + 'â¦' : flat;
+        return flat.length > n ? flat.slice(0, n - 1) + '…' : flat;
     }
 
     function renderCommentRow(filePath, side, lineNum, lineText, entries, isComposingHere) {
@@ -2263,7 +2326,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
             if (editingCommentId === comment.id) {
                 return \`
                     <div class="comment-block editing" data-comment-id="\${comment.id}">
-                        <div class="meta"><span>â Editing comment on \${comment.side === 'right' ? '+' : '-'}line \${comment.lineNum}</span></div>
+                        <div class="meta"><span>✎ Editing comment on \${comment.side === 'right' ? '+' : '-'}line \${comment.lineNum}</span></div>
                         <textarea data-role="edit-input">\${escapeHtml(comment.body)}</textarea>
                         <div class="actions">
                             <button class="primary" data-c-action="save-edit" data-id="\${comment.id}">Save</button>
@@ -2278,14 +2341,14 @@ export function getWebviewHtml(a: WebviewAssets): string {
             return \`
                 <div class="comment-block \${isCollapsed ? 'collapsed' : ''}\${aiCls}" data-comment-id="\${comment.id}">
                     <div class="meta" data-c-action="toggle-collapse" data-id="\${comment.id}" title="Click to \${isCollapsed ? 'expand' : 'minimize'}">
-                        <span class="chevron">â¶</span>
-                        <span>ð¬ \${comment.side === 'right' ? '+' : '-'}line \${comment.lineNum}</span>
+                        <span class="chevron">▶</span>
+                        <span>💬 \${comment.side === 'right' ? '+' : '-'}line \${comment.lineNum}</span>
                         \${stale ? '<span class="stale" title="Source line no longer matches the original text">(line shifted)</span>' : ''}
                         \${peek}
                     </div>
                     <div class="body">\${escapeHtml(comment.body)}</div>
                     <div class="actions">
-                        <button data-c-action="copy" data-id="\${comment.id}" title="Copy diff context + this comment as markdown">ð Copy with context</button>
+                        <button data-c-action="copy" data-id="\${comment.id}" title="Copy diff context + this comment as markdown">📋 Copy with context</button>
                         <button data-c-action="edit" data-id="\${comment.id}">Edit</button>
                         <button data-c-action="delete" data-id="\${comment.id}">Delete</button>
                     </div>
@@ -2298,13 +2361,13 @@ export function getWebviewHtml(a: WebviewAssets): string {
             composer = \`
                 <div class="comment-block" data-composing="1">
                     <div class="meta">New comment on \${side === 'right' ? '+' : '-'}line \${lineNum}</div>
-                    <textarea data-role="new-input" autofocus placeholder="Write a review commentâ¦"></textarea>
+                    <textarea data-role="new-input" autofocus placeholder="Write a review comment…"></textarea>
                     <div class="actions">
                         <button class="primary" data-c-action="save-new"
                             data-file="\${escapeHtml(filePath)}"
                             data-side="\${side}"
                             data-line-num="\${lineNum}"
-                            data-line-text="\${escapeHtml(lineText)}">Save (â+Enter)</button>
+                            data-line-text="\${escapeHtml(lineText)}">Save (⌘+Enter)</button>
                         <button data-c-action="cancel-new">Cancel</button>
                     </div>
                 </div>
@@ -2428,9 +2491,9 @@ export function getWebviewHtml(a: WebviewAssets): string {
         const actions = options.allowHunkActions ? \`
             <span class="hunk-actions">
                 \${section === 'unstaged'
-                    ? '<button class="approve" data-hunk-action="approve" title="Stage this hunk">â Approve</button>'
+                    ? '<button class="approve" data-hunk-action="approve" title="Stage this hunk">✓ Approve</button>'
                     : ''}
-                <button class="reject" data-hunk-action="reject" title="Discard this hunk">â Reject</button>
+                <button class="reject" data-hunk-action="reject" title="Discard this hunk">✗ Reject</button>
             </span>
         \` : '';
 
@@ -2466,7 +2529,9 @@ export function getWebviewHtml(a: WebviewAssets): string {
         return next;
     }
 
-    function renderFile(change) {
+    // flat=true skips the GridStack wrapper — used by the map's anchored
+    // diff panel, which injects the file into its own container.
+    function renderFile(change, flat) {
         const sections = parseDiff(change.diff || '');
         const lang = change.language || '';
         const allowHunkActions = !change.untracked && !change.binary;
@@ -2474,7 +2539,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
             ? '<div class="binary-note">No diff content available.</div>'
             : sections.map(sec => {
                 const title = sec.title ? \`<div class="section-title">\${escapeHtml(sec.title)}</div>\` : '';
-                if (sec.binary) return \`\${title}<div class="binary-note">Binary file â diff not shown.</div>\`;
+                if (sec.binary) return \`\${title}<div class="binary-note">Binary file — diff not shown.</div>\`;
                 if (sec.hunks.length === 0) return \`\${title}<div class="binary-note">No textual changes.</div>\`;
                 const sk = sec.title ? sectionKey(sec.title) : (change.staged ? 'staged' : 'unstaged');
                 return title + sec.hunks
@@ -2484,12 +2549,12 @@ export function getWebviewHtml(a: WebviewAssets): string {
 
         const tags = [];
         const actionStatus = fileActionStatus.get(change.path);
-        if (actionStatus === 'approved') tags.push('<span class="action-tag approved">â approved</span>');
-        if (actionStatus === 'rejected') tags.push('<span class="action-tag rejected">â rejected</span>');
+        if (actionStatus === 'approved') tags.push('<span class="action-tag approved">✓ approved</span>');
+        if (actionStatus === 'rejected') tags.push('<span class="action-tag rejected">✗ rejected</span>');
         if (change.staged) tags.push('<span class="stage-tag">staged</span>');
         if (change.unstaged) tags.push('<span class="stage-tag">unstaged</span>');
         if (change.untracked) tags.push('<span class="stage-tag">untracked</span>');
-        if (change.isMostRecent) tags.push('<span class="recent-tag" title="Most recently modified">â recent</span>');
+        if (change.isMostRecent) tags.push('<span class="recent-tag" title="Most recently modified">↑ recent</span>');
 
         const statusClass = change.status === '?' ? '\\\\?' : change.status;
         const ctxLabel = CONTEXT_LABELS[change.context] || String(change.context);
@@ -2497,22 +2562,30 @@ export function getWebviewHtml(a: WebviewAssets): string {
         const fileCommentCount = allComments.filter(c => c.file === change.path).length;
         const statusCls = actionStatus === 'approved' ? 'file-approved'
             : actionStatus === 'rejected' ? 'file-rejected' : '';
+        // Header stripe color keys off git status; untracked reads as added,
+        // matching the Code Map's color language.
+        const stKey = (change.untracked || change.status === '?') ? 'A' : String(change.status || 'M').charAt(0).toUpperCase();
+        const pCut = change.path.lastIndexOf('/');
+        const pDir = pCut > 0 ? change.path.slice(0, pCut + 1) : '';
+        const pName = pCut > 0 ? change.path.slice(pCut + 1) : change.path;
+        const pathHtml = (pDir ? '<span class="p-dir">' + escapeHtml(pDir) + '</span>' : '')
+            + '<span class="p-name">' + escapeHtml(pName) + '</span>';
         const inner = \`
-            <div class="file \${isExpanded ? 'expanded' : ''} \${change.isMostRecent ? 'most-recent' : ''} \${statusCls}" data-path="\${escapeHtml(change.path)}" data-context="\${change.context}">
+            <div class="file st-\${stKey} \${isExpanded ? 'expanded' : ''} \${change.isMostRecent ? 'most-recent' : ''} \${statusCls}" data-path="\${escapeHtml(change.path)}" data-context="\${change.context}">
                 <div class="file-header">
-                    <span class="grid-drag-handle" title="Drag to rearrange">â®â®</span>
-                    <span class="chevron">â¶</span>
+                    <span class="grid-drag-handle" title="Drag to rearrange">⋮⋮</span>
+                    <span class="chevron">▶</span>
                     <span class="badge \${statusClass}">\${escapeHtml(change.statusLabel)}</span>
                     \${tags.join('')}
-                    <span class="path" title="\${escapeHtml(change.path)}">\${escapeHtml(change.path)}</span>
+                    <span class="path" title="\${escapeHtml(change.path)}">\${pathHtml}</span>
                     <span class="stats">
                         <span class="add">+\${change.additions}</span>
                         <span class="del">-\${change.deletions}</span>
                     </span>
                     <span class="file-actions">
                         <span class="action-group" data-group="nav" title="Navigate hunks in this file">
-                            <button data-action="prevHunk" title="Scroll to previous hunk in this file (Alt+â for global)">â Prev</button>
-                            <button data-action="nextHunk" title="Scroll to next hunk in this file (Alt+â for global)">â Next</button>
+                            <button data-action="prevHunk" title="Scroll to previous hunk in this file (Alt+↑ for global)">↑ Prev</button>
+                            <button data-action="nextHunk" title="Scroll to next hunk in this file (Alt+↓ for global)">↓ Next</button>
                             <button class="ctx-btn" data-action="cycleContext" title="Cycle visible context lines (also: Alt+scroll on the diff)">Context: \${ctxLabel}</button>
                         </span>
                         <span class="action-group" data-group="file">
@@ -2524,22 +2597,22 @@ export function getWebviewHtml(a: WebviewAssets): string {
                                     ? '<button data-action="stage">Stage</button>'
                                     : ''}
                             \${(change.unstaged || change.untracked)
-                                ? '<button class="approve-all-btn" data-action="approveAll" title="Approve every hunk in this file (git add)">â Approve All</button>'
+                                ? '<button class="approve-all-btn" data-action="approveAll" title="Approve every hunk in this file (git add)">✓ Approve All</button>'
                                 : ''}
                             <button class="danger" data-action="discard" title="Discard ALL changes to this file">Discard</button>
-                            <button class="icon-btn" data-action="hide" title="Hide this file from the list">Ã</button>
+                            <button class="icon-btn" data-action="hide" title="Hide this file from the list">×</button>
                         </span>
                         <span class="action-group" data-group="ai">
-                            <button data-action="sendToAi" title="Open a chat with this file's diff + your comments">ð¤ Send to AI</button>
-                            <button data-action="analyzeDiff" title="Run senior-architect code review on this file's diff and add inline comments for issues found">ð Analyze</button>
-                            \${fileCommentCount > 0 ? \`<button data-action="copyReview" title="Copy all commented regions + comments as markdown">ð Copy (\${fileCommentCount})</button>\` : ''}
+                            <button data-action="sendToAi" title="Open a chat with this file's diff + your comments">🤖 Send to AI</button>
+                            <button data-action="analyzeDiff" title="Run senior-architect code review on this file's diff and add inline comments for issues found">🔍 Analyze</button>
+                            \${fileCommentCount > 0 ? \`<button data-action="copyReview" title="Copy all commented regions + comments as markdown">📋 Copy (\${fileCommentCount})</button>\` : ''}
                         </span>
                     </span>
                 </div>
                 <div class="file-body">\${sectionsHtml}</div>
             </div>
         \`;
-        if (!gridMode) return inner;
+        if (flat || !gridMode) return inner;
         // In grid mode each file is wrapped in GridStack's expected markup.
         // gs-id keys the widget to its file path so layout persistence and
         // diff-based DOM updates can find it. gs-x/y/w/h come from saved
@@ -2597,8 +2670,8 @@ export function getWebviewHtml(a: WebviewAssets): string {
         branchEl.textContent = state.branch?.branch || '(detached)';
         if (state.branch) {
             const ab = [];
-            if (state.branch.ahead) ab.push(\`â\${state.branch.ahead}\`);
-            if (state.branch.behind) ab.push(\`â\${state.branch.behind}\`);
+            if (state.branch.ahead) ab.push(\`↑\${state.branch.ahead}\`);
+            if (state.branch.behind) ab.push(\`↓\${state.branch.behind}\`);
             if (ab.length) {
                 branchEl.innerHTML = escapeHtml(state.branch.branch || '(detached)') +
                     \` <span class="ahead-behind">\${ab.join(' ')}</span>\`;
@@ -2616,8 +2689,17 @@ export function getWebviewHtml(a: WebviewAssets): string {
             if (visible[0]) expandedFiles.add(visible[0].path);
         } else {
             visible.forEach(c => { c.isMostRecent = false; });
+            // Grid organizes like the Code Map: folder-grouped — root files
+            // first, then each directory's files clustered together.
+            if (gridMode) {
+                visible = visible.slice().sort((a, b) => {
+                    const da = a.path.slice(0, a.path.lastIndexOf('/') + 1);
+                    const db = b.path.slice(0, b.path.lastIndexOf('/') + 1);
+                    return da === db ? a.path.localeCompare(b.path) : da.localeCompare(db);
+                });
+            }
         }
-        // In grid mode, every visible file should be expanded â including ones
+        // In grid mode, every visible file should be expanded — including ones
         // that just appeared from a refresh. setGridMode() only fires on toggle,
         // so without this newly-arrived files would render collapsed.
         if (gridMode) {
@@ -2627,19 +2709,19 @@ export function getWebviewHtml(a: WebviewAssets): string {
         const totalAdd = visible.reduce((n, c) => n + c.additions, 0);
         const totalDel = visible.reduce((n, c) => n + c.deletions, 0);
         const hiddenCount = lastChanges.length - visible.length;
-        const hiddenSuffix = hiddenCount > 0 ? \` â¢ \${hiddenCount} hidden\` : '';
-        summaryEl.textContent = \`\${visible.length} file\${visible.length === 1 ? '' : 's'} â¢ +\${totalAdd} / -\${totalDel}\${hiddenSuffix}\`;
+        const hiddenSuffix = hiddenCount > 0 ? \` • \${hiddenCount} hidden\` : '';
+        summaryEl.textContent = \`\${visible.length} file\${visible.length === 1 ? '' : 's'} • +\${totalAdd} / -\${totalDel}\${hiddenSuffix}\`;
 
         if (visible.length === 0) {
             contentEl.innerHTML = lastChanges.length === 0
-                ? '<div class="empty">Working tree is clean. â¨</div>'
-                : '<div class="empty">All changed files are hidden. Use the âhiddenâ pill above to bring them back.</div>';
+                ? '<div class="empty">Working tree is clean. ✨</div>'
+                : '<div class="empty">All changed files are hidden. Use the “hidden” pill above to bring them back.</div>';
             return;
         }
         const snaps = snapshotComposers(contentEl);
         const scrollSnap = snapshotScroll(contentEl);
         withTransition(() => {
-            // Tear down any existing GridStack before innerHTML replacement â
+            // Tear down any existing GridStack before innerHTML replacement —
             // otherwise gridstack's internal node list points at orphan DOM.
             if (gridStack) teardownGridStack();
             contentEl.innerHTML = visible.map(renderFile).join('');
@@ -2704,7 +2786,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     }
 
     function withTransition(fn) {
-        // Animations were intentionally removed â DOM mutations happen instantly.
+        // Animations were intentionally removed — DOM mutations happen instantly.
         fn();
     }
 
@@ -2774,13 +2856,21 @@ export function getWebviewHtml(a: WebviewAssets): string {
         }
     }
 
-    // Shared delegation â used by the grid (#content) and the map's diff drawer,
+    // Shared delegation — used by the grid (#content) and the map's diff drawer,
     // so hunk approve/reject/comment actions work identically in both places.
     const onContentClick = (e) => {
         const target = e.target;
         const fileEl = target.closest('.file');
         if (!fileEl) return;
         const p = fileEl.getAttribute('data-path');
+        // The map's anchored panel reuses this delegation. Local re-renders
+        // and focus must stay inside the panel there, not hit the grid.
+        const inPanel = !!target.closest('#map-panel-body');
+        const scopeEl = inPanel ? mapPanelBody : contentEl;
+        const rerenderHere = () => {
+            if (inPanel) refreshMapPanel();
+            else replaceFile(lastChanges.find(c => c.path === p));
+        };
 
         const hunkBtn = target.closest('button[data-hunk-action]');
         if (hunkBtn) {
@@ -2819,10 +2909,10 @@ export function getWebviewHtml(a: WebviewAssets): string {
             const codeCell = tr.querySelector(side === 'left' ? 'td.del-side' : 'td.add-side');
             const lineText = codeCell ? codeCell.innerText : '';
             composingFor = { path: p, side, lineNum, lineText };
-            replaceFile(lastChanges.find(c => c.path === p));
+            rerenderHere();
             // Focus the new textarea
             setTimeout(() => {
-                const ta = contentEl.querySelector(\`.file[data-path="\${CSS.escape(p)}"] textarea[data-role="new-input"]\`);
+                const ta = scopeEl.querySelector(\`.file[data-path="\${CSS.escape(p)}"] textarea[data-role="new-input"]\`);
                 if (ta) ta.focus();
             }, 0);
             return;
@@ -2848,17 +2938,17 @@ export function getWebviewHtml(a: WebviewAssets): string {
                 composingFor = null;
             } else if (cAction === 'cancel-new') {
                 composingFor = null;
-                replaceFile(lastChanges.find(c => c.path === p));
+                rerenderHere();
             } else if (cAction === 'edit') {
                 editingCommentId = cBtn.getAttribute('data-id');
-                replaceFile(lastChanges.find(c => c.path === p));
+                rerenderHere();
                 setTimeout(() => {
-                    const ta = contentEl.querySelector(\`textarea[data-role="edit-input"]\`);
+                    const ta = scopeEl.querySelector(\`textarea[data-role="edit-input"]\`);
                     if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
                 }, 0);
             } else if (cAction === 'cancel-edit') {
                 editingCommentId = null;
-                replaceFile(lastChanges.find(c => c.path === p));
+                rerenderHere();
             } else if (cAction === 'save-edit') {
                 const ta = cBtn.closest('.comment-block').querySelector('textarea[data-role="edit-input"]');
                 const body = (ta && ta.value || '').trim();
@@ -2881,7 +2971,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
                 const id = cBtn.getAttribute('data-id');
                 if (collapsedComments.has(id)) collapsedComments.delete(id);
                 else collapsedComments.add(id);
-                replaceFile(lastChanges.find(c => c.path === p));
+                rerenderHere();
             }
             return;
         }
@@ -2897,7 +2987,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
             else if (action === 'cycleContext') {
                 const cur = parseInt(fileEl.getAttribute('data-context') || '3', 10);
                 const next = nextContext(cur);
-                actionBtn.textContent = 'Context: ' + (CONTEXT_LABELS[next] || next) + 'â¦';
+                actionBtn.textContent = 'Context: ' + (CONTEXT_LABELS[next] || next) + '…';
                 vscode.postMessage({ type: 'setContext', path: p, context: next });
             }
             else if (action === 'prevHunk') { scrollHunk(-1, fileEl); }
@@ -2923,13 +3013,13 @@ export function getWebviewHtml(a: WebviewAssets): string {
             else if (action === 'analyzeDiff') {
                 const original = actionBtn.textContent;
                 actionBtn.disabled = true;
-                actionBtn.textContent = 'â Analyzingâ¦';
+                actionBtn.textContent = '⌛ Analyzing…';
                 actionBtn.dataset.originalLabel = original;
                 analyzePathInflight.add(p);
                 vscode.postMessage({ type: 'analyzeDiff', path: p });
             }
             else if (action === 'approveAll') {
-                // Collapse the file once the user has approved everything in it â
+                // Collapse the file once the user has approved everything in it —
                 // signals "done with this one" and clears space for the next file.
                 expandedFiles.delete(p);
                 fileActionStatus.set(p, 'approved');
@@ -2940,7 +3030,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         }
 
         if (target.closest('.file-header')) {
-            // Don't toggle when clicking the drag-grip â that's GridStack's
+            // Don't toggle when clicking the drag-grip — that's GridStack's
             // drag handle, and a stray collapse here would also break the cell
             // height the user just set.
             if (target.closest('.grid-drag-handle')) return;
@@ -2977,7 +3067,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
             vscode.postMessage({ type: 'saveDraft', draft: commitMsgEl.value });
         }, 400);
     });
-    // Cmd/Ctrl+Enter â Commit Staged. Cmd/Ctrl+Shift+Enter â Push.
+    // Cmd/Ctrl+Enter → Commit Staged. Cmd/Ctrl+Shift+Enter → Push.
     // When set, the next successful commitMessageGenerated will auto-fire
     // stage+commit+push without a second keystroke. Cmd+Enter on an empty
     // textarea sets this so "generate then ship" is one user action.
@@ -2985,7 +3075,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     function shipIt() {
         commitBtn.disabled = true;
         commitPushBtn.disabled = true;
-        setCommitStatus('Staging, committing, pushingâ¦', null);
+        setCommitStatus('Staging, committing, pushing…', null);
         vscode.postMessage({
             type: 'commit',
             message: commitMsgEl.value,
@@ -2997,20 +3087,20 @@ export function getWebviewHtml(a: WebviewAssets): string {
     commitMsgEl.addEventListener('keydown', (e) => {
         if (!((e.metaKey || e.ctrlKey) && e.key === 'Enter')) return;
         e.preventDefault();
-        // Cmd+Shift+Enter â push-only legacy shortcut (after committing in UI).
+        // Cmd+Shift+Enter — push-only legacy shortcut (after committing in UI).
         if (e.shiftKey) { commitPushBtn.click(); return; }
         const message = commitMsgEl.value.trim();
         if (!message) {
-            // Empty â generate AND auto-ship when the message lands.
+            // Empty → generate AND auto-ship when the message lands.
             const genBtn = document.getElementById('commit-generate');
             if (genBtn) {
                 autoShipAfterGenerate = true;
-                setCommitStatus('Generating messageâ¦', null);
+                setCommitStatus('Generating message…', null);
                 genBtn.click();
             }
             return;
         }
-        // Has text â ship-it path: stage all + commit + push in one shot.
+        // Has text → ship-it path: stage all + commit + push in one shot.
         shipIt();
     });
 
@@ -3030,14 +3120,14 @@ export function getWebviewHtml(a: WebviewAssets): string {
         }
         commitBtn.disabled = true;
         commitPushBtn.disabled = true;
-        setCommitStatus('Committingâ¦', null);
+        setCommitStatus('Committing…', null);
         vscode.postMessage({ type: 'commit', message, amend, stageAll: false, push: false });
     }
     commitBtn.addEventListener('click', () => doCommit());
     commitPushBtn.addEventListener('click', () => {
         commitPushBtn.disabled = true;
         commitBtn.disabled = true;
-        setCommitStatus('Pushingâ¦', null);
+        setCommitStatus('Pushing…', null);
         vscode.postMessage({ type: 'pushOnly' });
     });
 
@@ -3045,11 +3135,11 @@ export function getWebviewHtml(a: WebviewAssets): string {
     if (stageAllBtn) {
         stageAllBtn.addEventListener('click', () => {
             stageAllBtn.disabled = true;
-            setCommitStatus('Staging allâ¦', null);
+            setCommitStatus('Staging all…', null);
             vscode.postMessage({ type: 'stageAll' });
             setTimeout(() => {
                 stageAllBtn.disabled = false;
-                setCommitStatus('â All staged', 'ok');
+                setCommitStatus('✓ All staged', 'ok');
                 setTimeout(() => setCommitStatus(''), 2500);
             }, 250);
         });
@@ -3086,14 +3176,14 @@ export function getWebviewHtml(a: WebviewAssets): string {
             return;
         }
         keySaveBtn.disabled = true;
-        setKeyStatus('Saving to settingsâ¦', null);
-        // Don't clear input until we hear back â otherwise a failed save loses
+        setKeyStatus('Saving to settings…', null);
+        // Don't clear input until we hear back — otherwise a failed save loses
         // the key the user just typed.
         vscode.postMessage({ type: 'setOpenRouterKey', key: k });
     });
     keyClearBtn.addEventListener('click', () => {
         keyInputEl.value = '';
-        setKeyStatus('Clearingâ¦', null);
+        setKeyStatus('Clearing…', null);
         vscode.postMessage({ type: 'setOpenRouterKey', key: '' });
     });
     keySettingsBtn.addEventListener('click', () => {
@@ -3107,9 +3197,9 @@ export function getWebviewHtml(a: WebviewAssets): string {
     generateBtn.addEventListener('click', () => {
         generateBtn.disabled = true;
         const original = generateBtn.textContent;
-        generateBtn.textContent = 'â';
-        generateBtn.title = 'Generatingâ¦';
-        setCommitStatus('Asking modelâ¦', null);
+        generateBtn.textContent = '⌛';
+        generateBtn.title = 'Generating…';
+        setCommitStatus('Asking model…', null);
         vscode.postMessage({ type: 'generateCommitMessage' });
         generateBtn.dataset.originalLabel = original;
         generateBtn.dataset.originalTitle = 'Generate commit message from diff (OpenRouter model, configurable)';
@@ -3146,14 +3236,14 @@ export function getWebviewHtml(a: WebviewAssets): string {
         const change = lastChanges.find(c => c.path === filePath);
         let body = buildFileReviewMarkdown(filePath);
         if (!body) {
-            // No comments â fall back to the file's full diff so the AI has context.
+            // No comments — fall back to the file's full diff so the AI has context.
             body = '## ' + filePath + '\\n\\n\\\`\\\`\\\`diff\\n' + (change && change.diff || '(no diff)') + '\\n\\\`\\\`\\\`\\n';
         }
         return AI_DEFAULT_INTRO + body;
     }
 
     function openAiDialog(filePath) {
-        aiTitleEl.textContent = 'Send to AI â ' + filePath;
+        aiTitleEl.textContent = 'Send to AI — ' + filePath;
         aiMessageEl.value = buildAiPrompt(filePath);
         aiDialogEl.classList.add('open');
         // Persist target choice across opens within the session.
@@ -3202,7 +3292,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         }
     });
 
-    // CSS Custom Highlight API â shared by find-bar + selection word-match.
+    // CSS Custom Highlight API — shared by find-bar + selection word-match.
     const supportsHighlights = typeof window.Highlight !== 'undefined' && CSS.highlights;
 
     // ---- Cmd/Ctrl + F find bar ----
@@ -3340,7 +3430,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     findNextBtn.addEventListener('click', () => findStep(1));
     findCloseBtn.addEventListener('click', closeFindBar);
 
-    // Alt+ArrowUp / Alt+ArrowDown â jump to previous / next hunk across the
+    // Alt+ArrowUp / Alt+ArrowDown — jump to previous / next hunk across the
     // whole panel (per-file Prev/Next buttons stay scoped to the file). Skip
     // when typing in any input so the keys don't fight the comment composer.
     document.addEventListener('keydown', (e) => {
@@ -3445,7 +3535,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         }
         if (matches.length === 0) {
             const fileName = scopeEl ? scopeEl.getAttribute('data-path') : '';
-            showFindStatus(\`"\${term.length > 30 ? term.slice(0, 30) + 'â¦' : term}" â no matches\${fileName ? ' in ' + fileName : ''}\`);
+            showFindStatus(\`"\${term.length > 30 ? term.slice(0, 30) + '…' : term}" — no matches\${fileName ? ' in ' + fileName : ''}\`);
             return;
         }
         if (term !== lastFindTerm) {
@@ -3469,7 +3559,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
             cell.classList.add('find-flash');
             setTimeout(() => cell.classList.remove('find-flash'), 1600);
         });
-        showFindStatus(\`\${lastFindIndex + 1} / \${matches.length} â \${term.length > 30 ? term.slice(0, 30) + 'â¦' : term}\`);
+        showFindStatus(\`\${lastFindIndex + 1} / \${matches.length} — \${term.length > 30 ? term.slice(0, 30) + '…' : term}\`);
     }
 
     let lastFindScopeEl = null;
@@ -3496,7 +3586,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         let term = sel ? sel.toString() : '';
         if (!term || !term.trim()) term = lastFindTerm;
         if (!term) {
-            showFindStatus('Select text first, then â/Ctrl+D');
+            showFindStatus('Select text first, then ⌘/Ctrl+D');
             return;
         }
         // If we got a fresh selection, lock the scope to the file it's in.
@@ -3523,7 +3613,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         if (next === cur) return;
         fileEl.setAttribute('data-context', String(next));
         const btn = fileEl.querySelector('button[data-action="cycleContext"]');
-        if (btn) btn.textContent = 'Context: ' + (CONTEXT_LABELS[next] || next) + 'â¦';
+        if (btn) btn.textContent = 'Context: ' + (CONTEXT_LABELS[next] || next) + '…';
         vscode.postMessage({
             type: 'setContext',
             path: fileEl.getAttribute('data-path'),
@@ -3610,7 +3700,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
             if (ln) lines.push(ln.text);
         }
         const header = startNum && endNum
-            ? \`\\n_Lines \${startNum}â\${endNum} (\${side === 'right' ? 'after' : 'before'} change)_\\n\`
+            ? \`\\n_Lines \${startNum}–\${endNum} (\${side === 'right' ? 'after' : 'before'} change)_\\n\`
             : '';
         return \`\${header}\\n\\\`\\\`\\\`diff\\n\${lines.join('\\n')}\\n\\\`\\\`\\\`\`;
     }
@@ -3622,7 +3712,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         if (!data) return '';
         const idx = findRowIndexForComment(data.rows, comment);
         if (idx === -1) {
-            // Comment line is not in any visible hunk â copy comment alone.
+            // Comment line is not in any visible hunk — copy comment alone.
             return \`### Comment on \${filePath} (line \${comment.lineNum} \${comment.side})\\n\\n\${comment.body}\\n\`;
         }
         const from = Math.max(0, idx - COPY_CONTEXT_LINES);
@@ -3680,7 +3770,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         const startIdx = targetEl ? allFiles.indexOf(targetEl) : -1;
         const SELECTOR = 'button[data-hunk-action="approve"], button[data-hunk-action="reject"]';
 
-        // 1. Same file â most common case (next remaining hunk).
+        // 1. Same file — most common case (next remaining hunk).
         if (targetEl) {
             expandFileEl(targetEl);
             const btn = targetEl.querySelector(SELECTOR);
@@ -3697,7 +3787,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
                 return f.querySelector(SELECTOR) || btn;
             }
         }
-        // 3. Wrap around â files BEFORE the target.
+        // 3. Wrap around — files BEFORE the target.
         for (let i = 0; i < startIdx; i++) {
             const f = allFiles[i];
             const btn = f.querySelector(SELECTOR);
@@ -3742,7 +3832,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         root.style.setProperty('--editor-tab-size', String(tabSize));
     }
 
-    // === Architect Doc â async change review fed by the extension host ===
+    // === Architect Doc — async change review fed by the extension host ===
     const archDocEl = document.getElementById('arch-doc');
     const archBarEl = document.getElementById('arch-bar');
     const archCaretEl = document.getElementById('arch-caret');
@@ -3764,7 +3854,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     function archToggle(open) {
         archExpanded = open === undefined ? !archExpanded : open;
         archBodyEl.style.display = archExpanded ? 'block' : 'none';
-        archCaretEl.textContent = archExpanded ? 'â¾' : 'â¸';
+        archCaretEl.textContent = archExpanded ? '▾' : '▸';
         archBarEl.setAttribute('aria-expanded', archExpanded ? 'true' : 'false');
     }
     if (archBarEl) {
@@ -3773,7 +3863,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
             archToggle();
         });
         archRerunBtn.addEventListener('click', () => {
-            archSetStatus('restartingâ¦');
+            archSetStatus('restarting…');
             vscode.postMessage({ type: 'archDocRun' });
         });
         archCancelBtn.addEventListener('click', () => vscode.postMessage({ type: 'archDocCancel' }));
@@ -3783,8 +3873,8 @@ export function getWebviewHtml(a: WebviewAssets): string {
         const rows = Array.from(archFiles.entries())
             .sort((a, b) => archRiskRank(a[1].risk) - archRiskRank(b[1].risk) || a[0].localeCompare(b[0]));
         archFilesEl.innerHTML = rows.map(([p, r]) => {
-            const flags = (r.flags && r.flags.length) ? ' <span class="flags">â ' + escapeHtml(r.flags.join(' Â· ')) + '</span>' : '';
-            const sum = r.error ? 'â  ' + escapeHtml(r.error) : escapeHtml(r.summary || '');
+            const flags = (r.flags && r.flags.length) ? ' <span class="flags">⚑ ' + escapeHtml(r.flags.join(' · ')) + '</span>' : '';
+            const sum = r.error ? '⚠ ' + escapeHtml(r.error) : escapeHtml(r.summary || '');
             return '<div class="arch-file-row risk-' + escapeHtml(r.risk || 'unknown') + '" data-path="' + escapeHtml(p) + '" title="Jump to diff">'
                 + '<span class="risk-dot"></span><span class="p">' + escapeHtml(p) + '</span>'
                 + '<span class="s">' + sum + flags + '</span></div>';
@@ -3808,7 +3898,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
             fileEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
     }
-    // One-line AI note in each file panel header â inserted via DOM so the
+    // One-line AI note in each file panel header — inserted via DOM so the
     // renderFile template stays untouched; re-applied after every re-render.
     function archApplyNote(p) {
         const r = archFiles.get(p);
@@ -3822,9 +3912,9 @@ export function getWebviewHtml(a: WebviewAssets): string {
             if (stats && stats.parentNode) stats.parentNode.insertBefore(note, stats.nextSibling);
             else header.appendChild(note);
         }
-        const icon = r.risk === 'high' ? 'ð´ ' : r.risk === 'medium' ? 'ð¡ ' : r.risk === 'unknown' ? 'âª ' : 'ð¢ ';
+        const icon = r.risk === 'high' ? '🔴 ' : r.risk === 'medium' ? '🟡 ' : r.risk === 'unknown' ? '⚪ ' : '🟢 ';
         note.className = 'arch-note risk-' + (r.risk || 'unknown');
-        note.textContent = r.summary ? icon + r.summary : (r.error ? 'â  analysis failed' : '');
+        note.textContent = r.summary ? icon + r.summary : (r.error ? '⚠ analysis failed' : '');
         note.title = (r.summary || '') + ((r.flags && r.flags.length) ? '\\nFlags: ' + r.flags.join('; ') : '');
     }
     function archApplyAllNotes() { for (const p of archFiles.keys()) archApplyNote(p); }
@@ -3832,7 +3922,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         if (!archStaticEl) return;
         if (msg.skipped) { archStaticEl.innerHTML = ''; return; }
         if (!msg.installed) {
-            archStaticEl.innerHTML = '<em>fallow not installed â local static analysis skipped. Install: <code>npm i -g fallow</code> (or set gitDiffViewer.fallowPath).</em>';
+            archStaticEl.innerHTML = '<em>fallow not installed — local static analysis skipped. Install: <code>npm i -g fallow</code> (or set gitDiffViewer.fallowPath).</em>';
             return;
         }
         if (!msg.ok) {
@@ -3844,23 +3934,23 @@ export function getWebviewHtml(a: WebviewAssets): string {
         const vCls = verdict === 'pass' ? 'verdict-pass' : verdict === 'warn' ? 'verdict-warn' : verdict ? 'verdict-fail' : '';
         const issues = Array.isArray(rep.issues) ? rep.issues : [];
         let html = '<strong>fallow static analysis</strong>'
-            + (verdict ? ' â <span class="' + vCls + '">' + escapeHtml(verdict) + '</span>' : '');
+            + (verdict ? ' — <span class="' + vCls + '">' + escapeHtml(verdict) + '</span>' : '');
         if (!issues.length) {
-            html += ' Â· no issues on changed files';
+            html += ' · no issues on changed files';
         } else {
-            html += ' Â· ' + issues.length + ' issue' + (issues.length === 1 ? '' : 's') + '<ul>'
+            html += ' · ' + issues.length + ' issue' + (issues.length === 1 ? '' : 's') + '<ul>'
                 + issues.slice(0, 20).map(it => {
                     const loc = it.file ? escapeHtml(String(it.file)) + (it.line ? ':' + escapeHtml(String(it.line)) : '') : '';
                     const kind = escapeHtml(String(it.rule || it.kind || it.category || ''));
                     const m = escapeHtml(String(it.message || it.title || it.summary || JSON.stringify(it).slice(0, 120)));
                     return '<li><code>' + loc + '</code> ' + (kind ? '[' + kind + '] ' : '') + m + '</li>';
                 }).join('')
-                + (issues.length > 20 ? '<li>â¦ ' + (issues.length - 20) + ' more</li>' : '')
+                + (issues.length > 20 ? '<li>… ' + (issues.length - 20) + ' more</li>' : '')
                 + '</ul>';
         }
         archStaticEl.innerHTML = html;
     }
-    // === Code Map glue â renderer lives in the module script (window.GitMap);
+    // === Code Map glue — renderer lives in the module script (window.GitMap);
     // this side owns vscode messaging, view switching, and jump-to-diff. ===
     const mapToggleBtn = document.getElementById('map-toggle');
     const mapViewEl = document.getElementById('map-view');
@@ -3873,7 +3963,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     let pendingMapPayload = null;
 
     function mapJumpToDiff(p) {
-        mapHideDiff();
+        mapHidePanel();
         setMapActive(false);
         const fileEl = contentEl.querySelector('.file[data-path="' + CSS.escape(p) + '"]');
         if (!fileEl) return;
@@ -3884,57 +3974,138 @@ export function getWebviewHtml(a: WebviewAssets): string {
         fileEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    // In-map diff drawer â review a file without leaving the map.
-    const mapDiffEl = document.getElementById('map-diff');
-    const mapDiffBody = document.getElementById('map-diff-body');
-    const mapDiffPathEl = document.getElementById('map-diff-path');
-    const mapDiffViewedBtn = document.getElementById('map-diff-viewed');
-    const mapDiffGridBtn = document.getElementById('map-diff-grid');
-    const mapDiffCloseBtn = document.getElementById('map-diff-close');
-    let mapDiffCurrent = null;
+    // Anchored diff panel — the diff window that floats next to the clicked
+    // sphere. Content is owned here; positioning is owned by map.js.
+    const mapPanelEl = document.getElementById('map-panel');
+    const mapPanelBody = document.getElementById('map-panel-body');
+    const mapPanelPathEl = document.getElementById('map-panel-path');
+    const mapPanelViewedBtn = document.getElementById('map-panel-viewed');
+    const mapPanelGridBtn = document.getElementById('map-panel-grid');
+    const mapPanelCloseBtn = document.getElementById('map-panel-close');
+    const mapPanelNotesList = document.getElementById('map-panel-notes-list');
+    const mapNoteInput = document.getElementById('map-note-input');
+    const mapNoteSaveBtn = document.getElementById('map-note-save');
+    const mapNoteAiBtn = document.getElementById('map-note-ai');
+    let mapPanelCurrent = null;
 
-    function updateMapDiffViewedBtn() {
-        if (!mapDiffViewedBtn) return;
-        const viewed = !!(mapDiffCurrent && window.GitMap && window.GitMap.isViewed && window.GitMap.isViewed(mapDiffCurrent));
-        mapDiffViewedBtn.textContent = viewed ? 'â Reviewed Â·  unmark' : 'â Mark reviewed';
+    function updateMapPanelViewedBtn() {
+        if (!mapPanelViewedBtn) return;
+        const viewed = !!(mapPanelCurrent && window.GitMap && window.GitMap.isViewed && window.GitMap.isViewed(mapPanelCurrent));
+        mapPanelViewedBtn.textContent = viewed ? '✓ Reviewed ·  unmark' : '✓ Mark reviewed';
     }
 
-    function mapHideDiff() {
-        if (mapDiffEl) mapDiffEl.classList.remove('open');
-        if (mapDiffBody) mapDiffBody.innerHTML = '';
-        mapDiffCurrent = null;
+    // Notes list: every comment on the file (yours and the AI's) in one
+    // strip under the diff. File-level notes are comments at line 0.
+    function renderMapPanelNotes() {
+        if (!mapPanelNotesList || !mapPanelCurrent) return;
+        const notes = allComments.filter((c) => c.file === mapPanelCurrent);
+        let html = '';
+        for (const c of notes) {
+            const line = c.lineNum > 0 ? 'L' + c.lineNum : 'file';
+            const firstLine = String(c.body || '').split('\\n')[0].slice(0, 160);
+            html += '<div class="mp-note' + (c.aiGenerated ? ' ai' : '') + '">'
+                + '<span class="n-line">' + escapeHtml(line) + '</span>'
+                + '<span class="n-body">' + escapeHtml(firstLine) + '</span>'
+                + '<button class="n-del" data-note-id="' + escapeHtml(c.id) + '" title="Delete note">✕</button>'
+                + '</div>';
+        }
+        mapPanelNotesList.innerHTML = html || '<div class="mp-note" style="opacity:.55">No notes yet — add one below; 🔍 sends them to the AI.</div>';
     }
 
-    function mapShowDiff(p) {
+    function mapHidePanel() {
+        if (mapPanelEl) mapPanelEl.classList.remove('open');
+        if (mapPanelBody) mapPanelBody.innerHTML = '';
+        mapPanelCurrent = null;
+        if (window.GitMap && window.GitMap.anchorPanel) window.GitMap.anchorPanel(null);
+    }
+
+    function mapShowPanel(p) {
         const change = lastChanges.find(c => c.path === p);
         if (!change) { mapJumpToDiff(p); return; }
-        mapDiffCurrent = p;
-        // renderFile emits gridstack wrappers in grid mode â render flat here.
-        const savedGridMode = gridMode;
-        gridMode = false;
-        let html = '';
-        try { html = renderFile(change); } finally { gridMode = savedGridMode; }
-        mapDiffBody.innerHTML = html;
-        const fileEl = mapDiffBody.querySelector('.file');
+        mapPanelCurrent = p;
+        mapPanelBody.innerHTML = renderFile(change, true);
+        const fileEl = mapPanelBody.querySelector('.file');
         if (fileEl) fileEl.classList.add('expanded');
-        mapDiffPathEl.textContent = p;
-        updateMapDiffViewedBtn();
-        if (!mapDiffBody.dataset.wired) {
-            // Same delegation as the grid â hunk approve/reject, comments,
-            // stage/unstage all work inside the drawer.
-            mapDiffBody.addEventListener('click', onContentClick);
-            mapDiffBody.dataset.wired = '1';
+        mapPanelPathEl.textContent = p;
+        updateMapPanelViewedBtn();
+        renderMapPanelNotes();
+        syncMapNoteAiBtn();
+        if (!mapPanelBody.dataset.wired) {
+            // Same delegation as the grid — hunk approve/reject, comments,
+            // stage/unstage all work inside the panel.
+            mapPanelBody.addEventListener('click', onContentClick);
+            mapPanelBody.dataset.wired = '1';
         }
-        mapDiffEl.classList.add('open');
+        mapPanelEl.classList.add('open');
+        if (window.GitMap && window.GitMap.anchorPanel) window.GitMap.anchorPanel(p);
     }
-    if (mapDiffCloseBtn) mapDiffCloseBtn.addEventListener('click', mapHideDiff);
-    if (mapDiffGridBtn) mapDiffGridBtn.addEventListener('click', () => { if (mapDiffCurrent) mapJumpToDiff(mapDiffCurrent); });
-    if (mapDiffViewedBtn) mapDiffViewedBtn.addEventListener('click', () => {
-        if (mapDiffCurrent && window.GitMap && window.GitMap.toggleViewedPath) {
-            window.GitMap.toggleViewedPath(mapDiffCurrent);
-            updateMapDiffViewedBtn();
+
+    // Re-render the open panel in place (comments changed, diff refreshed).
+    function refreshMapPanel() {
+        if (!mapPanelCurrent || !mapPanelEl || !mapPanelEl.classList.contains('open')) return;
+        const p = mapPanelCurrent;
+        const change = lastChanges.find(c => c.path === p);
+        if (!change) { mapHidePanel(); return; }
+        const scrollTop = mapPanelBody.scrollTop;
+        // Keep half-typed inline comments alive across the swap — same
+        // dance render()/replaceFile() do for the grid.
+        const snaps = snapshotComposers(mapPanelBody);
+        mapPanelBody.innerHTML = renderFile(change, true);
+        const fileEl = mapPanelBody.querySelector('.file');
+        if (fileEl) fileEl.classList.add('expanded');
+        restoreComposers(mapPanelBody, snaps);
+        mapPanelBody.scrollTop = scrollTop;
+        updateMapPanelViewedBtn();
+        renderMapPanelNotes();
+    }
+
+    if (mapPanelCloseBtn) mapPanelCloseBtn.addEventListener('click', () => {
+        mapHidePanel();
+        if (window.GitMap && window.GitMap.clearSelection) window.GitMap.clearSelection();
+    });
+    if (mapPanelGridBtn) mapPanelGridBtn.addEventListener('click', () => { if (mapPanelCurrent) mapJumpToDiff(mapPanelCurrent); });
+    if (mapPanelViewedBtn) mapPanelViewedBtn.addEventListener('click', () => {
+        if (mapPanelCurrent && window.GitMap && window.GitMap.toggleViewedPath) {
+            window.GitMap.toggleViewedPath(mapPanelCurrent);
+            updateMapPanelViewedBtn();
         }
     });
+    if (mapPanelNotesList) mapPanelNotesList.addEventListener('click', (e) => {
+        const btn = e.target.closest('.n-del');
+        if (btn) vscode.postMessage({ type: 'deleteComment', id: btn.getAttribute('data-note-id') });
+    });
+    function mapSaveNote() {
+        if (!mapPanelCurrent || !mapNoteInput) return;
+        const body = mapNoteInput.value.trim();
+        if (!body) return;
+        // File-level note = comment anchored at line 0; the host stores it
+        // with the same machinery as inline comments and hands every
+        // non-AI note to analyzeDiff as reviewer guidance.
+        vscode.postMessage({ type: 'addComment', file: mapPanelCurrent, side: 'right', lineNum: 0, lineText: '', body });
+        mapNoteInput.value = '';
+    }
+    if (mapNoteSaveBtn) mapNoteSaveBtn.addEventListener('click', mapSaveNote);
+    if (mapNoteInput) mapNoteInput.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); mapSaveNote(); return; }
+        // Escape must still leave the composer — swallow everything else so
+        // single-letter map shortcuts don't fire while typing.
+        if (e.key === 'Escape') { mapNoteInput.blur(); return; }
+        e.stopPropagation();
+    });
+    if (mapNoteAiBtn) mapNoteAiBtn.addEventListener('click', () => {
+        if (!mapPanelCurrent) return;
+        analyzePathInflight.add(mapPanelCurrent);
+        syncMapNoteAiBtn();
+        vscode.postMessage({ type: 'analyzeDiff', path: mapPanelCurrent });
+    });
+    // Static button — derive its state from the inflight set so it can
+    // never wedge when the panel closes or switches mid-analysis.
+    function syncMapNoteAiBtn() {
+        if (!mapNoteAiBtn) return;
+        const busy = !!(mapPanelCurrent && analyzePathInflight.has(mapPanelCurrent));
+        mapNoteAiBtn.disabled = busy;
+        mapNoteAiBtn.textContent = busy ? '⌛ Analyzing…' : '🔍 Analyze with notes';
+    }
 
     const mapRootEl = document.getElementById('map-root');
     function mapSetRoot(root) {
@@ -3949,7 +4120,16 @@ export function getWebviewHtml(a: WebviewAssets): string {
 
     window.__gdvMapBridge = {
         jumpToDiff: mapJumpToDiff,
-        showDiff: mapShowDiff,
+        showDiff: mapShowPanel,
+        hidePanel: mapHidePanel,
+        // Raw unified diff + file length so the map can render the hover
+        // diff peek without another host round-trip.
+        getChange: (p) => {
+            const c = lastChanges.find((x) => x.path === p);
+            if (!c) return null;
+            const body = c.worktreeContent || c.headContent || '';
+            return { diff: c.diff || '', lines: body ? body.split('\\n').length : 0, binary: !!c.binary };
+        },
         setRoot: mapSetRoot,
         openFile: (p) => vscode.postMessage({ type: 'openFile', path: p }),
         setViewed: (p, v) => vscode.postMessage({ type: 'mapViewed', path: p, viewed: !!v }),
@@ -3959,7 +4139,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     function setMapActive(on) {
         mapActive = !!on;
         document.body.classList.toggle('map-mode', mapActive);
-        if (mapToggleBtn) mapToggleBtn.textContent = mapActive ? 'â¤ Grid' : 'â Map';
+        if (mapToggleBtn) mapToggleBtn.textContent = mapActive ? '▤ Grid' : '◉ Map';
         if (mapActive) {
             vscode.postMessage({ type: 'archMapRequest' });
             if (window.GitMap) window.GitMap.resize();
@@ -3986,7 +4166,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         }
         if (mapEmptyEl) {
             if (pendingMapPayload.changedCount === 0) {
-                mapEmptyEl.textContent = 'Working tree clean â map shows repo structure only.';
+                mapEmptyEl.textContent = 'Working tree clean — map shows repo structure only.';
                 mapEmptyEl.style.display = 'flex';
                 setTimeout(() => { mapEmptyEl.style.display = 'none'; }, 3500);
             } else {
@@ -4018,19 +4198,24 @@ export function getWebviewHtml(a: WebviewAssets): string {
             if (e.key === 'Escape' && e.target.blur) e.target.blur();
             return;
         }
+        // Cmd+V must never toggle "reviewed", Cmd+F must not reframe —
+        // chorded keys belong to the app/OS, not the map.
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
         if (e.key === '/') { e.preventDefault(); if (mapFilterEl) mapFilterEl.focus(); }
         else if (e.key === 'Escape') {
-            if (mapDiffEl && mapDiffEl.classList.contains('open')) mapHideDiff();
+            if (mapPanelEl && mapPanelEl.classList.contains('open')) { mapHidePanel(); window.GitMap.clearSelection(); }
             else window.GitMap.clearSelection();
         }
         else if (e.key === 'v') {
-            if (mapDiffCurrent && window.GitMap.toggleViewedPath) { window.GitMap.toggleViewedPath(mapDiffCurrent); updateMapDiffViewedBtn(); }
+            if (mapPanelCurrent && window.GitMap.toggleViewedPath) { window.GitMap.toggleViewedPath(mapPanelCurrent); updateMapPanelViewedBtn(); }
             else window.GitMap.toggleViewedSelected();
         }
         else if (e.key === 'Enter') { window.GitMap.diffSelected(); }
         else if (e.key === 'f') { window.GitMap.frameChangeset(); }
         else if (e.key === 'n') { window.GitMap.nextUnreviewed(1); }
         else if (e.key === 'p') { window.GitMap.nextUnreviewed(-1); }
+        else if (e.key === 'q') { window.GitMap.rotate(-1); }
+        else if (e.key === 'e') { window.GitMap.rotate(1); }
     });
 
     const archAutoCb = document.getElementById('arch-auto-cb');
@@ -4081,14 +4266,14 @@ export function getWebviewHtml(a: WebviewAssets): string {
             archDocEl.classList.remove('stale');
             archFiles = new Map();
             archFilesEl.innerHTML = '';
-            archOverviewEl.innerHTML = '<div class="review-loading">Analyzing ' + msg.total + ' file' + (msg.total === 1 ? '' : 's') + 'â¦</div>';
+            archOverviewEl.innerHTML = '<div class="review-loading">Analyzing ' + msg.total + ' file' + (msg.total === 1 ? '' : 's') + '…</div>';
             archTldrEl.textContent = '';
             archCancelBtn.style.display = '';
-            archSetStatus('analyzing 0/' + msg.total + 'â¦');
+            archSetStatus('analyzing 0/' + msg.total + '…');
             contentEl.querySelectorAll('.arch-note').forEach(n => n.remove());
         } else if (msg.phase === 'file') {
             archFiles.set(msg.path, msg.result || {});
-            archSetStatus('analyzing ' + msg.completed + '/' + msg.total + 'â¦');
+            archSetStatus('analyzing ' + msg.completed + '/' + msg.total + '…');
             archRenderFiles();
             archApplyNote(msg.path);
         } else if (msg.phase === 'static') {
@@ -4100,7 +4285,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
             archTldrEl.textContent = m ? m[1].trim() : '';
         } else if (msg.phase === 'done') {
             archCancelBtn.style.display = 'none';
-            archSetStatus(msg.localOnly ? 'â current (local only)' : 'â current');
+            archSetStatus(msg.localOnly ? '✓ current (local only)' : '✓ current');
             if (msg.localOnly) archOverviewEl.innerHTML = '';
         } else if (msg.phase === 'error') {
             archCancelBtn.style.display = 'none';
@@ -4108,7 +4293,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
             archOverviewEl.innerHTML = '<div class="review-loading">' + escapeHtml(msg.error || 'Analysis failed.') + '</div>';
         } else if (msg.phase === 'cancelled') {
             archCancelBtn.style.display = 'none';
-            archSetStatus('cancelled â â³ to re-run');
+            archSetStatus('cancelled — ⟳ to re-run');
             archDocEl.classList.add('stale');
         } else if (msg.phase === 'empty') {
             archCancelBtn.style.display = 'none';
@@ -4135,6 +4320,11 @@ export function getWebviewHtml(a: WebviewAssets): string {
             render(msg);
             maybeScrollToNextHunkAction();
             archApplyAllNotes();
+            // Panel actions that round-trip through refresh() (stage, hunk
+            // approve/reject, discard) reply with 'state' — the anchored
+            // panel must re-render or its hunk indices go stale and the
+            // next approve stages the wrong hunk.
+            refreshMapPanel();
             if (archAutoCb && msg.analysisAuto !== undefined) archAutoCb.checked = !!msg.analysisAuto;
             if (mapToggleBtn && msg.experimentalMap !== undefined) {
                 mapToggleBtn.style.display = msg.experimentalMap ? '' : 'none';
@@ -4157,7 +4347,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
                 archApplyNote(msg.change.path);
                 const li = lastChanges.findIndex(c => c.path === msg.change.path);
                 if (li >= 0) lastChanges[li] = msg.change; else lastChanges.push(msg.change);
-                if (mapDiffCurrent === msg.change.path) mapShowDiff(mapDiffCurrent);
+                if (mapPanelCurrent === msg.change.path) refreshMapPanel();
             }
         }
         else if (msg.type === 'hiddenUpdated') {
@@ -4184,10 +4374,10 @@ export function getWebviewHtml(a: WebviewAssets): string {
                 setKeyStatus('Save failed: ' + msg.error, 'error');
             } else if (msg.hasKey) {
                 if (msg.saved) {
-                    // Successful save â clear the input and confirm.
+                    // Successful save — clear the input and confirm.
                     keyInputEl.value = '';
                 }
-                setKeyStatus('â ' + sourceLabel, 'ok');
+                setKeyStatus('✓ ' + sourceLabel, 'ok');
                 keyToggleBtn.title = 'Change OpenRouter API key (' + sourceLabel + ')';
             } else {
                 setKeyStatus('No key configured', null);
@@ -4196,7 +4386,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         }
         else if (msg.type === 'commitMessageGenerated') {
             generateBtn.disabled = false;
-            generateBtn.textContent = generateBtn.dataset.originalLabel || 'â¨';
+            generateBtn.textContent = generateBtn.dataset.originalLabel || '✨';
             generateBtn.title = generateBtn.dataset.originalTitle
                 || 'Generate commit message from diff (OpenRouter model, configurable)';
             if (msg.ok) {
@@ -4205,12 +4395,12 @@ export function getWebviewHtml(a: WebviewAssets): string {
                 const tail = msg.truncated ? ' (diff truncated)' : '';
                 if (autoShipAfterGenerate && commitMsgEl.value.trim()) {
                     autoShipAfterGenerate = false;
-                    setCommitStatus('â Generated â staging, committing, pushingâ¦', null);
+                    setCommitStatus('✓ Generated — staging, committing, pushing…', null);
                     shipIt();
                 } else {
                     autoShipAfterGenerate = false;
                     commitMsgEl.focus();
-                    setCommitStatus('â Generated' + tail, 'ok');
+                    setCommitStatus('✓ Generated' + tail, 'ok');
                     setTimeout(() => setCommitStatus(''), 4000);
                 }
             } else {
@@ -4224,7 +4414,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
         else if (msg.type === 'reviewAllDiffsResult') {
             if (reviewBtn) {
                 reviewBtn.disabled = false;
-                reviewBtn.textContent = reviewBtn.dataset.originalLabel || 'ð§  Review All';
+                reviewBtn.textContent = reviewBtn.dataset.originalLabel || '🧠 Review All';
             }
             if (msg.ok) {
                 const md = String(msg.markdown || '');
@@ -4232,7 +4422,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
                 reviewBodyEl.innerHTML = renderMarkdown(md);
                 reviewBodyEl.scrollTop = 0;
                 const tail = msg.truncated ? ' (some diffs truncated)' : '';
-                setReviewStatus('â done' + tail, null);
+                setReviewStatus('✓ done' + tail, null);
             } else {
                 reviewLastMarkdown = '';
                 reviewBodyEl.innerHTML = '<div class="review-loading">' + escapeHtml(msg.error || 'Review failed.') + '</div>';
@@ -4246,13 +4436,19 @@ export function getWebviewHtml(a: WebviewAssets): string {
             const btn = contentEl.querySelector(\`.file[data-path="\${CSS.escape(msg.path)}"] button[data-action="analyzeDiff"]\`);
             if (btn) {
                 btn.disabled = false;
-                btn.textContent = btn.dataset.originalLabel || 'ð Analyze';
+                btn.textContent = btn.dataset.originalLabel || '🔍 Analyze';
             }
+            // Inflight already cleared above — sync unconditionally so the
+            // button recovers even if the panel switched files meanwhile,
+            // and refresh the panel body so its header Analyze button (a
+            // re-rendered element) recovers too.
+            syncMapNoteAiBtn();
+            if (msg.path === mapPanelCurrent) refreshMapPanel();
             if (msg.ok) {
                 const tail = msg.truncated ? ' (diff truncated)' : '';
                 const text = msg.count === 0
-                    ? \`â Analyzed \${msg.path} â no issues flagged\${tail}\`
-                    : \`â Analyzed \${msg.path} â \${msg.count} comment\${msg.count === 1 ? '' : 's'} added\${tail}\`;
+                    ? \`✓ Analyzed \${msg.path} — no issues flagged\${tail}\`
+                    : \`✓ Analyzed \${msg.path} — \${msg.count} comment\${msg.count === 1 ? '' : 's'} added\${tail}\`;
                 showFindStatus(text);
             } else {
                 showFindStatus(\`Analyze failed: \${msg.error || 'unknown error'}\`);
@@ -4267,12 +4463,13 @@ export function getWebviewHtml(a: WebviewAssets): string {
                 if (change) replaceFile(change);
             }
             archApplyAllNotes();
+            refreshMapPanel();
         }
         else if (msg.type === 'pushResult') {
             commitBtn.disabled = false;
             commitPushBtn.disabled = false;
             if (msg.ok) {
-                setCommitStatus('â pushed', 'ok');
+                setCommitStatus('✓ pushed', 'ok');
                 setTimeout(() => setCommitStatus(''), 3500);
             } else {
                 setCommitStatus(msg.error || 'Push failed', 'error');
@@ -4291,10 +4488,10 @@ export function getWebviewHtml(a: WebviewAssets): string {
                 composingFor = null;
                 editingCommentId = null;
                 const verb = msg.pushed ? 'Committed & pushed' : 'Committed';
-                contentEl.innerHTML = \`<div class="empty">â \${verb} â refreshingâ¦</div>\`;
+                contentEl.innerHTML = \`<div class="empty">✓ \${verb} — refreshing…</div>\`;
                 summaryEl.textContent = '';
                 const pushedSuffix = msg.pushed ? ' & pushed' : '';
-                setCommitStatus(\`â \${msg.head || 'committed'}\${pushedSuffix}\`, 'ok');
+                setCommitStatus(\`✓ \${msg.head || 'committed'}\${pushedSuffix}\`, 'ok');
                 setTimeout(() => setCommitStatus(''), 4000);
             } else {
                 setCommitStatus(msg.error || 'Commit failed.', 'error');
@@ -4329,7 +4526,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     }
 
     /**
-     * Tiny markdown â HTML converter. Not feature-complete; just enough for
+     * Tiny markdown → HTML converter. Not feature-complete; just enough for
      * a typical AI-written code review (headers, lists, code, bold, italic,
      * blockquotes, fenced blocks).
      */
@@ -4385,10 +4582,10 @@ export function getWebviewHtml(a: WebviewAssets): string {
             reviewBtn.disabled = true;
             const original = reviewBtn.textContent;
             reviewBtn.dataset.originalLabel = original;
-            reviewBtn.textContent = 'â Reviewingâ¦';
+            reviewBtn.textContent = '⌛ Reviewing…';
             showReviewPanel();
-            reviewBodyEl.innerHTML = '<div class="review-loading">Sending all diffs to review modelâ¦</div>';
-            setReviewStatus('thinkingâ¦', null);
+            reviewBodyEl.innerHTML = '<div class="review-loading">Sending all diffs to review model…</div>';
+            setReviewStatus('thinking…', null);
             vscode.postMessage({ type: 'reviewAllDiffs' });
         });
     }
@@ -4514,7 +4711,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
             tab.innerHTML = '<span class="term-status"></span>'
                 + '<span class="label"></span>'
                 + (s.pid ? '<span class="pid">#' + s.pid + '</span>' : '')
-                + '<span class="close-btn" title="Close">Ã</span>';
+                + '<span class="close-btn" title="Close">×</span>';
             tab.querySelector('.label').textContent = s.label;
             tab.addEventListener('click', (e) => {
                 if (e.target.classList.contains('close-btn')) {
@@ -4531,7 +4728,7 @@ export function getWebviewHtml(a: WebviewAssets): string {
     function spawnPty(opts) {
         const id = uid();
         const label = opts.label || 'Shell';
-        // Empty command lets the extension default to user's $SHELL â that
+        // Empty command lets the extension default to user's $SHELL — that
         // way zsh users on macOS get their actual login shell with the right
         // PATH (where claude/gemini are installed).
         const command = opts.command || '';
@@ -4733,997 +4930,8 @@ export function getWebviewHtml(a: WebviewAssets): string {
     vscode.postMessage({ type: 'ready' });
 })();
 </script>
-<script type="module">
-import * as THREE from '${a.threeUri}';
-
-// === Code Map renderer. Data + analysis arrive via window.GitMap.* calls
-// from the main script; user intents go back through window.__gdvMapBridge. ===
-const bridge = window.__gdvMapBridge || {};
-const wrap = document.getElementById('map-canvas-wrap');
-const tooltipEl = document.getElementById('map-tooltip');
-const cardEl = document.getElementById('map-card');
-const progressEl = document.getElementById('map-progress');
-const mapViewEl = document.getElementById('map-view');
-const isLight = document.body.classList.contains('vscode-light');
-
-const PAL = isLight ? {
-    dir: 0x8a919a, file: 0xc4c9cf, bgMix: 0xf3f3f3,
-    heatLo: 0xd4a72c, heatHi: 0xd1242f, viewed: 0x57ab5a, edge: 0x0969da,
-    label: '#1f2328', labelAccent: '#0969da', pill: 'rgba(255,255,255,0.88)',
-} : {
-    dir: 0x3a4048, file: 0x59626c, bgMix: 0x14181c,
-    heatLo: 0xd29922, heatHi: 0xf85149, viewed: 0x2ea043, edge: 0x39c5cf,
-    label: '#f0f6fc', labelAccent: '#7ee2eb', pill: 'rgba(8,12,16,0.74)',
-};
-const QUALITY = { clean: 0x2ea043, review: 0xd29922, concern: 0xf85149 };
-
-let renderer = null, scene = null, camera = null, raycaster = null;
-let changedMesh = null, baseMesh = null, dirMesh = null, ringMesh = null, edgeLines = null, labelGroup = null, rootGroup = null;
-let dirLabelGroup = null, dirNodes = [];
-let nodes = [], fileNodes = [], changedNodes = [], baseNodes = [];
-let lastPayloadStored = null;
-let showAllFiles = true, showAllUserSet = false, framedOnce = false;
-let camAnim = null;   // camera fly-to tween
-let glowSprites = []; // additive halos behind changed spheres
-let glowTex = null;
-let selRing = null;   // pulsing marker on the selected node
-let lastPickAt = 0;
-let bobItems = []; // changed files gently floating
-const bobMatrix = new THREE.Matrix4();
-const bobQuat = new THREE.Quaternion();
-const bobScale = new THREE.Vector3();
-const bobPos = new THREE.Vector3();
-let byPath = new Map(), adj = new Map(), analysisByPath = new Map(), labelByPath = new Map();
-let viewedSet = new Set();
-let ringIndexByPath = new Map();
-let filter = { text: '', unreviewedOnly: false, dimUnchanged: true };
-let selectedPath = null, blastSet = null;
-let layoutSize = 1200;
-
-function W() { return wrap.clientWidth || 800; }
-function H() { return wrap.clientHeight || 500; }
-function esc(s) {
-    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-function churnOf(n) { return (n.add || 0) + (n.del || 0); }
-function isChanged(n) { return n.add !== undefined || n.del !== undefined; }
-function hash01(s) {
-    let h = 2166136261;
-    for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
-    return ((h >>> 0) % 10000) / 10000;
-}
-
-// Orbit state â spherical coords around a pannable target on the map plane.
-let camTheta = 0, camPhi = 0.85, camDist = 1500;
-const camTarget = new THREE.Vector3(0, 0, 0);
-let camDirty = true, frameN = 0;
-
-function applyCamera() {
-    if (!camera) return;
-    const sp = Math.sin(camPhi), cp = Math.cos(camPhi);
-    camera.position.set(
-        camTarget.x + camDist * sp * Math.sin(camTheta),
-        camTarget.y - camDist * sp * Math.cos(camTheta),
-        camTarget.z + camDist * cp
-    );
-    camera.up.set(0, 0, 1);
-    camera.lookAt(camTarget);
-    camDirty = true;
-}
-
-function flyTo(to, dur) {
-    camAnim = {
-        from: { theta: camTheta, phi: camPhi, dist: camDist, x: camTarget.x, y: camTarget.y, z: camTarget.z },
-        to,
-        start: performance.now(),
-        dur: dur || 550,
-    };
-}
-
-function stepCamAnim(now) {
-    if (!camAnim) return;
-    const k = Math.min(1, (now - camAnim.start) / camAnim.dur);
-    const e = k < 0.5 ? 2 * k * k : -1 + (4 - 2 * k) * k; // ease in-out
-    const f = camAnim.from, t = camAnim.to;
-    camTheta = f.theta + ((t.theta !== undefined ? t.theta : f.theta) - f.theta) * e;
-    camPhi = f.phi + ((t.phi !== undefined ? t.phi : f.phi) - f.phi) * e;
-    camDist = f.dist + ((t.dist !== undefined ? t.dist : f.dist) - f.dist) * e;
-    camTarget.set(
-        f.x + ((t.x !== undefined ? t.x : f.x) - f.x) * e,
-        f.y + ((t.y !== undefined ? t.y : f.y) - f.y) * e,
-        f.z + ((t.z !== undefined ? t.z : f.z) - f.z) * e
-    );
-    applyCamera();
-    if (k >= 1) camAnim = null;
-}
-
-// Frame the changeset (or everything when the tree is clean).
-function frameChangeset() {
-    const pool = changedNodes.length ? changedNodes : fileNodes;
-    if (!pool.length || !camera) return;
-    let minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9, maxZ = 0, maxR = 0;
-    for (const n of pool) {
-        const p = worldPos(n);
-        if (p.x < minX) minX = p.x;
-        if (p.x > maxX) maxX = p.x;
-        if (p.y < minY) minY = p.y;
-        if (p.y > maxY) maxY = p.y;
-        if (p.z > maxZ) maxZ = p.z;
-        if (n.r > maxR) maxR = n.r;
-    }
-    const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
-    const span = Math.max(maxX - minX, maxY - minY) / 2 + maxR * 3 + 40;
-    const dist = Math.max(280, Math.min(6500, span / Math.tan(camera.fov * Math.PI / 360) * 1.15));
-    flyTo({ theta: camTheta, phi: 0.8, dist, x: cx, y: cy, z: Math.min(60, maxZ * 0.4) }, 650);
-}
-
-function flyToNode(n) {
-    const p = worldPos(n);
-    select(n);
-    flyTo({ theta: camTheta, phi: Math.min(camPhi, 1.0), dist: Math.max(240, Math.min(900, n.r * 16)), x: p.x, y: p.y, z: p.z * 0.6 }, 500);
-}
-
-// Fly to the next (dir=1) / previous (dir=-1) unreviewed changed file.
-function nextUnreviewed(dir) {
-    if (!changedNodes.length) return;
-    let pool = changedNodes.filter((n) => !viewedSet.has(n.path));
-    if (!pool.length) pool = changedNodes.slice();
-    pool.sort((a, b) => a.path.localeCompare(b.path));
-    let idx = pool.findIndex((n) => n.path === selectedPath);
-    idx = idx === -1 ? (dir > 0 ? 0 : pool.length - 1) : (idx + dir + pool.length) % pool.length;
-    flyToNode(pool[idx]);
-}
-
-// Screen-space label management: hide labels whose bubble is too small on
-// screen (LOD), then greedily suppress overlapping labels by priority.
-function updateLabelVisibility() {
-    if (!camera || !renderer) return;
-    camera.updateMatrixWorld();
-    const halfH = H() / 2, halfW = W() / 2;
-    const tanF = Math.tan(camera.fov * Math.PI / 360);
-    const camP = camera.position;
-    const items = [];
-    const collect = (sprite) => {
-        const n = sprite.userData.node;
-        if (!n) { sprite.visible = false; return; }
-        if (sprite.userData.wOk === false) { sprite.visible = false; return; }
-        const p = sprite.position;
-        const dist = camP.distanceTo(p);
-        if (dist <= 1) { sprite.visible = false; return; }
-        const screenR = (n.r * halfH) / (dist * tanF);
-        if (screenR < (n.dir ? 17 : 12)) { sprite.visible = false; return; }
-        const v = new THREE.Vector3(p.x, p.y, p.z).project(camera);
-        if (v.z > 1 || v.x < -1.05 || v.x > 1.05 || v.y < -1.05 || v.y > 1.05) { sprite.visible = false; return; }
-        const sx = v.x * halfW + halfW, sy = -v.y * halfH + halfH;
-        const w = Math.max(62, Math.min(280, screenR * 2.8));
-        const pri = (blastSet && blastSet.has(n.path) ? 1000 : 0)
-            + (n.dir ? 100 - n.depth * 12 : 220 + Math.min(99, churnOf(n)))
-            + screenR * 0.01;
-        items.push({ sprite, sx, sy, w, h: 26, pri });
-    };
-    if (labelGroup) for (const s of labelGroup.children) collect(s);
-    if (dirLabelGroup) for (const s of dirLabelGroup.children) collect(s);
-    items.sort((a, b) => b.pri - a.pri);
-    const kept = [];
-    for (const it of items) {
-        let hit = false;
-        for (const k of kept) {
-            if (Math.abs(it.sx - k.sx) * 2 < (it.w + k.w) && Math.abs(it.sy - k.sy) * 2 < (it.h + k.h) + 8) { hit = true; break; }
-        }
-        it.sprite.visible = !hit;
-        if (!hit) kept.push(it);
-    }
-}
-
-function initThree() {
-    if (renderer) return;
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setPixelRatio(window.devicePixelRatio || 1);
-    renderer.setSize(W(), H());
-    wrap.insertBefore(renderer.domElement, tooltipEl);
-    scene = new THREE.Scene();
-    scene.fog = new THREE.Fog(PAL.bgMix, 2400, 8500);
-    camera = new THREE.PerspectiveCamera(50, W() / Math.max(1, H()), 2, 14000);
-    applyCamera();
-    scene.add(new THREE.AmbientLight(0xffffff, 0.78));
-    const sun = new THREE.DirectionalLight(0xffffff, 1.0);
-    sun.position.set(-600, -900, 1300);
-    scene.add(sun);
-    raycaster = new THREE.Raycaster();
-    bindInput();
-    const loop = () => {
-        frameN++;
-        const now = performance.now();
-        stepCamAnim(now);
-        if (camDirty && frameN % 5 === 0) { updateLabelVisibility(); camDirty = false; }
-        animateBob(now * 0.001);
-        if (selRing && selRing.visible) {
-            const s = 1 + Math.sin(now * 0.004) * 0.08;
-            selRing.rotation.z = now * 0.0012;
-            selRing.material.opacity = 0.65 + Math.sin(now * 0.004) * 0.25;
-            const n = selectedPath ? byPath.get(selectedPath) : null;
-            if (n) selRing.scale.set(n.r * 1.6 * s, n.r * 1.6 * s, 1);
-        }
-        renderer.render(scene, camera);
-        requestAnimationFrame(loop);
-    };
-    requestAnimationFrame(loop);
-    if (window.ResizeObserver) new ResizeObserver(() => api.resize()).observe(wrap);
-}
-
-function disposeTree(obj) {
-    obj.traverse((o) => {
-        if (o.geometry) o.geometry.dispose();
-        if (o.material) {
-            if (o.material.map) o.material.map.dispose();
-            o.material.dispose();
-        }
-    });
-}
-
-function worldPos(n) {
-    const half = layoutSize / 2;
-    if (n.dir) return new THREE.Vector3(n.x - half, half - n.y, n.depth * 3);
-    const floor = n.depth * 3 + 2;
-    let z;
-    if (isChanged(n)) {
-        // Changed files rise with churn â the skyline IS the changeset.
-        z = floor + n.r + 10 + Math.min(44, Math.sqrt(churnOf(n)) * 1.7) + hash01(n.path) * 10;
-    } else {
-        // Unchanged files hug their platform: quiet background terrain.
-        z = floor + n.r * 0.55 + 2 + hash01(n.path) * 6;
-    }
-    return new THREE.Vector3(n.x - half, half - n.y, z);
-}
-
-function roundRect(ctx, x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + w, y, x + w, y + r, r);
-    ctx.lineTo(x + w, y + h - r);
-    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
-    ctx.lineTo(x + r, y + h);
-    ctx.arcTo(x, y + h, x, y + h - r, r);
-    ctx.lineTo(x, y + r);
-    ctx.arcTo(x, y, x + r, y, r);
-    ctx.closePath();
-}
-
-// High-res pill label: bold name on top, accent word/stats underneath.
-// plain=true drops the pill (stroked text only) — used for folder names so
-// they read as background wayfinding, not content.
-function drawLabel(canvas, line1, line2, accent, plain) {
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, 512, 128);
-    const t1 = String(line1 || '').slice(0, 24);
-    const t2 = String(line2 || '').slice(0, 24);
-    if (!t1 && !t2) return;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    if (plain) {
-        ctx.lineWidth = 9;
-        ctx.strokeStyle = PAL.pill;
-        ctx.font = '700 42px system-ui, sans-serif';
-        if (t2) {
-            ctx.strokeText(t1, 256, 42);
-            ctx.fillStyle = PAL.label;
-            ctx.fillText(t1, 256, 42);
-            ctx.font = '600 30px system-ui, sans-serif';
-            ctx.strokeText(t2, 256, 90);
-            ctx.fillStyle = accent || PAL.labelAccent;
-            ctx.fillText(t2, 256, 90);
-        } else {
-            ctx.strokeText(t1, 256, 66);
-            ctx.fillStyle = PAL.label;
-            ctx.fillText(t1, 256, 66);
-        }
-        return;
-    }
-    ctx.fillStyle = PAL.pill;
-    roundRect(ctx, 2, 2, 508, 124, 30);
-    ctx.fill();
-    if (t2) {
-        ctx.font = '700 44px system-ui, sans-serif';
-        ctx.fillStyle = PAL.label;
-        ctx.fillText(t1, 256, 42);
-        ctx.font = '600 34px system-ui, sans-serif';
-        ctx.fillStyle = accent || PAL.labelAccent;
-        ctx.fillText(t2, 256, 91);
-    } else {
-        ctx.font = '700 48px system-ui, sans-serif';
-        ctx.fillStyle = PAL.label;
-        ctx.fillText(t1, 256, 66);
-    }
-}
-
-function qualityAccent(a) {
-    if (!a || !a.quality) return PAL.labelAccent;
-    if (a.quality === 'clean') return '#2ea043';
-    if (a.quality === 'review') return '#d29922';
-    if (a.quality === 'concern') return '#f85149';
-    return PAL.labelAccent;
-}
-
-function makeLabelSprite(line1, line2, accent, plain) {
-    const canvas = document.createElement('canvas');
-    canvas.width = 512; canvas.height = 128;
-    drawLabel(canvas, line1, line2, accent, plain);
-    const tex = new THREE.CanvasTexture(canvas);
-    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
-    const sprite = new THREE.Sprite(mat);
-    sprite.renderOrder = 20;
-    sprite.userData.canvas = canvas;
-    return sprite;
-}
-
-function getGlowTexture() {
-    if (glowTex) return glowTex;
-    const c = document.createElement('canvas');
-    c.width = 128; c.height = 128;
-    const ctx = c.getContext('2d');
-    const g = ctx.createRadialGradient(64, 64, 4, 64, 64, 64);
-    g.addColorStop(0, 'rgba(255,255,255,0.85)');
-    g.addColorStop(0.35, 'rgba(255,255,255,0.28)');
-    g.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, 128, 128);
-    glowTex = new THREE.CanvasTexture(c);
-    return glowTex;
-}
-
-function setData(payload) {
-    initThree();
-    if (rootGroup) { scene.remove(rootGroup); disposeTree(rootGroup); }
-    rootGroup = new THREE.Group();
-    scene.add(rootGroup);
-
-    selRing = new THREE.Mesh(
-        new THREE.TorusGeometry(1, 0.06, 8, 48),
-        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, depthWrite: false })
-    );
-    selRing.visible = false;
-    selRing.renderOrder = 15;
-    rootGroup.add(selRing);
-
-    lastPayloadStored = payload;
-    if (!showAllUserSet) showAllFiles = (payload.shownFiles || 0) <= 120;
-    const allCb = document.getElementById('map-all-cb');
-    if (allCb) allCb.checked = showAllFiles;
-
-    layoutSize = payload.size || 1200;
-    nodes = payload.nodes || [];
-    fileNodes = nodes.filter((n) => !n.dir && n.path);
-    changedNodes = fileNodes.filter(isChanged);
-    byPath = new Map();
-    for (const n of fileNodes) byPath.set(n.path, n);
-    viewedSet = new Set(changedNodes.filter((n) => n.viewed).map((n) => n.path));
-    labelByPath = new Map();
-    ringIndexByPath = new Map();
-    selectedPath = null; blastSet = null;
-    hideCard(); hideTooltip();
-
-    // Quiet-zone pruning: unchanged files inside change-free directories stay
-    // collapsed into their platform (count on the label) unless "All files".
-    const dirPathSet = new Set();
-    const quietDirSet = new Set();
-    for (const n of nodes) {
-        if (n.dir && n.path) {
-            dirPathSet.add(n.path);
-            if (n.quiet) quietDirSet.add(n.path);
-        }
-    }
-    const isPruned = (n) => {
-        if (showAllFiles || isChanged(n)) return false;
-        let p = n.path;
-        for (;;) {
-            const cut = p.lastIndexOf('/');
-            if (cut === -1) return false;
-            p = p.slice(0, cut);
-            if (dirPathSet.has(p)) return quietDirSet.has(p);
-        }
-    };
-    const prunedSet = new Set();
-    for (const n of fileNodes) if (isPruned(n)) prunedSet.add(n.path);
-
-    // Directory platforms: real 3D â lit cylinder plinths with a torus rim,
-    // stacked by depth. Names are painted onto the platform as 3D planes.
-    const dirs = nodes.filter((n) => n.dir && n.depth > 0);
-    dirNodes = dirs;
-    if (dirs.length) {
-        const platGeo = new THREE.CylinderGeometry(1, 1, 2.4, 56);
-        platGeo.rotateX(Math.PI / 2); // axis â Z (map up)
-        dirMesh = new THREE.InstancedMesh(platGeo, new THREE.MeshLambertMaterial({
-            color: 0xffffff, transparent: true, opacity: 0.16,
-        }), dirs.length);
-        const rimGeo = new THREE.TorusGeometry(1, 0.014, 8, 72);
-        const dirRim = new THREE.InstancedMesh(rimGeo, new THREE.MeshBasicMaterial({
-            color: 0xffffff, transparent: true, opacity: 0.75,
-        }), dirs.length);
-        const m = new THREE.Matrix4();
-        const dirCol = new THREE.Color();
-        const bgCol = new THREE.Color(PAL.bgMix);
-        for (let i = 0; i < dirs.length; i++) {
-            const d = dirs[i];
-            const p = worldPos(d);
-            const z = d.depth * 3;
-            m.makeTranslation(p.x, p.y, z);
-            m.multiply(new THREE.Matrix4().makeScale(d.r, d.r, 1));
-            dirMesh.setMatrixAt(i, m);
-            m.makeTranslation(p.x, p.y, z + 1.3);
-            m.multiply(new THREE.Matrix4().makeScale(d.r, d.r, 1));
-            dirRim.setMatrixAt(i, m);
-            // Deep + quiet platforms fade toward the background — less terracing.
-            dirCol.set(PAL.dir);
-            const fade = Math.min(0.75, (d.depth - 1) * 0.28 + (d.quiet ? 0.25 : 0));
-            if (fade > 0) dirCol.lerp(bgCol, fade);
-            dirMesh.setColorAt(i, dirCol);
-            dirRim.setColorAt(i, dirCol.clone().lerp(new THREE.Color(0xffffff), 0.15));
-        }
-        if (dirMesh.instanceColor) dirMesh.instanceColor.needsUpdate = true;
-        if (dirRim.instanceColor) dirRim.instanceColor.needsUpdate = true;
-        rootGroup.add(dirMesh);
-        rootGroup.add(dirRim);
-        // Folder names float above their platform — plain stroked text so they
-        // read as wayfinding, with a file count when the zone is collapsed.
-        dirLabelGroup = new THREE.Group();
-        for (const d of dirs) {
-            if (d.r < 14) continue;
-            const collapsed = !showAllFiles && d.quiet;
-            const sprite = makeLabelSprite(d.name, collapsed && d.files ? d.files + ' files' : null, null, true);
-            const p = worldPos(d);
-            sprite.position.set(p.x, p.y, d.depth * 3 + 22 + d.r * 0.1);
-            const wWorld = Math.max(22, Math.min(95, d.r * 0.75));
-            sprite.scale.set(wWorld, wWorld * 0.25, 1);
-            sprite.material.opacity = 0.8;
-            sprite.userData.node = d;
-            dirLabelGroup.add(sprite);
-        }
-        rootGroup.add(dirLabelGroup);
-    } else {
-        dirMesh = null;
-        dirLabelGroup = null;
-    }
-
-    // Two sphere populations: quiet lit terrain for unchanged files, bright
-    // unlit (always-vivid) spheres for the changeset.
-    baseNodes = fileNodes.filter((n) => !isChanged(n) && !prunedSet.has(n.path));
-    baseMesh = null;
-    changedMesh = null;
-    if (baseNodes.length) {
-        const geo = new THREE.SphereGeometry(1, 14, 10);
-        baseMesh = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: 0xffffff }), baseNodes.length);
-        const m = new THREE.Matrix4();
-        for (let i = 0; i < baseNodes.length; i++) {
-            const n = baseNodes[i];
-            const p = worldPos(n);
-            const r = n.r * 0.55;
-            m.makeTranslation(p.x, p.y, p.z);
-            m.multiply(new THREE.Matrix4().makeScale(r, r, r));
-            baseMesh.setMatrixAt(i, m);
-        }
-        rootGroup.add(baseMesh);
-    }
-    glowSprites = [];
-    if (changedNodes.length) {
-        const geo = new THREE.SphereGeometry(1, 24, 18);
-        changedMesh = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({ color: 0xffffff }), changedNodes.length);
-        const m = new THREE.Matrix4();
-        const gtex = getGlowTexture();
-        for (let i = 0; i < changedNodes.length; i++) {
-            const n = changedNodes[i];
-            const p = worldPos(n);
-            m.makeTranslation(p.x, p.y, p.z);
-            m.multiply(new THREE.Matrix4().makeScale(n.r, n.r, n.r));
-            changedMesh.setMatrixAt(i, m);
-            // Beacon halo behind each changed sphere.
-            const glow = new THREE.Sprite(new THREE.SpriteMaterial({
-                map: gtex, transparent: true, depthWrite: false,
-                blending: THREE.AdditiveBlending, opacity: 0.55,
-            }));
-            glow.position.copy(p);
-            glow.scale.set(n.r * 3.6, n.r * 3.6, 1);
-            glow.renderOrder = 6;
-            rootGroup.add(glow);
-            glowSprites.push(glow);
-        }
-        rootGroup.add(changedMesh);
-    }
-
-    // Quality / viewed rings â Saturn-style, around the sphere's equator.
-    if (changedNodes.length) {
-        const geo = new THREE.RingGeometry(1.35, 1.6, 44);
-        ringMesh = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({
-            color: 0xffffff, transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthWrite: false,
-        }), changedNodes.length);
-        const m = new THREE.Matrix4();
-        for (let i = 0; i < changedNodes.length; i++) {
-            const n = changedNodes[i];
-            ringIndexByPath.set(n.path, i);
-            const p = worldPos(n);
-            m.makeTranslation(p.x, p.y, p.z);
-            m.multiply(new THREE.Matrix4().makeScale(n.r, n.r, 1));
-            ringMesh.setMatrixAt(i, m);
-            ringMesh.setColorAt(i, new THREE.Color(PAL.dir));
-        }
-        rootGroup.add(ringMesh);
-    } else {
-        ringMesh = null;
-    }
-
-    // Import edges â neural connections. Hot (touching a change) glow additive;
-    // cold repo wiring stays faint background structure.
-    adj = new Map();
-    const edges = payload.edges || [];
-    edgeLines = null;
-    if (edges.length) {
-        const hotPos = [], coldPos = [], hotCol = [];
-        const cFrom = new THREE.Color(PAL.edge), cTo = new THREE.Color(0xc678dd), cTmp = new THREE.Color();
-        for (const e of edges) {
-            const a = nodes[e.from], b = nodes[e.to];
-            if (!a || !b) continue;
-            if (!adj.has(a.path)) adj.set(a.path, []);
-            if (!adj.has(b.path)) adj.set(b.path, []);
-            adj.get(a.path).push(b.path);
-            adj.get(b.path).push(a.path);
-            // Cold wiring into pruned quiet zones is dropped (endpoint invisible).
-            if (!e.hot && (prunedSet.has(a.path) || prunedSet.has(b.path))) continue;
-            const pa = worldPos(a), pb = worldPos(b);
-            const mid = pa.clone().add(pb).multiplyScalar(0.5);
-            const ctrl = new THREE.Vector3(mid.x * 0.7, mid.y * 0.7, Math.max(pa.z, pb.z) + pa.distanceTo(pb) * 0.18 + 10);
-            const pts = new THREE.QuadraticBezierCurve3(pa, ctrl, pb).getPoints(16);
-            const dst = e.hot ? hotPos : coldPos;
-            for (let i = 0; i < pts.length - 1; i++) {
-                dst.push(pts[i].x, pts[i].y, pts[i].z, pts[i + 1].x, pts[i + 1].y, pts[i + 1].z);
-                if (e.hot) {
-                    // Direction gradient: importer (cyan) -> imported (purple).
-                    cTmp.copy(cFrom).lerp(cTo, i / (pts.length - 1));
-                    hotCol.push(cTmp.r, cTmp.g, cTmp.b);
-                    cTmp.copy(cFrom).lerp(cTo, (i + 1) / (pts.length - 1));
-                    hotCol.push(cTmp.r, cTmp.g, cTmp.b);
-                }
-            }
-        }
-        if (coldPos.length) {
-            const geo = new THREE.BufferGeometry();
-            geo.setAttribute('position', new THREE.Float32BufferAttribute(coldPos, 3));
-            const cold = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({
-                color: PAL.dir, transparent: true, opacity: 0.12, depthWrite: false,
-            }));
-            cold.renderOrder = 4;
-            rootGroup.add(cold);
-        }
-        if (hotPos.length) {
-            const geo = new THREE.BufferGeometry();
-            geo.setAttribute('position', new THREE.Float32BufferAttribute(hotPos, 3));
-            geo.setAttribute('color', new THREE.Float32BufferAttribute(hotCol, 3));
-            edgeLines = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({
-                vertexColors: true, transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending,
-            }));
-            edgeLines.renderOrder = 5;
-            rootGroup.add(edgeLines);
-        }
-    }
-
-    // Two-line pill labels floating above changed bubbles: filename + word.
-    labelGroup = new THREE.Group();
-    for (const n of changedNodes) {
-        const a = analysisByPath.get(n.path);
-        const counts = '+' + (n.add || 0) + ' â' + (n.del || 0);
-        const sprite = makeLabelSprite(n.name, (a && a.word) || counts, qualityAccent(a));
-        const p = worldPos(n);
-        sprite.position.set(p.x, p.y, p.z + n.r + 10);
-        const wWorld = Math.max(26, Math.min(96, n.r * 3.2));
-        sprite.scale.set(wWorld, wWorld * 0.25, 1);
-        sprite.userData.node = n;
-        labelGroup.add(sprite);
-        labelByPath.set(n.path, sprite);
-    }
-    rootGroup.add(labelGroup);
-
-    // Gentle float â nuclei drifting. Changed files only (cheap: â¤ a few hundred).
-    bobItems = [];
-    for (let i = 0; i < changedNodes.length; i++) {
-        const n = changedNodes[i];
-        bobItems.push({
-            n,
-            fi: i,
-            ri: ringIndexByPath.has(n.path) ? ringIndexByPath.get(n.path) : -1,
-            base: worldPos(n),
-            phase: hash01(n.path) * 6.283,
-            sprite: labelByPath.get(n.path) || null,
-            glow: glowSprites[i] || null,
-        });
-    }
-    camDirty = true;
-
-    applyColors();
-    updateProgress();
-
-    // First delivery: frame the changeset so the user lands on the action.
-    if (!framedOnce) {
-        framedOnce = true;
-        if (changedNodes.length) frameChangeset();
-    }
-}
-
-function animateBob(t) {
-    if (!changedMesh || !bobItems.length) return;
-    if (!document.body.classList.contains('map-mode')) return;
-    bobQuat.set(0, 0, 0, 1);
-    // Labels ride above the sphere along the camera's up vector, so the word
-    // reads "over the planet" from any orbit angle.
-    const upv = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 1);
-    for (const it of bobItems) {
-        const dz = Math.sin(t * 0.9 + it.phase) * 3.5 + Math.sin(t * 0.37 + it.phase * 2.1) * 1.5;
-        bobPos.set(it.base.x, it.base.y, it.base.z + dz);
-        bobScale.set(it.n.r, it.n.r, it.n.r);
-        bobMatrix.compose(bobPos, bobQuat, bobScale);
-        changedMesh.setMatrixAt(it.fi, bobMatrix);
-        if (ringMesh && it.ri >= 0) {
-            bobScale.set(it.n.r, it.n.r, 1);
-            bobMatrix.compose(bobPos, bobQuat, bobScale);
-            ringMesh.setMatrixAt(it.ri, bobMatrix);
-        }
-        if (it.sprite) {
-            it.sprite.position.set(it.base.x, it.base.y, it.base.z + dz)
-                .addScaledVector(upv, it.n.r * 1.15 + 9);
-        }
-        if (it.glow) it.glow.position.set(it.base.x, it.base.y, it.base.z + dz);
-    }
-    changedMesh.instanceMatrix.needsUpdate = true;
-    if (ringMesh) ringMesh.instanceMatrix.needsUpdate = true;
-}
-
-function weightOf(n) {
-    let w = 1;
-    const changed = isChanged(n);
-    if (filter.dimUnchanged && !changed) w = 0.2;
-    if (filter.unreviewedOnly && changed && viewedSet.has(n.path)) w = 0.15;
-    if (filter.text) {
-        const q = filter.text.toLowerCase();
-        if (n.path.toLowerCase().indexOf(q) === -1) w = Math.min(w, 0.1);
-    }
-    if (filter.quality) {
-        const a = analysisByPath.get(n.path);
-        if (!changed || !a || a.quality !== filter.quality) w = Math.min(w, 0.12);
-    }
-    if (blastSet) w = blastSet.has(n.path) ? Math.max(w, 1) : Math.min(w, 0.13);
-    return w;
-}
-
-function applyColors() {
-    const bg = new THREE.Color(PAL.bgMix);
-    if (changedMesh) {
-        for (let i = 0; i < changedNodes.length; i++) {
-            const n = changedNodes[i];
-            const a = analysisByPath.get(n.path);
-            let col;
-            // Quality verdict owns the color once analysis lands; churn heat
-            // is the pre-analysis fallback.
-            if (a && a.quality && QUALITY[a.quality] !== undefined) {
-                col = new THREE.Color(QUALITY[a.quality]);
-            } else {
-                const t = Math.min(1, Math.log(1 + churnOf(n)) / Math.log(500));
-                col = new THREE.Color(PAL.heatLo).lerp(new THREE.Color(PAL.heatHi), t);
-            }
-            if (viewedSet.has(n.path)) col.lerp(new THREE.Color(PAL.viewed), 0.55);
-            const w = weightOf(n);
-            if (w < 1) col.lerp(bg, 0.85 * (1 - w));
-            changedMesh.setColorAt(i, col);
-            const glow = glowSprites[i];
-            if (glow) {
-                glow.material.color.copy(col);
-                glow.material.opacity = viewedSet.has(n.path) ? 0.18 : 0.5 * Math.max(0.25, w);
-            }
-        }
-        if (changedMesh.instanceColor) changedMesh.instanceColor.needsUpdate = true;
-    }
-    if (baseMesh) {
-        for (let i = 0; i < baseNodes.length; i++) {
-            const n = baseNodes[i];
-            const col = new THREE.Color(PAL.file);
-            const w = weightOf(n);
-            if (w < 1) col.lerp(bg, 0.85 * (1 - w));
-            baseMesh.setColorAt(i, col);
-        }
-        if (baseMesh.instanceColor) baseMesh.instanceColor.needsUpdate = true;
-    }
-    if (ringMesh) {
-        for (const [p, i] of ringIndexByPath) {
-            const a = analysisByPath.get(p);
-            let col = null;
-            if (viewedSet.has(p)) col = new THREE.Color(PAL.viewed);
-            else if (a && a.quality && QUALITY[a.quality] !== undefined) col = new THREE.Color(QUALITY[a.quality]);
-            const n = byPath.get(p);
-            const w = n ? weightOf(n) : 1;
-            if (!col) col = new THREE.Color(PAL.dir);
-            if (w < 1) col.lerp(new THREE.Color(PAL.bgMix), 0.85 * (1 - w));
-            ringMesh.setColorAt(i, col);
-        }
-        if (ringMesh.instanceColor) ringMesh.instanceColor.needsUpdate = true;
-    }
-    for (const [p, sprite] of labelByPath) {
-        const n = byPath.get(p);
-        sprite.userData.wOk = !!n && weightOf(n) > 0.5;
-    }
-    camDirty = true;
-    updateProgress();
-}
-
-function updateProgress() {
-    if (progressEl) {
-        const total = changedNodes.length;
-        if (!total) { progressEl.textContent = ''; }
-        else {
-            let v = 0;
-            for (const n of changedNodes) if (viewedSet.has(n.path)) v++;
-            progressEl.textContent = v + '/' + total + ' reviewed';
-        }
-    }
-    const qEl = document.getElementById('map-quality');
-    if (qEl) {
-        const counts = { clean: 0, review: 0, concern: 0 };
-        for (const n of changedNodes) {
-            const a = analysisByPath.get(n.path);
-            if (a && a.quality && counts[a.quality] !== undefined) counts[a.quality]++;
-        }
-        let html = '';
-        for (const q of ['concern', 'review', 'clean']) {
-            if (!counts[q]) continue;
-            html += '<span class="q-chip q-' + q + (filter.quality === q ? ' on' : '') + '" data-q="' + q + '">' + counts[q] + ' ' + q + '</span>';
-        }
-        qEl.innerHTML = html;
-    }
-}
-
-function hideTooltip() { tooltipEl.style.display = 'none'; }
-function showTooltip(n, x, y) {
-    const a = analysisByPath.get(n.path);
-    let html = '<div style="font-weight:600; font-size:13px">' + (n.dir ? 'ð ' : '') + esc(n.name) + '</div>';
-    html += '<div class="t-path">' + esc(n.path) + '</div>';
-    if (isChanged(n)) {
-        html += '<div class="t-meta"><span style="color:#2ea043">+' + (n.add || 0) + '</span> <span style="color:#f85149">-' + (n.del || 0) + '</span>';
-        if (a && a.risk) html += ' Â· risk: ' + esc(a.risk);
-        if (a && a.quality) html += ' Â· ' + esc(a.quality);
-        if (viewedSet.has(n.path)) html += ' Â· â reviewed';
-        html += '</div>';
-        if (a && a.summary) html += '<div class="t-sum">' + esc(a.summary) + '</div>';
-        if (!n.testPair) html += '<div class="t-meta">â no test pair found</div>';
-        if (n.comments) html += '<div class="t-meta">ð¬ ' + n.comments + ' comment' + (n.comments === 1 ? '' : 's') + '</div>';
-    }
-    tooltipEl.innerHTML = html;
-    tooltipEl.style.display = 'block';
-    const rect = wrap.getBoundingClientRect();
-    let tx = x - rect.left + 14, ty = y - rect.top + 12;
-    if (tx + 430 > rect.width) tx = Math.max(4, rect.width - 434);
-    tooltipEl.style.left = tx + 'px';
-    tooltipEl.style.top = ty + 'px';
-}
-
-function hideCard() { cardEl.style.display = 'none'; }
-function showCard(n) {
-    const a = analysisByPath.get(n.path) || {};
-    let html = '<div class="c-path">' + esc(n.path) + '</div>';
-    html += '<div class="c-badges">';
-    if (isChanged(n)) html += '<span class="c-badge"><span style="color:#2ea043">+' + (n.add || 0) + '</span> <span style="color:#f85149">-' + (n.del || 0) + '</span></span>';
-    if (a.word) html += '<span class="c-badge">' + esc(a.word) + '</span>';
-    if (a.risk) html += '<span class="c-badge">risk: ' + esc(a.risk) + '</span>';
-    if (a.quality) html += '<span class="c-badge q-' + esc(a.quality) + '">' + esc(a.quality) + '</span>';
-    if (viewedSet.has(n.path)) html += '<span class="c-badge q-clean">â reviewed</span>';
-    html += '</div>';
-    if (a.summary) html += '<div class="c-sum">' + esc(a.summary) + '</div>';
-    if (a.flags && a.flags.length) html += '<div class="c-flags">â ' + a.flags.map(esc).join('<br>â ') + '</div>';
-    const deps = adj.get(n.path);
-    if (deps && deps.length) html += '<div class="c-flags">â¯ linked: ' + deps.length + ' file' + (deps.length === 1 ? '' : 's') + ' (highlighted)</div>';
-    html += '<div class="c-actions">';
-    if (isChanged(n)) html += '<button data-act="diff">Diff</button>';
-    html += '<button data-act="open">Open</button>';
-    if (isChanged(n)) {
-        html += '<button data-act="viewed">' + (viewedSet.has(n.path) ? 'Unmark' : 'â Reviewed') + '</button>';
-        html += '<button data-act="analyze">ð Analyze</button>';
-    }
-    html += '</div>';
-    cardEl.innerHTML = html;
-    cardEl.style.display = 'block';
-    const acts = { diff: () => (bridge.showDiff ? bridge.showDiff(n.path) : bridge.jumpToDiff && bridge.jumpToDiff(n.path)),
-        open: () => bridge.openFile && bridge.openFile(n.path),
-        viewed: () => toggleViewed(n.path),
-        analyze: () => bridge.analyze && bridge.analyze(n.path) };
-    for (const btn of cardEl.querySelectorAll('button')) {
-        btn.addEventListener('click', (ev) => { ev.stopPropagation(); const f = acts[btn.getAttribute('data-act')]; if (f) f(); });
-    }
-}
-
-function toggleViewed(p) {
-    const nowViewed = !viewedSet.has(p);
-    if (nowViewed) viewedSet.add(p); else viewedSet.delete(p);
-    if (bridge.setViewed) bridge.setViewed(p, nowViewed);
-    const n = byPath.get(p);
-    if (n && selectedPath === p) showCard(n);
-    applyColors();
-}
-
-function select(n) {
-    selectedPath = n ? n.path : null;
-    if (selRing) {
-        selRing.visible = !!n;
-        if (n) {
-            const p = worldPos(n);
-            selRing.position.copy(p);
-            selRing.scale.set(n.r * 1.6, n.r * 1.6, 1);
-        }
-    }
-    if (!n) { blastSet = null; hideCard(); applyColors(); return; }
-    blastSet = new Set([n.path]);
-    const queue = [n.path];
-    while (queue.length) {
-        const cur = queue.shift();
-        for (const next of adj.get(cur) || []) {
-            if (!blastSet.has(next)) { blastSet.add(next); queue.push(next); }
-        }
-    }
-    showCard(n);
-    applyColors();
-}
-
-function pick(e) {
-    if (!raycaster || !camera) return null;
-    const rect = renderer.domElement.getBoundingClientRect();
-    const ndc = new THREE.Vector2(
-        ((e.clientX - rect.left) / rect.width) * 2 - 1,
-        -((e.clientY - rect.top) / rect.height) * 2 + 1
-    );
-    raycaster.setFromCamera(ndc, camera);
-    if (changedMesh) {
-        const hits = raycaster.intersectObject(changedMesh);
-        if (hits.length && hits[0].instanceId !== undefined && hits[0].instanceId !== null) {
-            return changedNodes[hits[0].instanceId];
-        }
-    }
-    if (baseMesh) {
-        const hits = raycaster.intersectObject(baseMesh);
-        if (hits.length && hits[0].instanceId !== undefined && hits[0].instanceId !== null) {
-            return baseNodes[hits[0].instanceId];
-        }
-    }
-    if (dirMesh) {
-        const hits = raycaster.intersectObject(dirMesh);
-        if (hits.length && hits[0].instanceId !== undefined && hits[0].instanceId !== null) {
-            // Smallest (deepest) dir wins visually; instances are draw-order, so
-            // walk all hits and prefer the smallest radius.
-            let best = null;
-            for (const h of hits) {
-                const d = dirNodes[h.instanceId];
-                if (d && (!best || d.r < best.r)) best = d;
-            }
-            return best;
-        }
-    }
-    return null;
-}
-
-function bindInput() {
-    const el = renderer.domElement;
-    let dragging = false, moved = 0, lastX = 0, lastY = 0, panMode = false;
-    el.addEventListener('contextmenu', (e) => e.preventDefault());
-    el.addEventListener('pointerdown', (e) => {
-        camAnim = null; // user takes the wheel
-        dragging = true; moved = 0; lastX = e.clientX; lastY = e.clientY;
-        panMode = e.button === 2 || e.shiftKey;
-        wrap.classList.add('dragging');
-        el.setPointerCapture(e.pointerId);
-    });
-    el.addEventListener('pointermove', (e) => {
-        if (dragging) {
-            const dx = e.clientX - lastX, dy = e.clientY - lastY;
-            moved += Math.abs(dx) + Math.abs(dy);
-            lastX = e.clientX; lastY = e.clientY;
-            if (panMode) {
-                const panScale = camDist * 0.0014;
-                const right = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 0);
-                const upv = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 1);
-                camTarget.addScaledVector(right, -dx * panScale);
-                camTarget.addScaledVector(upv, dy * panScale);
-            } else {
-                camTheta -= dx * 0.005;
-                camPhi = Math.max(0.12, Math.min(1.35, camPhi - dy * 0.005));
-            }
-            applyCamera();
-            hideTooltip();
-        } else {
-            const now = performance.now();
-            if (now - lastPickAt < 40) return;
-            lastPickAt = now;
-            const n = pick(e);
-            if (n) showTooltip(n, e.clientX, e.clientY); else hideTooltip();
-        }
-    });
-    el.addEventListener('pointerup', (e) => {
-        wrap.classList.remove('dragging');
-        if (dragging && moved < 6 && e.button !== 2) {
-            const n = pick(e);
-            if (!n) { select(null); }
-            else if (n.dir) { select(null); }
-            else {
-                select(n);
-                if (isChanged(n) && bridge.showDiff) bridge.showDiff(n.path);
-            }
-        }
-        dragging = false;
-    });
-    el.addEventListener('dblclick', (e) => {
-        const n = pick(e);
-        if (n && n.dir && bridge.setRoot) bridge.setRoot(n.path);
-    });
-    el.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        camDist = Math.max(180, Math.min(7000, camDist * Math.pow(1.0016, e.deltaY)));
-        applyCamera();
-    }, { passive: false });
-    el.addEventListener('pointerleave', hideTooltip);
-}
-
-const api = {
-    setData,
-    analysis(p, result) {
-        analysisByPath.set(p, result || {});
-        const sprite = labelByPath.get(p);
-        const n = byPath.get(p);
-        if (sprite && n) {
-            const counts = '+' + (n.add || 0) + ' â' + (n.del || 0);
-            drawLabel(sprite.userData.canvas, n.name, (result && result.word) || counts, qualityAccent(result));
-            sprite.material.map.needsUpdate = true;
-        }
-        if (selectedPath === p && n) showCard(n);
-        applyColors();
-    },
-    setFilter(f) {
-        filter = { text: String(f.text || ''), unreviewedOnly: !!f.unreviewedOnly, dimUnchanged: !!f.dimUnchanged };
-        applyColors();
-    },
-    resize() {
-        if (!renderer) return;
-        renderer.setSize(W(), H());
-        if (camera) {
-            camera.aspect = W() / Math.max(1, H());
-            camera.updateProjectionMatrix();
-        }
-    },
-    setStale(b) { if (mapViewEl) mapViewEl.classList.toggle('stale', !!b); },
-    clearSelection() { select(null); },
-    toggleViewedSelected() { if (selectedPath) toggleViewed(selectedPath); },
-    toggleViewedPath(p) { if (p && byPath.has(p)) toggleViewed(p); },
-    isViewed(p) { return viewedSet.has(p); },
-    diffSelected() { if (selectedPath && bridge.showDiff) bridge.showDiff(selectedPath); },
-    frameChangeset() { frameChangeset(); },
-    flyToPath(p) { const n = byPath.get(p); if (n) flyToNode(n); },
-    nextUnreviewed(dir) { nextUnreviewed(dir || 1); },
-    setShowAll(b) {
-        showAllUserSet = true;
-        showAllFiles = !!b;
-        if (lastPayloadStored) setData(lastPayloadStored);
-    },
-};
-const mapAllCbEl = document.getElementById('map-all-cb');
-if (mapAllCbEl) mapAllCbEl.addEventListener('change', () => api.setShowAll(mapAllCbEl.checked));
-const mapFrameBtn = document.getElementById('map-frame');
-if (mapFrameBtn) mapFrameBtn.addEventListener('click', () => frameChangeset());
-const mapNextBtn = document.getElementById('map-next');
-if (mapNextBtn) mapNextBtn.addEventListener('click', () => nextUnreviewed(1));
-const mapQualityEl = document.getElementById('map-quality');
-if (mapQualityEl) {
-    mapQualityEl.addEventListener('click', (e) => {
-        const chip = e.target.closest('.q-chip');
-        if (!chip) return;
-        const q = chip.getAttribute('data-q');
-        filter.quality = filter.quality === q ? null : q;
-        applyColors();
-        updateProgress();
-    });
-}
-window.GitMap = api;
-window.dispatchEvent(new Event('gitmap-ready'));
-</script>
+<script type="importmap">{ "imports": { "three": "${a.threeUri}" } }</script>
+<script type="module" src="${a.mapJsUri}"></script>
 </body>
 </html>`;
 }

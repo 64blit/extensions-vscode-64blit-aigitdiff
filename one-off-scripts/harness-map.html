@@ -1,0 +1,1561 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>map.js harness</title>
+<style>
+    :root {
+        /* Editor settings injected by the extension — see buildEditorVars().
+           These can be live-updated via the editorConfig message. */
+        --diff-mono: Menlo, ui-monospace, 'SF Mono', 'SFMono-Regular', Menlo, Monaco, 'Cascadia Mono', 'Cascadia Code', Consolas, 'Liberation Mono', 'DejaVu Sans Mono', 'Courier New', monospace;
+        --editor-font-size: 12px;
+        --editor-line-height: 18px;
+        --editor-tab-size: 4;
+
+        /* === Dark theme (default) === */
+        --diff-fg: #ffffff;
+        --add-bg: rgba(0, 255, 100, 0.20);
+        --add-line: #00ff66;
+        --add-num-bg: rgba(0, 255, 100, 0.32);
+        --add-num-fg: #00ff66;
+        --del-bg: rgba(255, 60, 100, 0.22);
+        --del-line: #ff3366;
+        --del-num-bg: rgba(255, 60, 100, 0.32);
+        --del-num-fg: #ff3366;
+        --num-bg: rgba(255, 255, 255, 0.06);
+        --empty-bg: rgba(255, 255, 255, 0.02);
+        --hunk-bg: rgba(0, 255, 255, 0.06);
+        --hunk-header-fg: #00ffff;
+        --hunk-header-bg: rgba(0, 255, 255, 0.08);
+        --section-title-fg: #ffff66;
+        --row-num: #ffffff;
+        --border: rgba(255, 255, 255, 0.25);
+        --expand-bg: rgba(0, 212, 255, 0.10);
+        --expand-bg-hover: rgba(0, 212, 255, 0.22);
+        --expand-fg: #00d4ff;
+        --file-approved-bg: rgba(0, 255, 100, 0.10);
+        --file-approved-fg: #00ff66;
+        --file-rejected-bg: rgba(255, 60, 100, 0.10);
+        --file-rejected-fg: #ff3366;
+        --action-approved-bg: rgba(0, 255, 100, 0.16);
+        --action-approved-fg: #00ff66;
+        --action-approved-border: rgba(0, 255, 100, 0.55);
+        --action-rejected-bg: rgba(255, 60, 100, 0.16);
+        --action-rejected-fg: #ff3366;
+        --action-rejected-border: rgba(255, 60, 100, 0.55);
+        --recent-bg: rgba(56, 139, 253, 0.18);
+        --recent-fg: #58a6ff;
+        --recent-border: rgba(56, 139, 253, 0.4);
+
+        /* Highlight tokens — bright for dark bg */
+        --hl-comment: #00ffff;
+        --hl-keyword: #ff2ad4;
+        --hl-string: #00ff66;
+        --hl-number: #ffae00;
+        --hl-function: #ffff00;
+        --hl-builtin: #ff66cc;
+        --hl-variable: #00d4ff;
+        --hl-property: #66ffff;
+        --hl-attribute: #ffff66;
+        --hl-tag: #ff2ad4;
+        --hl-meta: #ffff66;
+        --hl-operator: #ffffff;
+        --hl-deletion: #ff5577;
+        --hl-addition: #66ff77;
+    }
+
+    /* === Light theme overrides — readable on white === */
+    body.vscode-light, body.vscode-high-contrast-light {
+        --diff-fg: #1f2328;
+        --add-bg: rgba(46, 160, 67, 0.18);
+        --add-line: #1a7f37;
+        --add-num-bg: rgba(46, 160, 67, 0.26);
+        --add-num-fg: #1a7f37;
+        --del-bg: rgba(207, 34, 46, 0.16);
+        --del-line: #cf222e;
+        --del-num-bg: rgba(207, 34, 46, 0.22);
+        --del-num-fg: #cf222e;
+        --num-bg: rgba(0, 0, 0, 0.04);
+        --empty-bg: rgba(0, 0, 0, 0.02);
+        --hunk-bg: rgba(0, 86, 197, 0.05);
+        --hunk-header-fg: #0550ae;
+        --hunk-header-bg: rgba(0, 86, 197, 0.08);
+        --section-title-fg: #9a6700;
+        --row-num: #57606a;
+        --border: rgba(0, 0, 0, 0.18);
+        --expand-bg: rgba(9, 105, 218, 0.06);
+        --expand-bg-hover: rgba(9, 105, 218, 0.14);
+        --expand-fg: #0969da;
+        --file-approved-bg: rgba(46, 160, 67, 0.12);
+        --file-approved-fg: #1a7f37;
+        --file-rejected-bg: rgba(207, 34, 46, 0.10);
+        --file-rejected-fg: #cf222e;
+        --action-approved-bg: rgba(46, 160, 67, 0.14);
+        --action-approved-fg: #1a7f37;
+        --action-approved-border: rgba(46, 160, 67, 0.55);
+        --action-rejected-bg: rgba(207, 34, 46, 0.12);
+        --action-rejected-fg: #cf222e;
+        --action-rejected-border: rgba(207, 34, 46, 0.55);
+        --recent-bg: rgba(9, 105, 218, 0.10);
+        --recent-fg: #0969da;
+        --recent-border: rgba(9, 105, 218, 0.4);
+
+        /* Highlight tokens — GitHub Primer Light */
+        --hl-comment: #6e7781;
+        --hl-keyword: #cf222e;
+        --hl-string: #0a3069;
+        --hl-number: #0550ae;
+        --hl-function: #8250df;
+        --hl-builtin: #953800;
+        --hl-variable: #24292f;
+        --hl-property: #116329;
+        --hl-attribute: #0550ae;
+        --hl-tag: #116329;
+        --hl-meta: #6639ba;
+        --hl-operator: #1f2328;
+        --hl-deletion: #82071e;
+        --hl-addition: #116329;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+        margin: 0; padding: 0; height: 100%;
+        font-family: var(--vscode-font-family);
+        font-size: var(--vscode-font-size);
+        color: var(--vscode-foreground);
+        background: var(--vscode-editor-background);
+    }
+    .toolbar {
+        display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+        padding: 8px 12px;
+        background: var(--vscode-sideBar-background, var(--vscode-editor-background));
+        border-bottom: 1px solid var(--border);
+    }
+    .toolbar .meta { display: flex; flex-direction: column; line-height: 1.2; margin-right: auto; }
+    .toolbar .meta .repo { font-size: 11px; opacity: 0.7; max-width: 60vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .toolbar .meta .branch { font-weight: 600; }
+    .toolbar .meta .branch .ahead-behind { margin-left: 6px; font-weight: normal; opacity: 0.75; font-size: 11px; }
+    .toolbar button, .toolbar input[type="search"] {
+        font: inherit; padding: 4px 10px;
+        background: var(--vscode-button-secondaryBackground, transparent);
+        color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
+        border: 1px solid var(--border); border-radius: 3px; cursor: pointer;
+    }
+    .toolbar button:hover { background: var(--vscode-button-secondaryHoverBackground, rgba(128,128,128,0.15)); }
+    .toolbar input[type="search"] { cursor: text; min-width: 180px; }
+    .toolbar .summary { font-size: 11px; opacity: 0.75; }
+
+    .commit-bar {
+        display: flex; gap: 8px; align-items: stretch;
+        padding: 8px 12px;
+        background: var(--vscode-sideBar-background, var(--vscode-editor-background));
+        border-bottom: 1px solid var(--border);
+    }
+    .commit-bar textarea {
+        flex: 1;
+        min-height: 36px;
+        max-height: 160px;
+        resize: vertical;
+        padding: 6px 8px;
+        font: inherit;
+        font-family: var(--diff-mono);
+        background: var(--vscode-input-background, transparent);
+        color: var(--vscode-input-foreground, var(--vscode-foreground));
+        border: 1px solid var(--vscode-input-border, var(--border));
+        border-radius: 3px;
+    }
+    .commit-bar .commit-actions {
+        display: flex; flex-direction: column; gap: 4px; align-items: stretch;
+        min-width: 170px;
+    }
+    .commit-bar label {
+        font-size: 11px; display: flex; gap: 6px; align-items: center;
+    }
+    .commit-bar button {
+        font: inherit; font-weight: 600;
+        padding: 6px 12px;
+        background: var(--vscode-button-background, #0e639c);
+        color: var(--vscode-button-foreground, white);
+        border: 1px solid var(--vscode-button-background, #0e639c);
+        border-radius: 3px; cursor: pointer;
+    }
+    .commit-bar button.secondary {
+        font-weight: normal;
+        background: var(--vscode-button-secondaryBackground, transparent);
+        color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
+        border: 1px solid var(--border);
+    }
+    .commit-bar button:disabled {
+        opacity: 0.5; cursor: not-allowed;
+    }
+    .commit-bar button:hover:not(:disabled) {
+        background: var(--vscode-button-hoverBackground, #1177bb);
+    }
+    .commit-bar button.secondary:hover:not(:disabled) {
+        background: var(--vscode-button-secondaryHoverBackground, rgba(128,128,128,0.15));
+    }
+    .commit-status {
+        font-size: 11px; opacity: 0.8;
+        align-self: center;
+        padding: 0 8px;
+    }
+    .commit-status.error { color: var(--vscode-errorForeground, #f85149); }
+    .commit-status.ok { color: #3fb950; }
+
+    .commit-msg-wrap { display: flex; flex-direction: column; flex: 1; gap: 4px; }
+    .commit-key-row {
+        display: flex; gap: 6px; align-items: center;
+        font-size: 11px;
+    }
+    .commit-key-row input[type="password"] {
+        flex: 1;
+        font: inherit;
+        font-family: var(--diff-mono);
+        font-size: 11px;
+        padding: 4px 8px;
+        background: var(--vscode-input-background, transparent);
+        color: var(--vscode-input-foreground, var(--vscode-foreground));
+        border: 1px solid var(--vscode-input-border, var(--border));
+        border-radius: 3px;
+    }
+    .commit-key-row button {
+        font: inherit; font-size: 11px;
+        padding: 3px 10px;
+        background: transparent;
+        color: var(--vscode-foreground);
+        border: 1px solid var(--border);
+        border-radius: 3px; cursor: pointer;
+    }
+    .commit-key-row button:hover { background: var(--vscode-list-hoverBackground, rgba(128,128,128,0.1)); }
+    .commit-key-status { opacity: 0.75; font-size: 11px; }
+    .commit-key-status.ok { color: #3fb950; }
+    .commit-key-status.error { color: var(--vscode-errorForeground, #f85149); }
+
+    /* Floating Generate (✨) + key (⚙) buttons inside the textarea. */
+    .commit-msg-container {
+        position: relative;
+        flex: 1;
+        display: flex;
+    }
+    .commit-msg-container > textarea {
+        flex: 1;
+        padding-right: 64px;
+    }
+    .commit-msg-floating {
+        position: absolute;
+        top: 4px;
+        right: 6px;
+        display: flex;
+        gap: 4px;
+        z-index: 2;
+    }
+    .commit-msg-floating button {
+        width: 26px; height: 26px;
+        padding: 0;
+        font: inherit;
+        font-size: 14px;
+        line-height: 1;
+        background: var(--vscode-button-secondaryBackground, transparent);
+        color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        cursor: pointer;
+        opacity: 0.85;
+    }
+    .commit-msg-floating button:hover {
+        opacity: 1;
+        background: var(--vscode-list-hoverBackground, rgba(128,128,128,0.15));
+    }
+    .commit-msg-floating button:disabled {
+        opacity: 0.5; cursor: not-allowed;
+    }
+    .commit-msg-floating button#commit-generate {
+        font-size: 13px;
+    }
+
+    .hidden-pill {
+        display: none;
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: rgba(127,127,127,0.12);
+        cursor: pointer;
+    }
+    .hidden-pill.has-hidden { display: inline-flex; align-items: center; gap: 6px; }
+    .hidden-pill:hover { background: rgba(127,127,127,0.25); }
+
+    .hidden-list {
+        display: none;
+        padding: 6px 12px;
+        border-bottom: 1px solid var(--border);
+        background: var(--hunk-bg);
+        font-size: 11px;
+    }
+    .hidden-list.open { display: block; }
+    .hidden-list .h-row {
+        display: flex; gap: 8px; align-items: center;
+        padding: 2px 0;
+        font-family: var(--diff-mono);
+    }
+    .hidden-list .h-row .path { flex: 1; opacity: 0.85; }
+    .hidden-list button {
+        font: inherit; font-size: 11px;
+        padding: 1px 8px;
+        background: transparent;
+        color: var(--vscode-foreground);
+        border: 1px solid var(--border); border-radius: 3px; cursor: pointer;
+    }
+    .hidden-list button:hover { background: var(--vscode-list-hoverBackground, rgba(128,128,128,0.1)); }
+
+    .file-actions .icon-btn {
+        padding: 2px 6px; font-size: 13px; line-height: 1;
+    }
+    .file-actions .danger {
+        color: #f85149;
+        border-color: rgba(248, 81, 73, 0.5);
+    }
+    .file-actions .danger:hover {
+        background: rgba(248, 81, 73, 0.15);
+    }
+
+    .hunk-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .hunk-header .hunk-text {
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .hunk-actions { display: flex; gap: 4px; }
+    .hunk-actions button {
+        font: inherit; font-size: 11px;
+        padding: 1px 8px;
+        background: transparent;
+        color: var(--vscode-foreground);
+        border: 1px solid var(--border);
+        border-radius: 3px; cursor: pointer;
+    }
+    .hunk-actions button.approve {
+        color: #3fb950;
+        border-color: rgba(46, 160, 67, 0.5);
+    }
+    .hunk-actions button.approve:hover {
+        background: rgba(46, 160, 67, 0.15);
+    }
+    .hunk-actions button.reject {
+        color: #f85149;
+        border-color: rgba(248, 81, 73, 0.5);
+    }
+    .hunk-actions button.reject:hover {
+        background: rgba(248, 81, 73, 0.15);
+    }
+
+    /* Recent badge for files sorted by mtime in auto-expand mode. */
+    .file.most-recent .file-header { box-shadow: inset 3px 0 0 var(--recent-fg); }
+    .recent-tag {
+        font-size: 10px;
+        padding: 1px 6px;
+        border-radius: 8px;
+        background: var(--recent-bg);
+        color: var(--recent-fg);
+        border: 1px solid var(--recent-border);
+    }
+
+    /* File-level approve / reject status (per-session). Layered as bg-image
+       over the file-header's solid base so sticky positioning still hides
+       scrolling content beneath it. */
+    .file.file-approved > .file-header {
+        background-image: linear-gradient(var(--file-approved-bg), var(--file-approved-bg));
+    }
+    .file.file-approved .file-header .path { color: var(--file-approved-fg); font-weight: 700; }
+    .file.file-rejected > .file-header {
+        background-image: linear-gradient(var(--file-rejected-bg), var(--file-rejected-bg));
+    }
+    .file.file-rejected .file-header .path { color: var(--file-rejected-fg); font-weight: 700; }
+    .action-tag {
+        font-size: 10px;
+        font-weight: 700;
+        padding: 1px 6px;
+        border-radius: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .action-tag.approved {
+        color: var(--action-approved-fg);
+        background: var(--action-approved-bg);
+        border: 1px solid var(--action-approved-border);
+    }
+    .action-tag.rejected {
+        color: var(--action-rejected-fg);
+        background: var(--action-rejected-bg);
+        border: 1px solid var(--action-rejected-border);
+    }
+
+    /* Comment affordance — a "+" button appears in the line-num gutter on row hover. */
+    .diff-table tr.code-row { position: relative; }
+    .diff-table tr.code-row td.num { position: relative; }
+    .diff-table tr.code-row .add-comment {
+        position: absolute;
+        right: 2px; top: 50%;
+        transform: translateY(-50%);
+        width: 14px; height: 14px;
+        border-radius: 3px;
+        background: var(--expand-fg);
+        color: white;
+        font-size: 10px; line-height: 14px; text-align: center;
+        cursor: pointer; opacity: 0;
+        user-select: none;
+    }
+    .diff-table tr.code-row td.num:hover .add-comment { opacity: 1; }
+
+    /* Inline comment rows in the diff table. */
+    tr.comment-row > td {
+        padding: 0 !important;
+        line-height: 1 !important;
+        background: var(--vscode-editorWidget-background, rgba(127,127,127,0.06));
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+        white-space: normal;
+    }
+    .comment-block {
+        padding: 2px 8px;
+        border-left: 3px solid #d29922;
+        background: rgba(210, 153, 34, 0.06);
+        font-family: var(--diff-mono);
+        font-size: var(--editor-font-size);
+        line-height: 1.25;
+    }
+    .comment-block.ai-critical { border-left-color: #ff3366; background: rgba(255, 60, 100, 0.08); }
+    .comment-block.ai-major    { border-left-color: #ffae00; background: rgba(255, 174, 0, 0.07); }
+    .comment-block.ai-minor    { border-left-color: #00d4ff; background: rgba(0, 212, 255, 0.06); }
+    .comment-block.ai-nit      { border-left-color: #6e7781; background: rgba(110, 119, 129, 0.06); }
+    .comment-block .meta {
+        font-family: var(--diff-mono);
+        font-size: calc(var(--editor-font-size) * 0.9);
+        opacity: 0.85;
+        margin: 0;
+        line-height: 1.2;
+        display: flex; gap: 6px; align-items: center;
+        cursor: pointer;
+        user-select: none;
+    }
+    .comment-block .meta .chevron {
+        display: inline-block;
+        width: 8px;
+        font-size: 10px;
+        opacity: 0.8;
+    }
+    .comment-block:not(.collapsed) .meta .chevron { transform: rotate(90deg); }
+    .comment-block .meta .stale { color: #d29922; }
+    .comment-block .meta .peek {
+        color: rgba(255, 255, 255, 0.6);
+        font-style: italic;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 60vw;
+    }
+    .comment-block.collapsed .body,
+    .comment-block.collapsed .actions { display: none; }
+
+    .comment-block textarea {
+        display: block;
+        width: 100%;
+        min-height: 24px;
+        height: 24px;
+        max-height: 240px;
+        resize: vertical;
+        padding: 2px 6px;
+        margin: 2px 0 0 0;
+        font-family: var(--diff-mono);
+        font-size: var(--editor-font-size);
+        line-height: 1.3;
+        background: var(--vscode-input-background, transparent);
+        color: var(--vscode-input-foreground, var(--vscode-foreground));
+        border: 1px solid var(--vscode-input-border, var(--border));
+        border-radius: 3px;
+        box-sizing: border-box;
+    }
+    .comment-block .body {
+        white-space: pre-wrap;
+        font-family: var(--diff-mono);
+        font-size: var(--editor-font-size);
+        line-height: 1.3;
+        color: #ff2ad4;
+        margin: 1px 0 0 0;
+    }
+    body.vscode-light .comment-block .body { color: #a626a4; }
+    .comment-block .actions {
+        margin: 2px 0 0 0;
+        line-height: 1;
+        display: flex; gap: 4px;
+        flex-wrap: wrap;
+    }
+    .comment-block .actions button {
+        font-family: var(--diff-mono);
+        font-size: calc(var(--editor-font-size) * 0.9);
+        line-height: 1.2;
+        padding: 1px 6px;
+        background: transparent;
+        color: var(--vscode-foreground);
+        border: 1px solid var(--border);
+        border-radius: 3px; cursor: pointer;
+    }
+    .comment-block .actions button.primary {
+        background: var(--vscode-button-background, #0e639c);
+        color: var(--vscode-button-foreground, white);
+        border-color: var(--vscode-button-background, #0e639c);
+    }
+    .comment-block .actions button:hover {
+        background: var(--vscode-list-hoverBackground, rgba(128,128,128,0.1));
+    }
+    .comment-block .actions button.primary:hover {
+        background: var(--vscode-button-hoverBackground, #1177bb);
+    }
+
+    .toolbar-toggle {
+        display: inline-flex; align-items: center; gap: 6px;
+        font-size: 11px;
+        padding: 4px 8px;
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        cursor: pointer;
+        user-select: none;
+    }
+    .toolbar-toggle input { margin: 0; }
+    .toolbar-toggle.active {
+        background: rgba(56, 139, 253, 0.16);
+        border-color: rgba(56, 139, 253, 0.5);
+    }
+
+    /* AI prompt dialog */
+    .ai-dialog {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.55);
+        z-index: 100;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+    }
+    .ai-dialog.open { display: flex; }
+    .ai-dialog-content {
+        background: var(--vscode-editor-background);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 14px 16px;
+        max-width: 760px;
+        width: 100%;
+        max-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+    }
+    .ai-dialog-content h3 {
+        margin: 0;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--expand-fg);
+    }
+    .ai-dialog-content .row {
+        display: flex; gap: 10px; align-items: center;
+        font-size: 12px;
+    }
+    .ai-dialog-content select,
+    .ai-dialog-content input[type="text"] {
+        font: inherit;
+        padding: 4px 8px;
+        background: var(--vscode-input-background, transparent);
+        color: var(--vscode-input-foreground, var(--vscode-foreground));
+        border: 1px solid var(--vscode-input-border, var(--border));
+        border-radius: 3px;
+    }
+    .ai-dialog-content textarea {
+        flex: 1;
+        min-height: 240px;
+        max-height: 60vh;
+        resize: vertical;
+        padding: 6px 8px;
+        font-family: var(--diff-mono);
+        font-size: var(--editor-font-size);
+        line-height: 1.4;
+        background: var(--vscode-input-background, transparent);
+        color: var(--vscode-input-foreground, var(--vscode-foreground));
+        border: 1px solid var(--vscode-input-border, var(--border));
+        border-radius: 3px;
+        white-space: pre-wrap;
+    }
+    .ai-dialog-content .ai-actions {
+        display: flex; gap: 6px; justify-content: flex-end;
+    }
+    .ai-dialog-content button {
+        font: inherit;
+        padding: 5px 14px;
+        background: var(--vscode-button-secondaryBackground, transparent);
+        color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        cursor: pointer;
+    }
+    .ai-dialog-content button.primary {
+        background: var(--vscode-button-background, #0e639c);
+        color: var(--vscode-button-foreground, white);
+        border-color: var(--vscode-button-background, #0e639c);
+        font-weight: 600;
+    }
+    .ai-dialog-content button:hover {
+        background: var(--vscode-list-hoverBackground, rgba(128,128,128,0.1));
+    }
+    .ai-dialog-content button.primary:hover {
+        background: var(--vscode-button-hoverBackground, #1177bb);
+    }
+
+    .files { padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+    .empty { padding: 32px; text-align: center; opacity: 0.7; }
+
+    /* Multi-column grid view — gridstack handles per-cell drag/resize/reorder.
+       Cells are absolutely positioned by gridstack, so we don't lay them out
+       ourselves; just style the inner content box. */
+    .files.grid-mode .grid-stack-item-content {
+        display: flex;
+        flex-direction: column;
+        /* Override gridstack's default overflow-y:auto so the inner .file-body
+           handles scrolling instead of doubling up scrollbars. */
+        overflow: hidden;
+    }
+    .files.grid-mode .grid-stack-item-content > .file {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        height: 100%;
+    }
+    .files.grid-mode .file.expanded > .file-body {
+        overflow: auto;
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+    /* Drag-handle grip in the file header. Visible only inside grid mode;
+       gridstack uses .grid-drag-handle as its drag selector. */
+    .grid-drag-handle { display: none; }
+    .files.grid-mode .grid-drag-handle {
+        display: inline-flex;
+        align-items: center;
+        cursor: grab;
+        padding: 0 4px;
+        opacity: 0.6;
+        font-weight: bold;
+        letter-spacing: -2px;
+        user-select: none;
+    }
+    .files.grid-mode .grid-drag-handle:hover { opacity: 1; }
+    .files.grid-mode .grid-drag-handle:active { cursor: grabbing; }
+    /* In grid mode, push file actions to their own row below the filename so
+       the path stays readable in narrow cells. */
+    .files.grid-mode .file-header {
+        flex-wrap: wrap;
+        row-gap: 4px;
+    }
+    .files.grid-mode .file-header .path {
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+    .files.grid-mode .file-actions {
+        flex: 0 0 100%;
+        order: 99;
+        margin-top: 2px;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+    }
+    /* GridStack visual touch-ups — make the resize handle a bit more obvious
+       by using the editor foreground color and rounding the corners. */
+    .grid-stack > .grid-stack-item > .ui-resizable-handle {
+        background-color: rgba(128, 128, 128, 0.25);
+        opacity: 0;
+        transition: opacity 0.15s ease;
+    }
+    .grid-stack > .grid-stack-item:hover > .ui-resizable-handle { opacity: 1; }
+    .grid-stack > .grid-stack-item.ui-draggable-dragging,
+    .grid-stack > .grid-stack-item.ui-resizable-resizing {
+        z-index: 100;
+        outline: 1px dashed var(--expand-fg, #58a6ff);
+    }
+    .toolbar-toggle.active { /* already defined elsewhere */ }
+    /* Active state for the grid toggle button. */
+    .toolbar #view-mode-toggle.active {
+        background: rgba(56, 139, 253, 0.18);
+        border-color: rgba(56, 139, 253, 0.55);
+        color: var(--expand-fg);
+    }
+
+    .file {
+        border: 1px solid var(--border); border-radius: 4px;
+        background: var(--vscode-editorWidget-background, transparent);
+        overflow: hidden;
+    }
+    .file-header {
+        display: flex; align-items: center; gap: 8px;
+        padding: 6px 10px; cursor: pointer; user-select: none;
+        /* Solid background so sticky positioning hides scrolling content
+           underneath. Translucent approve/reject tints layer on top via
+           background-image overlays below. */
+        background-color: var(--vscode-sideBarSectionHeader-background, var(--vscode-editor-background));
+        background-image: none;
+    }
+    .file-header:hover { background-color: var(--vscode-list-hoverBackground, rgba(128,128,128,0.1)); }
+    .file-header .chevron { display: inline-block; width: 10px; }
+    .file.expanded .file-header .chevron { transform: rotate(90deg); }
+    .file-header .path {
+        flex: 1; font-family: var(--diff-mono);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    /* Filename first-class: bold name, dimmed folder prefix. */
+    .file-header .path .p-dir { opacity: 0.55; font-weight: 400; font-size: 11px; }
+    .file-header .path .p-name { font-weight: 700; font-size: 13px; }
+    /* Status stripe on the header's left edge — same color language as the
+       Code Map: green added, amber modified, red deleted, blue renamed. */
+    .file.st-A > .file-header { border-left: 3px solid #3fb950; }
+    .file.st-M > .file-header, .file.st-T > .file-header { border-left: 3px solid #d29922; }
+    .file.st-D > .file-header, .file.st-U > .file-header { border-left: 3px solid #f85149; }
+    .file.st-R > .file-header, .file.st-C > .file-header { border-left: 3px solid #58a6ff; }
+    .badge {
+        font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 8px;
+        text-transform: uppercase; letter-spacing: 0.5px;
+        border: 1px solid currentColor; opacity: 0.85;
+    }
+    .badge.M { color: #d29922; }
+    .badge.A { color: #3fb950; }
+    .badge.D { color: #f85149; }
+    .badge.R, .badge.C { color: #58a6ff; }
+    .badge.T { color: #d29922; }
+    .badge.U { color: #f85149; }
+    .badge.\? { color: #8b949e; }
+    .stage-tag { font-size: 10px; padding: 1px 6px; border-radius: 8px; border: 1px dashed var(--border); opacity: 0.75; }
+    .stats { font-size: 11px; font-family: var(--diff-mono); }
+    .stats .add { color: #3fb950; }
+    .stats .del { color: #f85149; }
+    .file-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    /* Sub-group boxes: visually corral related actions so the toolbar reads as
+       three concerns (navigation/context, file ops, AI) instead of a flat row. */
+    .action-group {
+        display: inline-flex;
+        gap: 3px;
+        padding: 2px 4px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: rgba(128, 128, 128, 0.04);
+    }
+    .action-group:empty { display: none; }
+    .action-group[data-group="ai"] { background: rgba(56, 139, 253, 0.06); }
+    .action-group[data-group="nav"] { background: rgba(63, 185, 80, 0.05); }
+    .file-actions button {
+        font-size: 11px; padding: 2px 8px;
+        background: transparent; color: var(--vscode-foreground);
+        border: 1px solid var(--border); border-radius: 3px; cursor: pointer;
+    }
+    .file-actions button:hover { background: var(--vscode-list-hoverBackground, rgba(128,128,128,0.1)); }
+
+    .file-body { display: none; border-top: 1px solid var(--border); }
+    .file.expanded .file-body { display: block; }
+
+    .section-title {
+        padding: 4px 10px; font-size: 11px; opacity: 0.65;
+        background: var(--hunk-bg); border-bottom: 1px solid var(--border);
+    }
+
+    /* Brief outline pulse on the hunk we just navigated to — fades after ~1s. */
+    @keyframes hunk-flash-fade {
+        0% { box-shadow: 0 0 0 2px var(--expand-fg, #58a6ff) inset; }
+        100% { box-shadow: 0 0 0 2px transparent inset; }
+    }
+    .hunk-flash {
+        animation: hunk-flash-fade 1s ease-out;
+    }
+
+    .hunk { border-bottom: 1px solid var(--border); }
+    .hunk:last-child { border-bottom: none; }
+    .hunk-header {
+        padding: 4px 10px;
+        font-family: var(--diff-mono);
+        font-size: 11px;
+        color: var(--hunk-header-fg);
+        font-weight: 700;
+        background: var(--hunk-header-bg);
+        border-bottom: 1px solid var(--border);
+    }
+    .section-title {
+        color: var(--section-title-fg) !important;
+        font-weight: 800 !important;
+        opacity: 1 !important;
+    }
+
+    /* Strict 50/50 split — no horizontal scroll, lines always wrap inside the cell. */
+    .diff-scroll {
+        overflow: hidden;
+        background: var(--vscode-editor-background);
+        width: 100%;
+    }
+    .diff-table {
+        border-collapse: collapse;
+        font-family: var(--diff-mono);
+        font-size: var(--editor-font-size);
+        table-layout: fixed;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+    }
+    /* Column structure per row: [num | code] | [num | code]
+       Each SIDE takes exactly 50% (gutter + code together). */
+    .diff-table colgroup col.num { width: 60px; }
+    .diff-table colgroup col.code { width: calc(50% - 60px); }
+    .diff-table td {
+        padding: 0 8px;
+        vertical-align: top;
+        line-height: var(--editor-line-height);
+        tab-size: var(--editor-tab-size);
+        -moz-tab-size: var(--editor-tab-size);
+        border-right: 1px solid var(--border);
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        box-sizing: border-box;
+        /* max-width: 0 is the canonical trick to force fixed-layout tables
+           to honor column widths even with very long unbreakable tokens. */
+        max-width: 0;
+    }
+    .diff-table td:last-child { border-right: none; }
+    .diff-table td.num {
+        text-align: right; color: var(--row-num);
+        user-select: none; background: var(--num-bg);
+        font-size: 0.9em;
+        font-weight: 700;
+        width: 60px;
+        max-width: 60px;
+        min-width: 60px;
+        white-space: nowrap;
+        word-break: keep-all;
+        overflow-wrap: normal;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .diff-table td.code {
+        overflow: hidden;
+    }
+
+    /* Per-cell colorization: a modified-line row has left=del + right=add,
+       so we color cells by their own kind, not the row class. */
+    .diff-table td.code.add { background: var(--add-bg); box-shadow: inset 3px 0 0 var(--add-line); }
+    .diff-table td.code.del { background: var(--del-bg); box-shadow: inset 3px 0 0 var(--del-line); }
+    .diff-table td.code.empty { background: var(--empty-bg); }
+
+    .diff-table td.num.add { background: var(--add-num-bg); color: var(--add-num-fg); }
+    .diff-table td.num.del { background: var(--del-num-bg); color: var(--del-num-fg); }
+    .diff-table td.num.empty { background: var(--empty-bg); }
+
+    /* Vertical (unified) diff: renderHunk emits 2-column markup with one row
+       per side. Just need the column to fill the remaining width since the
+       col.code default is "calc(50% - 60px)" sized for the 4-col split. */
+    .diff-table.vertical colgroup col.code { width: calc(100% - 60px); }
+
+    /* Intra-line diff highlight — bolds the differing substring on each side
+       of a changed line pair (computed via prefix/suffix common-text
+       detection in JS). Subtle yellow tint draws the eye without overwhelming
+       the surrounding hljs colors. */
+    .intra-diff {
+        font-weight: 700;
+        background: rgba(255, 200, 0, 0.22);
+        border-radius: 2px;
+        padding: 0 1px;
+        box-decoration-break: clone;
+        -webkit-box-decoration-break: clone;
+    }
+
+    /* highlight.js fallback so nothing breaks if hljs fails to load. */
+    .hljs { background: transparent !important; padding: 0 !important; }
+    .code-inner {
+        display: inline;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        max-width: 100%;
+    }
+    .code-inner * {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .binary-note { padding: 12px; opacity: 0.7; font-style: italic; }
+    .error {
+        padding: 12px; color: var(--vscode-errorForeground, #f85149);
+        background: rgba(248, 81, 73, 0.08);
+        border: 1px solid rgba(248, 81, 73, 0.4);
+        border-radius: 4px; margin: 12px;
+    }
+
+    .file.hidden-by-search { display: none; }
+
+    /* Approve All button accent — green to match the per-hunk approve. */
+    .file-actions .approve-all-btn {
+        color: var(--add-line);
+        border-color: rgba(0, 255, 100, 0.5);
+    }
+    body.vscode-light .file-actions .approve-all-btn {
+        color: #1a7f37;
+        border-color: rgba(46, 160, 67, 0.55);
+    }
+    .file-actions .approve-all-btn:hover {
+        background: rgba(0, 255, 100, 0.15);
+    }
+    body.vscode-light .file-actions .approve-all-btn:hover {
+        background: rgba(46, 160, 67, 0.18);
+    }
+
+    /* === Embedded terminal panel (xterm.js + node-pty) === */
+    #term-panel {
+        position: fixed;
+        left: 0; right: 0; bottom: 0;
+        z-index: 50;
+        background: var(--vscode-editor-background, #1e1e1e);
+        border-top: 1px solid var(--border);
+        display: none;
+        flex-direction: column;
+        height: 36vh;
+        min-height: 120px;
+        max-height: 80vh;
+        box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.45);
+    }
+    #term-panel.open { display: flex; }
+    #term-panel.minimized {
+        height: 28px !important;
+        min-height: 28px;
+    }
+    #term-panel.minimized .term-resize,
+    #term-panel.minimized .term-tabs .term-body { display: none; }
+    #term-panel .term-resize {
+        height: 5px;
+        cursor: ns-resize;
+        background: transparent;
+        border-bottom: 1px solid var(--border);
+    }
+    #term-panel .term-resize:hover {
+        background: var(--expand-bg-hover);
+    }
+    #term-panel .term-bar {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: stretch;
+        background: var(--vscode-sideBarSectionHeader-background, transparent);
+        border-bottom: 1px solid var(--border);
+        height: 28px;
+    }
+    #term-panel .term-tabs {
+        flex: 1;
+        display: flex;
+        overflow-x: auto;
+        scrollbar-width: thin;
+    }
+    #term-panel .term-tab {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-right: 1px solid var(--border);
+        cursor: pointer;
+        font-size: 11px;
+        color: var(--vscode-foreground);
+        opacity: 0.65;
+        white-space: nowrap;
+        flex: 0 0 auto;
+    }
+    #term-panel .term-tab:hover { opacity: 1; }
+    #term-panel .term-tab.active {
+        opacity: 1;
+        background: var(--vscode-editor-background);
+        box-shadow: inset 0 -2px 0 var(--expand-fg);
+    }
+    #term-panel .term-tab .label { font-weight: 600; }
+    #term-panel .term-tab .pid { opacity: 0.6; font-size: 10px; }
+    #term-panel .term-tab .term-status {
+        width: 6px; height: 6px; border-radius: 50%;
+        background: var(--add-line);
+    }
+    #term-panel .term-tab.exited .term-status { background: var(--row-num); }
+    #term-panel .term-tab .close-btn {
+        margin-left: 4px;
+        width: 16px; height: 16px;
+        line-height: 14px; text-align: center;
+        border-radius: 3px;
+        font-size: 13px;
+        opacity: 0.7;
+    }
+    #term-panel .term-tab .close-btn:hover {
+        background: rgba(255, 255, 255, 0.15);
+        opacity: 1;
+    }
+    #term-panel .term-controls {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 0 6px;
+    }
+    #term-panel .term-controls button {
+        font: inherit; font-size: 13px;
+        background: transparent;
+        color: var(--vscode-foreground);
+        border: none;
+        width: 24px; height: 24px;
+        border-radius: 3px;
+        cursor: pointer;
+        opacity: 0.75;
+    }
+    #term-panel .term-controls button:hover {
+        background: var(--vscode-list-hoverBackground, rgba(128,128,128,0.15));
+        opacity: 1;
+    }
+    #term-panel .term-body {
+        flex: 1 1 auto;
+        position: relative;
+        overflow: hidden;
+        padding: 4px 0 0 4px;
+    }
+    #term-panel .term-pane {
+        position: absolute;
+        inset: 0;
+        display: none;
+    }
+    #term-panel .term-pane.active { display: block; }
+
+    /* Diff review panel — bottom drawer, separate from terminal panel. */
+    #review-panel {
+        position: fixed;
+        left: 0; right: 0; bottom: 0;
+        z-index: 48;
+        background: var(--vscode-editor-background);
+        border-top: 1px solid var(--border);
+        display: none;
+        flex-direction: column;
+        height: 38vh;
+        min-height: 140px;
+        max-height: 85vh;
+        box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.45);
+    }
+    #review-panel.open { display: flex; }
+    #review-panel.minimized {
+        height: 28px !important;
+        min-height: 28px;
+    }
+    #review-panel.minimized .review-body,
+    #review-panel.minimized .review-resize { display: none; }
+    #review-panel .review-resize {
+        height: 5px;
+        cursor: ns-resize;
+        border-bottom: 1px solid var(--border);
+    }
+    #review-panel .review-resize:hover { background: var(--expand-bg-hover); }
+    #review-panel .review-bar {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        height: 28px;
+        padding: 0 10px;
+        background: var(--vscode-sideBarSectionHeader-background, transparent);
+        border-bottom: 1px solid var(--border);
+    }
+    #review-panel .review-title {
+        flex: 1;
+        font-size: 12px;
+        font-weight: 700;
+        display: flex; align-items: center; gap: 8px;
+    }
+    #review-panel .review-status {
+        font-weight: normal; opacity: 0.8;
+        font-size: 11px;
+    }
+    #review-panel .review-status.error { color: var(--vscode-errorForeground, #f85149); }
+    #review-panel .review-controls { display: flex; gap: 4px; }
+    #review-panel .review-controls button {
+        font: inherit; font-size: 12px;
+        background: transparent;
+        color: var(--vscode-foreground);
+        border: 1px solid transparent;
+        padding: 2px 8px;
+        border-radius: 3px;
+        cursor: pointer;
+    }
+    #review-panel .review-controls button:hover {
+        background: var(--vscode-list-hoverBackground, rgba(128,128,128,0.15));
+        border-color: var(--border);
+    }
+    #review-panel .review-body {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        padding: 12px 18px;
+        font-family: var(--vscode-font-family);
+        font-size: 13px;
+        line-height: 1.5;
+        color: var(--diff-fg);
+    }
+    /* Markdown styling inside the review body. */
+    #review-panel .review-body h1,
+    #review-panel .review-body h2,
+    #review-panel .review-body h3 {
+        margin: 14px 0 6px;
+        font-weight: 700;
+        color: var(--hl-keyword);
+    }
+    #review-panel .review-body h1 { font-size: 17px; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+    #review-panel .review-body h2 { font-size: 15px; }
+    #review-panel .review-body h3 { font-size: 13px; color: var(--hl-function); }
+    #review-panel .review-body p { margin: 6px 0; }
+    #review-panel .review-body ul, #review-panel .review-body ol { margin: 6px 0; padding-left: 22px; }
+    #review-panel .review-body li { margin: 2px 0; }
+    #review-panel .review-body code {
+        font-family: var(--diff-mono);
+        font-size: 0.92em;
+        background: rgba(127, 127, 127, 0.18);
+        padding: 1px 5px;
+        border-radius: 3px;
+    }
+    #review-panel .review-body pre {
+        font-family: var(--diff-mono);
+        font-size: 12px;
+        background: rgba(0, 0, 0, 0.35);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 8px 10px;
+        margin: 8px 0;
+        overflow-x: auto;
+        line-height: 1.4;
+    }
+    body.vscode-light #review-panel .review-body pre {
+        background: rgba(0, 0, 0, 0.05);
+    }
+    #review-panel .review-body pre code {
+        background: transparent;
+        padding: 0;
+    }
+    #review-panel .review-body strong { color: var(--hl-builtin); }
+    #review-panel .review-body em { color: var(--hl-comment); }
+    #review-panel .review-body blockquote {
+        margin: 6px 0;
+        padding: 4px 12px;
+        border-left: 3px solid var(--hl-attribute);
+        background: rgba(127, 127, 127, 0.08);
+        opacity: 0.95;
+    }
+    #review-panel .review-loading {
+        padding: 18px;
+        opacity: 0.75;
+        font-style: italic;
+        text-align: center;
+    }
+
+    /* Float a "Show terminal" pill at bottom-right when panel is closed and
+       at least one session exists (e.g., minimized then closed-via-close). */
+    #term-launcher {
+        position: fixed;
+        right: 10px; bottom: 10px;
+        z-index: 49;
+        display: none;
+        gap: 6px;
+        align-items: center;
+        padding: 6px 10px;
+        font-size: 11px;
+        background: var(--vscode-button-background, #0e639c);
+        color: var(--vscode-button-foreground, white);
+        border: 1px solid var(--expand-fg);
+        border-radius: 14px;
+        cursor: pointer;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    }
+    #term-launcher.show { display: inline-flex; }
+
+    /* === Selection word-match highlighting === */
+    ::highlight(word-match) {
+        background-color: rgba(255, 220, 0, 0.45);
+        color: inherit;
+    }
+    body.vscode-light ::highlight(word-match) {
+        background-color: rgba(255, 200, 0, 0.55);
+    }
+
+    /* === Cmd/Ctrl+F find bar + match highlights === */
+    ::highlight(find-match) {
+        background-color: rgba(255, 165, 0, 0.40);
+        color: inherit;
+    }
+    ::highlight(find-match-current) {
+        background-color: #ffae00;
+        color: #1f2328;
+    }
+    body.vscode-light ::highlight(find-match) {
+        background-color: rgba(255, 145, 0, 0.45);
+    }
+    body.vscode-light ::highlight(find-match-current) {
+        background-color: #ff8f00;
+        color: #ffffff;
+    }
+    .find-bar {
+        position: fixed;
+        top: 8px;
+        right: 12px;
+        z-index: 60;
+        display: none;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 6px;
+        background: var(--vscode-editor-background);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+        font-family: var(--diff-mono);
+        font-size: 12px;
+    }
+    .find-bar.open { display: flex; }
+    .find-bar input[type="search"] {
+        font: inherit;
+        font-family: var(--diff-mono);
+        padding: 4px 8px;
+        min-width: 220px;
+        background: var(--vscode-input-background, transparent);
+        color: var(--vscode-input-foreground, var(--vscode-foreground));
+        border: 1px solid var(--vscode-input-border, var(--border));
+        border-radius: 3px;
+    }
+    .find-bar .find-count {
+        font-size: 11px;
+        opacity: 0.75;
+        min-width: 64px;
+        text-align: center;
+        font-variant-numeric: tabular-nums;
+    }
+    .find-bar .find-count.error { color: var(--vscode-errorForeground, #f85149); }
+    .find-bar button {
+        font: inherit; font-size: 13px;
+        background: transparent;
+        color: var(--vscode-foreground);
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        padding: 2px 8px;
+        cursor: pointer;
+        line-height: 1;
+    }
+    .find-bar button:hover {
+        background: var(--vscode-list-hoverBackground, rgba(128,128,128,0.15));
+    }
+    .find-bar label {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 6px;
+        font-size: 11px;
+        cursor: pointer;
+        user-select: none;
+        border: 1px solid transparent;
+        border-radius: 3px;
+    }
+    .find-bar label.active {
+        background: rgba(255, 165, 0, 0.18);
+        border-color: rgba(255, 165, 0, 0.5);
+    }
+    .find-bar label input { margin: 0; }
+
+    /* Ctrl+D find-next highlight (no animation, just an outline that's removed after a timeout). */
+    .find-flash {
+        outline: 2px solid #ffff00 !important;
+        outline-offset: -2px;
+        position: relative;
+        z-index: 1;
+    }
+    .find-status {
+        position: fixed;
+        bottom: 10px;
+        right: 14px;
+        z-index: 50;
+        padding: 4px 10px;
+        font-family: var(--diff-mono);
+        font-size: 11px;
+        background: rgba(0, 0, 0, 0.85);
+        color: #ffff00;
+        border: 1px solid #ffff00;
+        border-radius: 3px;
+        pointer-events: none;
+        opacity: 0;
+    }
+    .find-status.show { opacity: 1; }
+
+    .file-actions .ctx-btn {
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* Architect Doc — expandable change-review section at the top. */
+    .arch-doc { border-bottom: 1px solid var(--border); background: var(--vscode-sideBar-background, rgba(128,128,128,0.04)); }
+    .arch-bar { display: flex; align-items: center; gap: 8px; padding: 5px 12px; cursor: pointer; user-select: none; font-size: 12px; }
+    .arch-caret { opacity: .7; width: 10px; flex: none; }
+    .arch-title { font-weight: 600; white-space: nowrap; flex: none; }
+    .arch-tldr { opacity: .85; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+    .arch-status { font-size: 11px; opacity: .75; white-space: nowrap; flex: none; }
+    .arch-status.error { color: var(--vscode-errorForeground, #f85149); opacity: 1; }
+    .arch-auto { display: flex; gap: 3px; align-items: center; font-size: 11px; opacity: .85; flex: none; cursor: pointer; }
+    .arch-usage { font-size: 11px; opacity: .7; white-space: nowrap; flex: none; font-variant-numeric: tabular-nums; }
+    .arch-actions { display: flex; gap: 4px; flex: none; }
+    .arch-actions button { background: none; border: 1px solid var(--border); border-radius: 3px; color: inherit; cursor: pointer; font-size: 11px; padding: 1px 7px; }
+    .arch-actions button:hover { background: var(--expand-bg-hover, rgba(128,128,128,0.15)); }
+    .arch-body { padding: 6px 14px 12px; max-height: 45vh; overflow: auto; font-size: 12px; }
+    .arch-overview { margin-bottom: 8px; }
+    .arch-files { display: flex; flex-direction: column; gap: 2px; margin-bottom: 8px; }
+    .arch-file-row { display: flex; gap: 8px; align-items: baseline; padding: 2px 6px; border-radius: 3px; cursor: pointer; }
+    .arch-file-row:hover { background: var(--expand-bg-hover, rgba(128,128,128,0.12)); }
+    .arch-file-row .p { font-family: var(--vscode-editor-font-family, monospace); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 34%; opacity: .9; flex: none; }
+    .arch-file-row .s { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: .8; }
+    .arch-file-row .flags { opacity: .65; font-size: 11px; }
+    .risk-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; align-self: center; }
+    .risk-low .risk-dot { background: #2ea043; }
+    .risk-medium .risk-dot { background: #d29922; }
+    .risk-high .risk-dot { background: #f85149; }
+    .risk-unknown .risk-dot { background: #8b949e; }
+    .arch-static { border-top: 1px dashed var(--border); padding-top: 6px; opacity: .9; }
+    .arch-static ul { margin: 4px 0; padding-left: 18px; }
+    .arch-static .verdict-pass { color: #2ea043; }
+    .arch-static .verdict-warn { color: #d29922; }
+    .arch-static .verdict-fail { color: #f85149; }
+    .arch-note { font-size: 11px; opacity: .75; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 340px; }
+    .arch-note.risk-high { color: #f85149; opacity: 1; }
+    .arch-note.risk-medium { color: #d29922; }
+    .arch-doc.stale .arch-body, .arch-doc.stale .arch-tldr { opacity: .45; }
+
+    /* Code Map — three.js circle-packed repo view. */
+    #map-view { display: none; position: relative; flex: 1; min-height: 0; overflow: hidden; }
+    body.map-mode { display: flex; flex-direction: column; overflow: hidden; }
+    body.map-mode > * { flex: none; }
+    body.map-mode #content { display: none !important; }
+    body.map-mode #map-view { display: flex; flex-direction: column; flex: 1; }
+    .map-topbar {
+        display: flex; align-items: center; gap: 10px; padding: 4px 12px;
+        border-bottom: 1px solid var(--border); font-size: 12px; flex: none;
+        background: var(--vscode-sideBar-background, rgba(128,128,128,0.04));
+    }
+    .map-topbar input[type="search"] {
+        background: var(--vscode-input-background, #1e1e1e); color: inherit;
+        border: 1px solid var(--border); border-radius: 3px; padding: 2px 8px; font-size: 12px; width: 200px;
+    }
+    .map-topbar label { display: flex; align-items: center; gap: 4px; cursor: pointer; opacity: .85; }
+    .map-topbar button {
+        background: none; border: 1px solid var(--border); border-radius: 3px;
+        color: inherit; cursor: pointer; font-size: 11px; padding: 2px 8px;
+    }
+    .map-topbar button:hover { background: var(--expand-bg-hover, rgba(128,128,128,0.15)); }
+    .map-quality { display: flex; gap: 4px; }
+    .q-chip { border: 1px solid var(--border); border-radius: 9px; padding: 0 8px; font-size: 11px; cursor: pointer; opacity: .8; }
+    .q-chip:hover, .q-chip.on { opacity: 1; }
+    .q-chip.on { outline: 1px solid currentColor; }
+    .q-chip.q-clean { color: #2ea043; border-color: #2ea043; }
+    .q-chip.q-review { color: #d29922; border-color: #d29922; }
+    .q-chip.q-concern { color: #f85149; border-color: #f85149; }
+    .map-progress { font-variant-numeric: tabular-nums; opacity: .8; }
+    .map-note { opacity: .6; font-size: 11px; }
+    #map-canvas-wrap { flex: 1; min-height: 0; position: relative; cursor: grab; }
+    #map-canvas-wrap.dragging { cursor: grabbing; }
+    #map-canvas-wrap canvas { display: block; }
+    #map-tooltip {
+        position: absolute; display: none; pointer-events: none; z-index: 40;
+        max-width: 460px; padding: 9px 12px; border-radius: 6px; font-size: 13px;
+        background: var(--vscode-editorHoverWidget-background, #252526);
+        border: 1px solid var(--vscode-editorHoverWidget-border, #454545);
+        box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+        line-height: 1.45;
+    }
+    #map-tooltip .t-path { font-family: var(--diff-mono, monospace); font-size: 11px; opacity: .65; margin-top: 1px; }
+    #map-tooltip .t-sum { margin-top: 6px; font-size: 13px; opacity: .95; white-space: normal; }
+    #map-tooltip .t-meta { margin-top: 5px; font-size: 12px; opacity: .75; }
+    /* Hover diff window — the hunk living at the slab under the cursor. */
+    #map-tooltip .t-hunk {
+        margin-top: 7px; border: 1px solid var(--border); border-radius: 4px; overflow: hidden;
+        font-family: var(--diff-mono, monospace); font-size: 11px; line-height: 1.45;
+        background: var(--vscode-editor-background, #1e1e1e);
+    }
+    #map-tooltip .t-hunk .th-head {
+        padding: 2px 7px; font-size: 10px; opacity: .7;
+        background: var(--expand-bg-hover, rgba(128,128,128,0.12));
+    }
+    #map-tooltip .t-hunk .th-line { padding: 0 7px; white-space: pre; overflow: hidden; text-overflow: ellipsis; }
+    #map-tooltip .t-hunk .th-add { background: rgba(46,160,67,0.18); color: #7ee787; }
+    #map-tooltip .t-hunk .th-del { background: rgba(248,81,73,0.18); color: #ffa198; }
+    #map-tooltip .t-hunk .th-ctx { opacity: .55; }
+    #map-tooltip .t-hunk .th-more { padding: 1px 7px; font-size: 10px; opacity: .55; }
+    #map-card {
+        position: absolute; top: 10px; right: 10px; width: 330px; z-index: 41; display: none;
+        background: var(--vscode-sideBar-background, #1f1f1f);
+        border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; font-size: 12px;
+        box-shadow: 0 6px 22px rgba(0,0,0,0.5);
+    }
+    #map-card .c-path { font-family: var(--diff-mono, monospace); font-size: 11px; word-break: break-all; }
+    #map-card .c-badges { display: flex; gap: 6px; margin: 6px 0; flex-wrap: wrap; }
+    #map-card .c-badge { border: 1px solid var(--border); border-radius: 8px; padding: 0 7px; font-size: 11px; }
+    #map-card .c-badge.q-clean { color: #2ea043; border-color: #2ea043; }
+    #map-card .c-badge.q-review { color: #d29922; border-color: #d29922; }
+    #map-card .c-badge.q-concern { color: #f85149; border-color: #f85149; }
+    #map-card .c-sum { opacity: .95; margin: 8px 0; font-size: 13px; line-height: 1.5; }
+    #map-card .c-flags { opacity: .8; font-size: 11px; margin-bottom: 6px; }
+    #map-card .c-actions { display: flex; gap: 6px; }
+    #map-card .c-actions button {
+        background: none; border: 1px solid var(--border); border-radius: 3px;
+        color: inherit; cursor: pointer; font-size: 11px; padding: 2px 9px;
+    }
+    #map-card .c-actions button:hover { background: var(--expand-bg-hover, rgba(128,128,128,0.15)); }
+    #map-legend {
+        position: absolute; left: 10px; bottom: 10px; z-index: 40; font-size: 11px;
+        background: var(--vscode-sideBar-background, rgba(30,30,30,0.9));
+        border: 1px solid var(--border); border-radius: 5px; padding: 6px 10px; opacity: .92;
+        display: flex; flex-direction: column; gap: 3px;
+    }
+    #map-legend .lg-row { display: flex; align-items: center; gap: 6px; }
+    #map-legend .lg-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; display: inline-block; }
+    #map-empty {
+        position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+        z-index: 39; font-size: 13px; opacity: .75; text-align: center; padding: 30px;
+    }
+    #map-view.stale #map-canvas-wrap { opacity: .55; }
+    .map-topbar #map-root { width: 110px; background: var(--vscode-input-background, #1e1e1e); color: inherit;
+        border: 1px solid var(--border); border-radius: 3px; padding: 2px 8px; font-size: 12px;
+        font-family: var(--diff-mono, monospace); }
+    /* Anchored diff panel — a floating window glued to the clicked sphere.
+       map.js repositions it every rendered frame; the connector line ties it
+       back to its planet. */
+    #map-connector { position: absolute; inset: 0; display: none; pointer-events: none; z-index: 44; }
+    #map-connector line { stroke: var(--vscode-focusBorder, #58a6ff); stroke-width: 1.5; stroke-dasharray: 5 4; opacity: .8; }
+    #map-panel {
+        position: absolute; left: 40px; top: 40px; width: min(480px, 46vw); max-height: 68%;
+        display: none; flex-direction: column; z-index: 45;
+        background: var(--vscode-editor-background, #1e1e1e);
+        border: 1px solid var(--vscode-focusBorder, #58a6ff); border-radius: 8px;
+        box-shadow: 0 10px 34px rgba(0,0,0,0.5);
+        overflow: hidden;
+    }
+    #map-panel.open { display: flex; }
+    #map-panel .mp-bar {
+        display: flex; align-items: center; gap: 8px; padding: 6px 10px; flex: none;
+        border-bottom: 1px solid var(--border);
+        background: var(--vscode-sideBar-background, rgba(128,128,128,0.05));
+    }
+    #map-panel .mp-path { font-family: var(--diff-mono, monospace); font-size: 11px; flex: 1; min-width: 0;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #map-panel .mp-actions { display: flex; gap: 5px; }
+    #map-panel .mp-actions button, #map-panel .mp-note-actions button {
+        background: none; border: 1px solid var(--border); border-radius: 3px;
+        color: inherit; cursor: pointer; font-size: 11px; padding: 2px 9px;
+    }
+    #map-panel .mp-actions button:hover, #map-panel .mp-note-actions button:hover { background: var(--expand-bg-hover, rgba(128,128,128,0.15)); }
+    #map-panel .mp-body { flex: 1; overflow: auto; padding: 8px; min-height: 80px; }
+    #map-panel .mp-body .file { border: 1px solid var(--border); border-radius: 6px; }
+    /* Notes: review remarks stored on the file and sent with AI analysis. */
+    #map-panel .mp-notes { flex: none; border-top: 1px solid var(--border); padding: 6px 10px 8px;
+        background: var(--vscode-sideBar-background, rgba(128,128,128,0.04)); }
+    #map-panel .mp-notes-list { max-height: 110px; overflow: auto; }
+    #map-panel .mp-note { display: flex; gap: 6px; align-items: baseline; font-size: 11.5px; padding: 2px 0; }
+    #map-panel .mp-note .n-body { flex: 1; min-width: 0; white-space: pre-wrap; word-break: break-word; }
+    #map-panel .mp-note .n-line { opacity: .55; font-family: var(--diff-mono, monospace); font-size: 10px; flex: none; }
+    #map-panel .mp-note .n-del { opacity: .5; cursor: pointer; border: none; background: none; color: inherit; flex: none; }
+    #map-panel .mp-note .n-del:hover { opacity: 1; }
+    #map-panel .mp-note.ai .n-body { opacity: .85; }
+    #map-panel .mp-note-compose textarea {
+        width: 100%; box-sizing: border-box; resize: vertical; margin-top: 4px;
+        background: var(--vscode-input-background, #1e1e1e); color: inherit;
+        border: 1px solid var(--border); border-radius: 4px; padding: 4px 7px; font-size: 12px;
+        font-family: inherit;
+    }
+    #map-panel .mp-note-actions { display: flex; gap: 6px; margin-top: 4px; justify-content: flex-end; }
+</style>
+<style>
+  html, body { height: 100%; margin: 0; }
+  body { background: #14181c; color: #f0f6fc; font-family: system-ui, sans-serif; }
+  #map-view { display: flex !important; flex-direction: column; height: 100vh; }
+</style>
+</head>
+<body class="vscode-dark map-mode">
+<div id="map-view" aria-label="Code Map">
+  <div class="map-topbar">
+    <input type="search" id="map-filter" placeholder="Filter" />
+    <label><input type="checkbox" id="map-all-cb"> All files</label>
+    <button id="map-frame">⤢ Frame</button>
+    <button id="map-next">▶ Next</button>
+    <span class="map-progress" id="map-progress"></span>
+    <span id="map-quality" class="map-quality"></span>
+  </div>
+  <div id="map-canvas-wrap">
+    <div id="map-tooltip"></div>
+    <div id="map-card"></div>
+    <div id="map-legend">
+      <div class="lg-row" style="opacity:.75">ring = folder orbit · sphere = file · height = depth</div>
+      <div class="lg-row"><span class="lg-dot" style="background:#3fb950"></span> added <span class="lg-dot" style="background:#d29922"></span> modified <span class="lg-dot" style="background:#f85149"></span> deleted</div>
+      <div class="lg-row"><span class="lg-dot" style="border:2px solid #c678dd; width:5px; height:5px; background:transparent"></span> hub — imported by many</div>
+    </div>
+    <div id="map-empty"></div>
+    <svg id="map-connector" aria-hidden="true"><line id="map-connector-line" /></svg>
+    <div id="map-panel">
+      <div class="mp-bar">
+        <span class="mp-path" id="map-panel-path"></span>
+        <span class="mp-actions">
+          <button id="map-panel-viewed">✓ Reviewed</button>
+          <button id="map-panel-close">✕</button>
+        </span>
+      </div>
+      <div class="mp-body files" id="map-panel-body"></div>
+      <div class="mp-notes">
+        <div class="mp-notes-list" id="map-panel-notes-list"><div class="mp-note"><span class="n-line">file</span><span class="n-body">check the retry loop here</span><button class="n-del">✕</button></div></div>
+        <div class="mp-note-compose">
+          <textarea id="map-note-input" rows="2" placeholder="Note for the AI review…"></textarea>
+          <div class="mp-note-actions"><button id="map-note-save">💬 Add note</button><button id="map-note-ai">🔍 Analyze with notes</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+window.__harnessLog = [];
+window.__gdvMapBridge = {
+  getChange: (p) => ({ diff: "diff --git a/x.ts b/x.ts\n--- a/x.ts\n+++ b/x.ts\n@@ -10,6 +10,9 @@ function demo()\n const a = 1;\n-const b = compute(a);\n+const b = computeFast(a);\n+const c = validate(b);\n+log(c);\n return b;\n@@ -40,4 +43,3 @@\n more();\n-legacy();\n done();", lines: 60, binary: false }),
+  showDiff: (p) => {
+    window.__harnessLog.push('showDiff:' + p);
+    const panel = document.getElementById('map-panel');
+    document.getElementById('map-panel-path').textContent = p;
+    document.getElementById('map-panel-body').innerHTML =
+      '<div class="file expanded" data-path="' + p + '" style="padding:8px; font-family:monospace; font-size:11px">' +
+      '<div style="opacity:.7">@@ -10,6 +10,9 @@</div>' +
+      '<div style="background:rgba(248,81,73,.18); color:#ffa198">-const b = compute(a);</div>' +
+      '<div style="background:rgba(46,160,67,.18); color:#7ee787">+const b = computeFast(a);</div>' +
+      '<div style="background:rgba(46,160,67,.18); color:#7ee787">+const c = validate(b);</div>' +
+      '</div>';
+    panel.classList.add('open');
+    if (window.GitMap && window.GitMap.anchorPanel) window.GitMap.anchorPanel(p);
+  },
+  hidePanel: () => {
+    document.getElementById('map-panel').classList.remove('open');
+    if (window.GitMap && window.GitMap.anchorPanel) window.GitMap.anchorPanel(null);
+  },
+  jumpToDiff: (p) => window.__harnessLog.push('jumpToDiff:' + p),
+  openFile: (p) => window.__harnessLog.push('openFile:' + p),
+  setViewed: (p, v) => window.__harnessLog.push('setViewed:' + p + ':' + v),
+  analyze: (p) => window.__harnessLog.push('analyze:' + p),
+  setRoot: (p) => window.__harnessLog.push('setRoot:' + p),
+};
+window.__payload = {"v":2,"size":1200,"nodes":[{"id":0,"path":"","name":"(root)","dir":true,"depth":0,"x":656.0473244482879,"y":760.8472261551779,"z":0,"r":36.07825822001957,"br":600,"bx":600,"by":600},{"id":1,"path":"root0.ts","name":"root0.ts","dir":false,"depth":1,"x":658.62,"y":796.83,"z":0,"r":2.27},{"id":2,"path":"root1.ts","name":"root1.ts","dir":false,"depth":1,"x":651.08,"y":796.58,"z":0,"r":2.27},{"id":3,"path":"root10.ts","name":"root10.ts","dir":false,"depth":1,"x":643.76,"y":794.77,"z":0,"r":2.27},{"id":4,"path":"root11.ts","name":"root11.ts","dir":false,"depth":1,"x":636.98,"y":791.47,"z":0,"r":2.27},{"id":5,"path":"root12.ts","name":"root12.ts","dir":false,"depth":1,"x":631.02,"y":786.84,"z":0,"r":2.27},{"id":6,"path":"root13.ts","name":"root13.ts","dir":false,"depth":1,"x":626.17,"y":781.07,"z":0,"r":2.27},{"id":7,"path":"root14.ts","name":"root14.ts","dir":false,"depth":1,"x":622.62,"y":774.41,"z":0,"r":2.27},{"id":8,"path":"root15.ts","name":"root15.ts","dir":false,"depth":1,"x":620.53,"y":767.17,"z":0,"r":2.27},{"id":9,"path":"root16.ts","name":"root16.ts","dir":false,"depth":1,"x":619.99,"y":759.64,"z":0,"r":2.27},{"id":10,"path":"root17.ts","name":"root17.ts","dir":false,"depth":1,"x":621.03,"y":752.17,"z":0,"r":2.27},{"id":11,"path":"root18.ts","name":"root18.ts","dir":false,"depth":1,"x":623.6,"y":745.08,"z":0,"r":2.27},{"id":12,"path":"root19.ts","name":"root19.ts","dir":false,"depth":1,"x":627.58,"y":738.68,"z":0,"r":2.27},{"id":13,"path":"root2.ts","name":"root2.ts","dir":false,"depth":1,"x":632.81,"y":733.25,"z":0,"r":2.27},{"id":14,"path":"root20.ts","name":"root20.ts","dir":false,"depth":1,"x":639.06,"y":729.02,"z":0,"r":2.27},{"id":15,"path":"root21.ts","name":"root21.ts","dir":false,"depth":1,"x":646.05,"y":726.18,"z":0,"r":2.27},{"id":16,"path":"root22.ts","name":"root22.ts","dir":false,"depth":1,"x":653.48,"y":724.86,"z":0,"r":2.27},{"id":17,"path":"root23.ts","name":"root23.ts","dir":false,"depth":1,"x":661.01,"y":725.11,"z":0,"r":2.27},{"id":18,"path":"root24.ts","name":"root24.ts","dir":false,"depth":1,"x":668.34,"y":726.93,"z":0,"r":2.27},{"id":19,"path":"root25.ts","name":"root25.ts","dir":false,"depth":1,"x":675.12,"y":730.22,"z":0,"r":2.27},{"id":20,"path":"root26.ts","name":"root26.ts","dir":false,"depth":1,"x":681.07,"y":734.86,"z":0,"r":2.27},{"id":21,"path":"root27.ts","name":"root27.ts","dir":false,"depth":1,"x":685.93,"y":740.63,"z":0,"r":2.27},{"id":22,"path":"root28.ts","name":"root28.ts","dir":false,"depth":1,"x":689.48,"y":747.28,"z":0,"r":2.27},{"id":23,"path":"root29.ts","name":"root29.ts","dir":false,"depth":1,"x":691.57,"y":754.53,"z":0,"r":2.27},{"id":24,"path":"root3.ts","name":"root3.ts","dir":false,"depth":1,"x":692.11,"y":762.05,"z":0,"r":2.27},{"id":25,"path":"root4.ts","name":"root4.ts","dir":false,"depth":1,"x":691.07,"y":769.52,"z":0,"r":2.27},{"id":26,"path":"root5.ts","name":"root5.ts","dir":false,"depth":1,"x":688.5,"y":776.61,"z":0,"r":2.27},{"id":27,"path":"root6.ts","name":"root6.ts","dir":false,"depth":1,"x":684.51,"y":783.02,"z":0,"r":2.27},{"id":28,"path":"root7.ts","name":"root7.ts","dir":false,"depth":1,"x":679.28,"y":788.45,"z":0,"r":2.27},{"id":29,"path":"root8.ts","name":"root8.ts","dir":false,"depth":1,"x":673.03,"y":792.68,"z":0,"r":2.27},{"id":30,"path":"root9.ts","name":"root9.ts","dir":false,"depth":1,"x":666.04,"y":795.51,"z":0,"r":2.27},{"id":31,"path":"docs","name":"docs","dir":true,"depth":1,"x":527.8481590725621,"y":760.8472261551779,"z":22.5,"r":69.51,"br":80.82,"bx":527.85,"by":760.85,"files":45},{"id":32,"path":"docs/f315.ts","name":"f315.ts","dir":false,"depth":2,"x":595.19,"y":778.08,"z":22.5,"r":2.27},{"id":33,"path":"docs/f316.ts","name":"f316.ts","dir":false,"depth":2,"x":592.92,"y":785.28,"z":22.5,"r":2.27},{"id":34,"path":"docs/f317.ts","name":"f317.ts","dir":false,"depth":2,"x":589.89,"y":792.2,"z":22.5,"r":2.27},{"id":35,"path":"docs/f318.ts","name":"f318.ts","dir":false,"depth":2,"x":586.12,"y":798.74,"z":22.5,"r":2.27},{"id":36,"path":"docs/f319.ts","name":"f319.ts","dir":false,"depth":2,"x":573.24,"y":813.49,"z":22.5,"r":14.36,"add":276,"del":17,"status":"R","testPair":false,"viewed":false},{"id":37,"path":"docs/f320.ts","name":"f320.ts","dir":false,"depth":2,"x":556.76,"y":824.06,"z":22.5,"r":2.27},{"id":38,"path":"docs/f321.ts","name":"f321.ts","dir":false,"depth":2,"x":549.73,"y":826.83,"z":22.5,"r":2.27},{"id":39,"path":"docs/f322.ts","name":"f322.ts","dir":false,"depth":2,"x":542.44,"y":828.81,"z":22.5,"r":2.27},{"id":40,"path":"docs/f323.ts","name":"f323.ts","dir":false,"depth":2,"x":534.98,"y":829.99,"z":22.5,"r":2.27},{"id":41,"path":"docs/f324.ts","name":"f324.ts","dir":false,"depth":2,"x":527.44,"y":830.36,"z":22.5,"r":2.27},{"id":42,"path":"docs/f325.ts","name":"f325.ts","dir":false,"depth":2,"x":519.9,"y":829.9,"z":22.5,"r":2.27},{"id":43,"path":"docs/f326.ts","name":"f326.ts","dir":false,"depth":2,"x":512.45,"y":828.63,"z":22.5,"r":2.27},{"id":44,"path":"docs/f327.ts","name":"f327.ts","dir":false,"depth":2,"x":505.19,"y":826.56,"z":22.5,"r":2.27},{"id":45,"path":"docs/f328.ts","name":"f328.ts","dir":false,"depth":2,"x":498.19,"y":823.72,"z":22.5,"r":2.27},{"id":46,"path":"docs/f329.ts","name":"f329.ts","dir":false,"depth":2,"x":491.55,"y":820.13,"z":22.5,"r":2.27},{"id":47,"path":"docs/f330.ts","name":"f330.ts","dir":false,"depth":2,"x":476.46,"y":807.65,"z":22.5,"r":14.36,"add":313,"del":30,"status":"M","testPair":false,"viewed":false},{"id":48,"path":"docs/f331.ts","name":"f331.ts","dir":false,"depth":2,"x":465.44,"y":791.46,"z":22.5,"r":2.27},{"id":49,"path":"docs/f332.ts","name":"f332.ts","dir":false,"depth":2,"x":462.49,"y":784.51,"z":22.5,"r":2.27},{"id":50,"path":"docs/f333.ts","name":"f333.ts","dir":false,"depth":2,"x":460.31,"y":777.28,"z":22.5,"r":2.27},{"id":51,"path":"docs/f334.ts","name":"f334.ts","dir":false,"depth":2,"x":458.92,"y":769.86,"z":22.5,"r":2.27},{"id":52,"path":"docs/f335.ts","name":"f335.ts","dir":false,"depth":2,"x":458.35,"y":762.32,"z":22.5,"r":2.27},{"id":53,"path":"docs/f336.ts","name":"f336.ts","dir":false,"depth":2,"x":458.6,"y":754.78,"z":22.5,"r":2.27},{"id":54,"path":"docs/f337.ts","name":"f337.ts","dir":false,"depth":2,"x":459.67,"y":747.3,"z":22.5,"r":2.27},{"id":55,"path":"docs/f338.ts","name":"f338.ts","dir":false,"depth":2,"x":461.54,"y":739.98,"z":22.5,"r":2.27},{"id":56,"path":"docs/f339.ts","name":"f339.ts","dir":false,"depth":2,"x":464.2,"y":732.91,"z":22.5,"r":2.27},{"id":57,"path":"docs/f340.ts","name":"f340.ts","dir":false,"depth":2,"x":467.6,"y":726.17,"z":22.5,"r":2.27},{"id":58,"path":"docs/f341.ts","name":"f341.ts","dir":false,"depth":2,"x":479.67,"y":710.75,"z":22.5,"r":14.36,"add":350,"del":43,"status":"M","testPair":false,"viewed":false},{"id":59,"path":"docs/f342.ts","name":"f342.ts","dir":false,"depth":2,"x":495.55,"y":699.3,"z":22.5,"r":2.27},{"id":60,"path":"docs/f343.ts","name":"f343.ts","dir":false,"depth":2,"x":502.42,"y":696.16,"z":22.5,"r":2.27},{"id":61,"path":"docs/f344.ts","name":"f344.ts","dir":false,"depth":2,"x":509.59,"y":693.78,"z":22.5,"r":2.27},{"id":62,"path":"docs/f345.ts","name":"f345.ts","dir":false,"depth":2,"x":516.97,"y":692.19,"z":22.5,"r":2.27},{"id":63,"path":"docs/f346.ts","name":"f346.ts","dir":false,"depth":2,"x":524.48,"y":691.42,"z":22.5,"r":2.27},{"id":64,"path":"docs/f347.ts","name":"f347.ts","dir":false,"depth":2,"x":532.04,"y":691.46,"z":22.5,"r":2.27},{"id":65,"path":"docs/f348.ts","name":"f348.ts","dir":false,"depth":2,"x":539.54,"y":692.33,"z":22.5,"r":2.27},{"id":66,"path":"docs/f349.ts","name":"f349.ts","dir":false,"depth":2,"x":546.9,"y":694,"z":22.5,"r":2.27},{"id":67,"path":"docs/f350.ts","name":"f350.ts","dir":false,"depth":2,"x":554.04,"y":696.46,"z":22.5,"r":2.27},{"id":68,"path":"docs/f351.ts","name":"f351.ts","dir":false,"depth":2,"x":560.87,"y":699.68,"z":22.5,"r":2.27},{"id":69,"path":"docs/f352.ts","name":"f352.ts","dir":false,"depth":2,"x":576.62,"y":711.32,"z":22.5,"r":14.36,"add":387,"del":56,"status":"M","testPair":false,"viewed":false},{"id":70,"path":"docs/f353.ts","name":"f353.ts","dir":false,"depth":2,"x":588.5,"y":726.89,"z":22.5,"r":2.27},{"id":71,"path":"docs/f354.ts","name":"f354.ts","dir":false,"depth":2,"x":591.83,"y":733.67,"z":22.5,"r":2.27},{"id":72,"path":"docs/f355.ts","name":"f355.ts","dir":false,"depth":2,"x":594.4,"y":740.77,"z":22.5,"r":2.27},{"id":73,"path":"docs/f356.ts","name":"f356.ts","dir":false,"depth":2,"x":596.18,"y":748.11,"z":22.5,"r":2.27},{"id":74,"path":"docs/f357.ts","name":"f357.ts","dir":false,"depth":2,"x":597.16,"y":755.6,"z":22.5,"r":2.27},{"id":75,"path":"docs/f358.ts","name":"f358.ts","dir":false,"depth":2,"x":597.32,"y":763.15,"z":22.5,"r":2.27},{"id":76,"path":"docs/f359.ts","name":"f359.ts","dir":false,"depth":2,"x":596.66,"y":770.67,"z":22.5,"r":2.27},{"id":77,"path":"scripts","name":"scripts","dir":true,"depth":1,"x":635.9372709296914,"y":885.6402521080324,"z":25.67,"r":67.71,"br":79.02,"bx":635.94,"by":885.64,"files":45},{"id":78,"path":"scripts/f360.ts","name":"f360.ts","dir":false,"depth":2,"x":641.06,"y":953.16,"z":25.67,"r":2.27},{"id":79,"path":"scripts/f361.ts","name":"f361.ts","dir":false,"depth":2,"x":633.51,"y":953.31,"z":25.67,"r":2.27},{"id":80,"path":"scripts/f362.ts","name":"f362.ts","dir":false,"depth":2,"x":625.99,"y":952.62,"z":25.67,"r":2.27},{"id":81,"path":"scripts/f363.ts","name":"f363.ts","dir":false,"depth":2,"x":609.58,"y":948.02,"z":25.67,"r":11.79,"add":24,"del":69,"status":"A","testPair":false,"viewed":false},{"id":82,"path":"scripts/f364.ts","name":"f364.ts","dir":false,"depth":2,"x":594.85,"y":939.46,"z":25.67,"r":2.27},{"id":83,"path":"scripts/f365.ts","name":"f365.ts","dir":false,"depth":2,"x":589.11,"y":934.55,"z":25.67,"r":2.27},{"id":84,"path":"scripts/f366.ts","name":"f366.ts","dir":false,"depth":2,"x":583.95,"y":929.03,"z":25.67,"r":2.27},{"id":85,"path":"scripts/f367.ts","name":"f367.ts","dir":false,"depth":2,"x":579.45,"y":922.98,"z":25.67,"r":2.27},{"id":86,"path":"scripts/f368.ts","name":"f368.ts","dir":false,"depth":2,"x":575.64,"y":916.45,"z":25.67,"r":2.27},{"id":87,"path":"scripts/f369.ts","name":"f369.ts","dir":false,"depth":2,"x":572.58,"y":909.55,"z":25.67,"r":2.27},{"id":88,"path":"scripts/f370.ts","name":"f370.ts","dir":false,"depth":2,"x":570.31,"y":902.34,"z":25.67,"r":2.27},{"id":89,"path":"scripts/f371.ts","name":"f371.ts","dir":false,"depth":2,"x":568.86,"y":894.93,"z":25.67,"r":2.27},{"id":90,"path":"scripts/f372.ts","name":"f372.ts","dir":false,"depth":2,"x":568.25,"y":887.4,"z":25.67,"r":2.27},{"id":91,"path":"scripts/f373.ts","name":"f373.ts","dir":false,"depth":2,"x":568.47,"y":879.86,"z":25.67,"r":2.27},{"id":92,"path":"scripts/f374.ts","name":"f374.ts","dir":false,"depth":2,"x":572.71,"y":861.39,"z":25.67,"r":13.72,"add":61,"del":82,"status":"D","testPair":false,"viewed":false},{"id":93,"path":"scripts/f375.ts","name":"f375.ts","dir":false,"depth":2,"x":581.9,"y":844.83,"z":25.67,"r":2.27},{"id":94,"path":"scripts/f376.ts","name":"f376.ts","dir":false,"depth":2,"x":586.79,"y":839.06,"z":25.67,"r":2.27},{"id":95,"path":"scripts/f377.ts","name":"f377.ts","dir":false,"depth":2,"x":592.28,"y":833.88,"z":25.67,"r":2.27},{"id":96,"path":"scripts/f378.ts","name":"f378.ts","dir":false,"depth":2,"x":598.31,"y":829.34,"z":25.67,"r":2.27},{"id":97,"path":"scripts/f379.ts","name":"f379.ts","dir":false,"depth":2,"x":604.82,"y":825.5,"z":25.67,"r":2.27},{"id":98,"path":"scripts/f380.ts","name":"f380.ts","dir":false,"depth":2,"x":611.71,"y":822.41,"z":25.67,"r":2.27},{"id":99,"path":"scripts/f381.ts","name":"f381.ts","dir":false,"depth":2,"x":618.9,"y":820.1,"z":25.67,"r":2.27},{"id":100,"path":"scripts/f382.ts","name":"f382.ts","dir":false,"depth":2,"x":626.3,"y":818.61,"z":25.67,"r":2.27},{"id":101,"path":"scripts/f383.ts","name":"f383.ts","dir":false,"depth":2,"x":633.83,"y":817.96,"z":25.67,"r":2.27},{"id":102,"path":"scripts/f384.ts","name":"f384.ts","dir":false,"depth":2,"x":641.38,"y":818.14,"z":25.67,"r":2.27},{"id":103,"path":"scripts/f385.ts","name":"f385.ts","dir":false,"depth":2,"x":658.45,"y":821.78,"z":25.67,"r":12.21,"add":98,"del":5,"status":"R","testPair":false,"viewed":false},{"id":104,"path":"scripts/f386.ts","name":"f386.ts","dir":false,"depth":2,"x":674.03,"y":829.65,"z":25.67,"r":2.27},{"id":105,"path":"scripts/f387.ts","name":"f387.ts","dir":false,"depth":2,"x":680.02,"y":834.24,"z":25.67,"r":2.27},{"id":106,"path":"scripts/f388.ts","name":"f388.ts","dir":false,"depth":2,"x":685.47,"y":839.47,"z":25.67,"r":2.27},{"id":107,"path":"scripts/f389.ts","name":"f389.ts","dir":false,"depth":2,"x":690.31,"y":845.28,"z":25.67,"r":2.27},{"id":108,"path":"scripts/f390.ts","name":"f390.ts","dir":false,"depth":2,"x":694.46,"y":851.58,"z":25.67,"r":2.27},{"id":109,"path":"scripts/f391.ts","name":"f391.ts","dir":false,"depth":2,"x":697.89,"y":858.31,"z":25.67,"r":2.27},{"id":110,"path":"scripts/f392.ts","name":"f392.ts","dir":false,"depth":2,"x":700.55,"y":865.38,"z":25.67,"r":2.27},{"id":111,"path":"scripts/f393.ts","name":"f393.ts","dir":false,"depth":2,"x":702.4,"y":872.7,"z":25.67,"r":2.27},{"id":112,"path":"scripts/f394.ts","name":"f394.ts","dir":false,"depth":2,"x":703.43,"y":880.18,"z":25.67,"r":2.27},{"id":113,"path":"scripts/f395.ts","name":"f395.ts","dir":false,"depth":2,"x":703.62,"y":887.73,"z":25.67,"r":2.27},{"id":114,"path":"scripts/f396.ts","name":"f396.ts","dir":false,"depth":2,"x":700.29,"y":906.72,"z":25.67,"r":14.06,"add":135,"del":18,"status":"?","testPair":false,"viewed":false},{"id":115,"path":"scripts/f397.ts","name":"f397.ts","dir":false,"depth":2,"x":691.73,"y":924.01,"z":25.67,"r":2.27},{"id":116,"path":"scripts/f398.ts","name":"f398.ts","dir":false,"depth":2,"x":687.11,"y":929.98,"z":25.67,"r":2.27},{"id":117,"path":"scripts/f399.ts","name":"f399.ts","dir":false,"depth":2,"x":681.86,"y":935.41,"z":25.67,"r":2.27},{"id":118,"path":"scripts/f400.ts","name":"f400.ts","dir":false,"depth":2,"x":676.03,"y":940.21,"z":25.67,"r":2.27},{"id":119,"path":"scripts/f401.ts","name":"f401.ts","dir":false,"depth":2,"x":669.7,"y":944.33,"z":25.67,"r":2.27},{"id":120,"path":"scripts/f402.ts","name":"f402.ts","dir":false,"depth":2,"x":662.96,"y":947.73,"z":25.67,"r":2.27},{"id":121,"path":"scripts/f403.ts","name":"f403.ts","dir":false,"depth":2,"x":655.88,"y":950.35,"z":25.67,"r":2.27},{"id":122,"path":"scripts/f404.ts","name":"f404.ts","dir":false,"depth":2,"x":648.55,"y":952.17,"z":25.67,"r":2.27},{"id":123,"path":"src","name":"src","dir":true,"depth":1,"x":715.4304565756428,"y":375.61168982964733,"z":35.21,"r":0,"br":342.4,"bx":715.43,"by":375.61,"files":270},{"id":124,"path":"src/api","name":"api","dir":true,"depth":2,"x":607.2196996781237,"y":478.04805450186365,"z":61.92,"r":69.51,"br":80.82,"bx":607.22,"by":478.05,"files":45},{"id":125,"path":"src/api/f180.ts","name":"f180.ts","dir":false,"depth":3,"x":559.13,"y":427.86,"z":61.92,"r":2.27},{"id":126,"path":"src/api/f181.ts","name":"f181.ts","dir":false,"depth":3,"x":564.86,"y":422.94,"z":61.92,"r":2.27},{"id":127,"path":"src/api/f182.ts","name":"f182.ts","dir":false,"depth":3,"x":571.08,"y":418.67,"z":61.92,"r":2.27},{"id":128,"path":"src/api/f183.ts","name":"f183.ts","dir":false,"depth":3,"x":577.74,"y":415.1,"z":61.92,"r":2.27},{"id":129,"path":"src/api/f184.ts","name":"f184.ts","dir":false,"depth":3,"x":584.74,"y":412.27,"z":61.92,"r":2.27},{"id":130,"path":"src/api/f185.ts","name":"f185.ts","dir":false,"depth":3,"x":592.01,"y":410.22,"z":61.92,"r":2.27},{"id":131,"path":"src/api/f186.ts","name":"f186.ts","dir":false,"depth":3,"x":599.46,"y":408.97,"z":61.92,"r":2.27},{"id":132,"path":"src/api/f187.ts","name":"f187.ts","dir":false,"depth":3,"x":619.03,"y":409.55,"z":61.92,"r":14.36,"add":232,"del":41,"status":"R","testPair":false,"viewed":false},{"id":133,"path":"src/api/f188.ts","name":"f188.ts","dir":false,"depth":3,"x":637.67,"y":415.56,"z":61.92,"r":2.27},{"id":134,"path":"src/api/f189.ts","name":"f189.ts","dir":false,"depth":3,"x":644.27,"y":419.23,"z":61.92,"r":2.27},{"id":135,"path":"src/api/f190.ts","name":"f190.ts","dir":false,"depth":3,"x":650.43,"y":423.6,"z":61.92,"r":2.27},{"id":136,"path":"src/api/f191.ts","name":"f191.ts","dir":false,"depth":3,"x":656.08,"y":428.61,"z":61.92,"r":2.27},{"id":137,"path":"src/api/f192.ts","name":"f192.ts","dir":false,"depth":3,"x":661.16,"y":434.2,"z":61.92,"r":2.27},{"id":138,"path":"src/api/f193.ts","name":"f193.ts","dir":false,"depth":3,"x":665.6,"y":440.31,"z":61.92,"r":2.27},{"id":139,"path":"src/api/f194.ts","name":"f194.ts","dir":false,"depth":3,"x":669.35,"y":446.87,"z":61.92,"r":2.27},{"id":140,"path":"src/api/f195.ts","name":"f195.ts","dir":false,"depth":3,"x":672.36,"y":453.79,"z":61.92,"r":2.27},{"id":141,"path":"src/api/f196.ts","name":"f196.ts","dir":false,"depth":3,"x":674.61,"y":461,"z":61.92,"r":2.27},{"id":142,"path":"src/api/f197.ts","name":"f197.ts","dir":false,"depth":3,"x":676.06,"y":468.41,"z":61.92,"r":2.27},{"id":143,"path":"src/api/f198.ts","name":"f198.ts","dir":false,"depth":3,"x":676.02,"y":488,"z":61.92,"r":14.36,"add":269,"del":54,"status":"?","testPair":false,"viewed":false},{"id":144,"path":"src/api/f199.ts","name":"f199.ts","dir":false,"depth":3,"x":670.51,"y":506.79,"z":61.92,"r":2.27},{"id":145,"path":"src/api/f200.ts","name":"f200.ts","dir":false,"depth":3,"x":667.02,"y":513.48,"z":61.92,"r":2.27},{"id":146,"path":"src/api/f201.ts","name":"f201.ts","dir":false,"depth":3,"x":662.82,"y":519.76,"z":61.92,"r":2.27},{"id":147,"path":"src/api/f202.ts","name":"f202.ts","dir":false,"depth":3,"x":657.97,"y":525.55,"z":61.92,"r":2.27},{"id":148,"path":"src/api/f203.ts","name":"f203.ts","dir":false,"depth":3,"x":652.52,"y":530.77,"z":61.92,"r":2.27},{"id":149,"path":"src/api/f204.ts","name":"f204.ts","dir":false,"depth":3,"x":646.53,"y":535.38,"z":61.92,"r":2.27},{"id":150,"path":"src/api/f205.ts","name":"f205.ts","dir":false,"depth":3,"x":640.08,"y":539.3,"z":61.92,"r":2.27},{"id":151,"path":"src/api/f206.ts","name":"f206.ts","dir":false,"depth":3,"x":633.24,"y":542.51,"z":61.92,"r":2.27},{"id":152,"path":"src/api/f207.ts","name":"f207.ts","dir":false,"depth":3,"x":626.09,"y":544.95,"z":61.92,"r":2.27},{"id":153,"path":"src/api/f208.ts","name":"f208.ts","dir":false,"depth":3,"x":618.72,"y":546.6,"z":61.92,"r":2.27},{"id":154,"path":"src/api/f209.ts","name":"f209.ts","dir":false,"depth":3,"x":599.15,"y":547.09,"z":61.92,"r":14.36,"add":306,"del":67,"status":"M","testPair":false,"viewed":false},{"id":155,"path":"src/api/f210.ts","name":"f210.ts","dir":false,"depth":3,"x":580.21,"y":542.1,"z":61.92,"r":2.27},{"id":156,"path":"src/api/f211.ts","name":"f211.ts","dir":false,"depth":3,"x":573.42,"y":538.79,"z":61.92,"r":2.27},{"id":157,"path":"src/api/f212.ts","name":"f212.ts","dir":false,"depth":3,"x":567.03,"y":534.76,"z":61.92,"r":2.27},{"id":158,"path":"src/api/f213.ts","name":"f213.ts","dir":false,"depth":3,"x":561.12,"y":530.07,"z":61.92,"r":2.27},{"id":159,"path":"src/api/f214.ts","name":"f214.ts","dir":false,"depth":3,"x":555.74,"y":524.76,"z":61.92,"r":2.27},{"id":160,"path":"src/api/f215.ts","name":"f215.ts","dir":false,"depth":3,"x":550.98,"y":518.9,"z":61.92,"r":2.27},{"id":161,"path":"src/api/f216.ts","name":"f216.ts","dir":false,"depth":3,"x":546.88,"y":512.56,"z":61.92,"r":2.27},{"id":162,"path":"src/api/f217.ts","name":"f217.ts","dir":false,"depth":3,"x":543.49,"y":505.81,"z":61.92,"r":2.27},{"id":163,"path":"src/api/f218.ts","name":"f218.ts","dir":false,"depth":3,"x":540.86,"y":498.73,"z":61.92,"r":2.27},{"id":164,"path":"src/api/f219.ts","name":"f219.ts","dir":false,"depth":3,"x":539,"y":491.41,"z":61.92,"r":2.27},{"id":165,"path":"src/api/f220.ts","name":"f220.ts","dir":false,"depth":3,"x":537.99,"y":471.85,"z":61.92,"r":14.36,"add":343,"del":80,"status":"M","testPair":false,"viewed":false},{"id":166,"path":"src/api/f221.ts","name":"f221.ts","dir":false,"depth":3,"x":542.46,"y":452.79,"z":61.92,"r":2.27},{"id":167,"path":"src/api/f222.ts","name":"f222.ts","dir":false,"depth":3,"x":545.58,"y":445.91,"z":61.92,"r":2.27},{"id":168,"path":"src/api/f223.ts","name":"f223.ts","dir":false,"depth":3,"x":549.43,"y":439.42,"z":61.92,"r":2.27},{"id":169,"path":"src/api/f224.ts","name":"f224.ts","dir":false,"depth":3,"x":553.97,"y":433.37,"z":61.92,"r":2.27},{"id":170,"path":"src/core","name":"core","dir":true,"depth":2,"x":939.7245019495739,"y":478.04805450186365,"z":52.55,"r":68.23,"br":162.98,"bx":856.28,"by":478.05,"files":90},{"id":171,"path":"src/core/f000.ts","name":"f000.ts","dir":false,"depth":3,"x":1004.58,"y":499.26,"z":52.55,"r":5.22,"add":3,"del":0,"status":"?","testPair":false,"viewed":false,"inDeg":32,"hub":true},{"id":172,"path":"src/core/f001.ts","name":"f001.ts","dir":false,"depth":3,"x":1000.56,"y":508.95,"z":52.55,"r":2.27,"inDeg":1},{"id":173,"path":"src/core/f002.ts","name":"f002.ts","dir":false,"depth":3,"x":996.77,"y":515.49,"z":52.55,"r":2.27},{"id":174,"path":"src/core/f003.ts","name":"f003.ts","dir":false,"depth":3,"x":992.28,"y":521.56,"z":52.55,"r":2.27},{"id":175,"path":"src/core/f004.ts","name":"f004.ts","dir":false,"depth":3,"x":987.15,"y":527.1,"z":52.55,"r":2.27},{"id":176,"path":"src/core/f005.ts","name":"f005.ts","dir":false,"depth":3,"x":981.44,"y":532.04,"z":52.55,"r":2.27},{"id":177,"path":"src/core/f006.ts","name":"f006.ts","dir":false,"depth":3,"x":975.21,"y":536.32,"z":52.55,"r":2.27},{"id":178,"path":"src/core/f007.ts","name":"f007.ts","dir":false,"depth":3,"x":968.56,"y":539.89,"z":52.55,"r":2.27},{"id":179,"path":"src/core/f008.ts","name":"f008.ts","dir":false,"depth":3,"x":961.55,"y":542.7,"z":52.55,"r":2.27},{"id":180,"path":"src/core/f009.ts","name":"f009.ts","dir":false,"depth":3,"x":954.27,"y":544.71,"z":52.55,"r":2.27},{"id":181,"path":"src/core/f010.ts","name":"f010.ts","dir":false,"depth":3,"x":946.81,"y":545.91,"z":52.55,"r":2.27},{"id":182,"path":"src/core/f011.ts","name":"f011.ts","dir":false,"depth":3,"x":931.72,"y":545.81,"z":52.55,"r":9.83,"add":40,"del":13,"status":"M","testPair":false,"viewed":true},{"id":183,"path":"src/core/f012.ts","name":"f012.ts","dir":false,"depth":3,"x":917.03,"y":542.39,"z":52.55,"r":2.27},{"id":184,"path":"src/core/f013.ts","name":"f013.ts","dir":false,"depth":3,"x":910.05,"y":539.49,"z":52.55,"r":2.27},{"id":185,"path":"src/core/f014.ts","name":"f014.ts","dir":false,"depth":3,"x":903.45,"y":535.84,"z":52.55,"r":2.27},{"id":186,"path":"src/core/f015.ts","name":"f015.ts","dir":false,"depth":3,"x":897.28,"y":531.47,"z":52.55,"r":2.27},{"id":187,"path":"src/core/f016.ts","name":"f016.ts","dir":false,"depth":3,"x":891.64,"y":526.45,"z":52.55,"r":2.27},{"id":188,"path":"src/core/f017.ts","name":"f017.ts","dir":false,"depth":3,"x":886.58,"y":520.84,"z":52.55,"r":2.27},{"id":189,"path":"src/core/f018.ts","name":"f018.ts","dir":false,"depth":3,"x":882.18,"y":514.71,"z":52.55,"r":2.27},{"id":190,"path":"src/core/f019.ts","name":"f019.ts","dir":false,"depth":3,"x":878.48,"y":508.12,"z":52.55,"r":2.27},{"id":191,"path":"src/core/f020.ts","name":"f020.ts","dir":false,"depth":3,"x":875.53,"y":501.17,"z":52.55,"r":2.27},{"id":192,"path":"src/core/f021.ts","name":"f021.ts","dir":false,"depth":3,"x":873.37,"y":493.94,"z":52.55,"r":2.27},{"id":193,"path":"src/core/f022.ts","name":"f022.ts","dir":false,"depth":3,"x":871.51,"y":476.58,"z":52.55,"r":12.21,"add":77,"del":26,"status":"M","testPair":false,"viewed":true},{"id":194,"path":"src/core/f023.ts","name":"f023.ts","dir":false,"depth":3,"x":874.11,"y":459.32,"z":52.55,"r":2.27},{"id":195,"path":"src/core/f024.ts","name":"f024.ts","dir":false,"depth":3,"x":876.58,"y":452.18,"z":52.55,"r":2.27},{"id":196,"path":"src/core/f025.ts","name":"f025.ts","dir":false,"depth":3,"x":879.83,"y":445.36,"z":52.55,"r":2.27},{"id":197,"path":"src/core/f026.ts","name":"f026.ts","dir":false,"depth":3,"x":883.81,"y":438.94,"z":52.55,"r":2.27},{"id":198,"path":"src/core/f027.ts","name":"f027.ts","dir":false,"depth":3,"x":888.47,"y":433,"z":52.55,"r":2.27},{"id":199,"path":"src/core/f028.ts","name":"f028.ts","dir":false,"depth":3,"x":893.77,"y":427.62,"z":52.55,"r":2.27},{"id":200,"path":"src/core/f029.ts","name":"f029.ts","dir":false,"depth":3,"x":899.62,"y":422.85,"z":52.55,"r":2.27},{"id":201,"path":"src/core/f030.ts","name":"f030.ts","dir":false,"depth":3,"x":905.97,"y":418.75,"z":52.55,"r":2.27},{"id":202,"path":"src/core/f031.ts","name":"f031.ts","dir":false,"depth":3,"x":912.73,"y":415.38,"z":52.55,"r":2.27},{"id":203,"path":"src/core/f032.ts","name":"f032.ts","dir":false,"depth":3,"x":919.82,"y":412.78,"z":52.55,"r":2.27},{"id":204,"path":"src/core/f033.ts","name":"f033.ts","dir":false,"depth":3,"x":938.87,"y":409.82,"z":52.55,"r":14.06,"add":114,"del":39,"status":"A","testPair":false,"viewed":false,"comments":2},{"id":205,"path":"src/core/f034.ts","name":"f034.ts","dir":false,"depth":3,"x":958,"y":412.31,"z":52.55,"r":2.27},{"id":206,"path":"src/core/f035.ts","name":"f035.ts","dir":false,"depth":3,"x":965.15,"y":414.73,"z":52.55,"r":2.27},{"id":207,"path":"src/core/f036.ts","name":"f036.ts","dir":false,"depth":3,"x":971.99,"y":417.93,"z":52.55,"r":2.27},{"id":208,"path":"src/core/f037.ts","name":"f037.ts","dir":false,"depth":3,"x":978.44,"y":421.86,"z":52.55,"r":2.27},{"id":209,"path":"src/core/f038.ts","name":"f038.ts","dir":false,"depth":3,"x":984.41,"y":426.48,"z":52.55,"r":2.27},{"id":210,"path":"src/core/f039.ts","name":"f039.ts","dir":false,"depth":3,"x":989.83,"y":431.74,"z":52.55,"r":2.27},{"id":211,"path":"src/core/f040.ts","name":"f040.ts","dir":false,"depth":3,"x":994.65,"y":437.56,"z":52.55,"r":2.27},{"id":212,"path":"src/core/f041.ts","name":"f041.ts","dir":false,"depth":3,"x":998.78,"y":443.88,"z":52.55,"r":2.27},{"id":213,"path":"src/core/f042.ts","name":"f042.ts","dir":false,"depth":3,"x":1002.2,"y":450.61,"z":52.55,"r":2.27},{"id":214,"path":"src/core/f043.ts","name":"f043.ts","dir":false,"depth":3,"x":1004.85,"y":457.69,"z":52.55,"r":2.27},{"id":215,"path":"src/core/f044.ts","name":"f044.ts","dir":false,"depth":3,"x":1007.95,"y":477.02,"z":52.55,"r":14.36,"add":151,"del":52,"status":"D","testPair":false,"viewed":false},{"id":216,"path":"src/core/utils","name":"utils","dir":true,"depth":3,"x":779.3715736185142,"y":478.04805450186365,"z":91.31,"r":69.51,"br":80.82,"bx":779.37,"by":478.05,"files":45},{"id":217,"path":"src/core/utils/f045.ts","name":"f045.ts","dir":false,"depth":4,"x":720.77,"y":440.67,"z":91.31,"r":2.27},{"id":218,"path":"src/core/utils/f046.ts","name":"f046.ts","dir":false,"depth":4,"x":725.17,"y":434.53,"z":91.31,"r":2.27},{"id":219,"path":"src/core/utils/f047.ts","name":"f047.ts","dir":false,"depth":4,"x":730.21,"y":428.91,"z":91.31,"r":2.27},{"id":220,"path":"src/core/utils/f048.ts","name":"f048.ts","dir":false,"depth":4,"x":735.83,"y":423.86,"z":91.31,"r":2.27},{"id":221,"path":"src/core/utils/f049.ts","name":"f049.ts","dir":false,"depth":4,"x":741.97,"y":419.46,"z":91.31,"r":2.27},{"id":222,"path":"src/core/utils/f050.ts","name":"f050.ts","dir":false,"depth":4,"x":748.54,"y":415.75,"z":91.31,"r":2.27},{"id":223,"path":"src/core/utils/f051.ts","name":"f051.ts","dir":false,"depth":4,"x":755.48,"y":412.77,"z":91.31,"r":2.27},{"id":224,"path":"src/core/utils/f052.ts","name":"f052.ts","dir":false,"depth":4,"x":762.71,"y":410.56,"z":91.31,"r":2.27},{"id":225,"path":"src/core/utils/f053.ts","name":"f053.ts","dir":false,"depth":4,"x":770.13,"y":409.15,"z":91.31,"r":2.27},{"id":226,"path":"src/core/utils/f054.ts","name":"f054.ts","dir":false,"depth":4,"x":777.66,"y":408.56,"z":91.31,"r":2.27},{"id":227,"path":"src/core/utils/f055.ts","name":"f055.ts","dir":false,"depth":4,"x":797.1,"y":410.84,"z":91.31,"r":14.36,"add":188,"del":65,"status":"R","testPair":false,"viewed":false},{"id":228,"path":"src/core/utils/f056.ts","name":"f056.ts","dir":false,"depth":4,"x":815.14,"y":418.45,"z":91.31,"r":2.27},{"id":229,"path":"src/core/utils/f057.ts","name":"f057.ts","dir":false,"depth":4,"x":821.4,"y":422.68,"z":91.31,"r":2.27},{"id":230,"path":"src/core/utils/f058.ts","name":"f058.ts","dir":false,"depth":4,"x":827.16,"y":427.57,"z":91.31,"r":2.27},{"id":231,"path":"src/core/utils/f059.ts","name":"f059.ts","dir":false,"depth":4,"x":832.35,"y":433.05,"z":91.31,"r":2.27},{"id":232,"path":"src/core/utils/f060.ts","name":"f060.ts","dir":false,"depth":4,"x":836.92,"y":439.06,"z":91.31,"r":2.27},{"id":233,"path":"src/core/utils/f061.ts","name":"f061.ts","dir":false,"depth":4,"x":840.81,"y":445.54,"z":91.31,"r":2.27},{"id":234,"path":"src/core/utils/f062.ts","name":"f062.ts","dir":false,"depth":4,"x":843.98,"y":452.4,"z":91.31,"r":2.27},{"id":235,"path":"src/core/utils/f063.ts","name":"f063.ts","dir":false,"depth":4,"x":846.38,"y":459.56,"z":91.31,"r":2.27},{"id":236,"path":"src/core/utils/f064.ts","name":"f064.ts","dir":false,"depth":4,"x":847.99,"y":466.93,"z":91.31,"r":2.27},{"id":237,"path":"src/core/utils/f065.ts","name":"f065.ts","dir":false,"depth":4,"x":848.79,"y":474.44,"z":91.31,"r":2.27},{"id":238,"path":"src/core/utils/f066.ts","name":"f066.ts","dir":false,"depth":4,"x":847.04,"y":493.95,"z":91.31,"r":14.36,"add":225,"del":78,"status":"M","testPair":false,"viewed":false},{"id":239,"path":"src/core/utils/f067.ts","name":"f067.ts","dir":false,"depth":4,"x":839.92,"y":512.19,"z":91.31,"r":2.27},{"id":240,"path":"src/core/utils/f068.ts","name":"f068.ts","dir":false,"depth":4,"x":835.86,"y":518.56,"z":91.31,"r":2.27},{"id":241,"path":"src/core/utils/f069.ts","name":"f069.ts","dir":false,"depth":4,"x":831.13,"y":524.44,"z":91.31,"r":2.27},{"id":242,"path":"src/core/utils/f070.ts","name":"f070.ts","dir":false,"depth":4,"x":825.79,"y":529.79,"z":91.31,"r":2.27},{"id":243,"path":"src/core/utils/f071.ts","name":"f071.ts","dir":false,"depth":4,"x":819.91,"y":534.52,"z":91.31,"r":2.27},{"id":244,"path":"src/core/utils/f072.ts","name":"f072.ts","dir":false,"depth":4,"x":813.54,"y":538.58,"z":91.31,"r":2.27},{"id":245,"path":"src/core/utils/f073.ts","name":"f073.ts","dir":false,"depth":4,"x":806.77,"y":541.93,"z":91.31,"r":2.27},{"id":246,"path":"src/core/utils/f074.ts","name":"f074.ts","dir":false,"depth":4,"x":799.68,"y":544.53,"z":91.31,"r":2.27},{"id":247,"path":"src/core/utils/f075.ts","name":"f075.ts","dir":false,"depth":4,"x":792.35,"y":546.34,"z":91.31,"r":2.27},{"id":248,"path":"src/core/utils/f076.ts","name":"f076.ts","dir":false,"depth":4,"x":784.86,"y":547.34,"z":91.31,"r":2.27},{"id":249,"path":"src/core/utils/f077.ts","name":"f077.ts","dir":false,"depth":4,"x":765.32,"y":546.12,"z":91.31,"r":14.36,"add":262,"del":1,"status":"M","testPair":false,"viewed":false},{"id":250,"path":"src/core/utils/f078.ts","name":"f078.ts","dir":false,"depth":4,"x":746.89,"y":539.5,"z":91.31,"r":2.27},{"id":251,"path":"src/core/utils/f079.ts","name":"f079.ts","dir":false,"depth":4,"x":740.41,"y":535.62,"z":91.31,"r":2.27},{"id":252,"path":"src/core/utils/f080.ts","name":"f080.ts","dir":false,"depth":4,"x":734.4,"y":531.05,"z":91.31,"r":2.27},{"id":253,"path":"src/core/utils/f081.ts","name":"f081.ts","dir":false,"depth":4,"x":728.91,"y":525.86,"z":91.31,"r":2.27},{"id":254,"path":"src/core/utils/f082.ts","name":"f082.ts","dir":false,"depth":4,"x":724.02,"y":520.1,"z":91.31,"r":2.27},{"id":255,"path":"src/core/utils/f083.ts","name":"f083.ts","dir":false,"depth":4,"x":719.79,"y":513.85,"z":91.31,"r":2.27},{"id":256,"path":"src/core/utils/f084.ts","name":"f084.ts","dir":false,"depth":4,"x":716.26,"y":507.17,"z":91.31,"r":2.27},{"id":257,"path":"src/core/utils/f085.ts","name":"f085.ts","dir":false,"depth":4,"x":713.47,"y":500.15,"z":91.31,"r":2.27},{"id":258,"path":"src/core/utils/f086.ts","name":"f086.ts","dir":false,"depth":4,"x":711.46,"y":492.87,"z":91.31,"r":2.27},{"id":259,"path":"src/core/utils/f087.ts","name":"f087.ts","dir":false,"depth":4,"x":710.25,"y":485.42,"z":91.31,"r":2.27},{"id":260,"path":"src/core/utils/f088.ts","name":"f088.ts","dir":false,"depth":4,"x":710.94,"y":465.85,"z":91.31,"r":14.36,"add":299,"del":14,"status":"M","testPair":false,"viewed":false},{"id":261,"path":"src/core/utils/f089.ts","name":"f089.ts","dir":false,"depth":4,"x":717.06,"y":447.25,"z":91.31,"r":2.27},{"id":262,"path":"src/deep/a/b/c","name":"deep/a/b/c","dir":true,"depth":2,"x":664.405529868747,"y":630.7338150178856,"z":60.79,"r":65.66,"br":76.97,"bx":664.41,"by":630.73,"files":45},{"id":263,"path":"src/deep/a/b/c/f405.ts","name":"f405.ts","dir":false,"depth":3,"x":603.1,"y":607.21,"z":60.79,"r":2.27},{"id":264,"path":"src/deep/a/b/c/f406.ts","name":"f406.ts","dir":false,"depth":3,"x":606.21,"y":600.33,"z":60.79,"r":2.27},{"id":265,"path":"src/deep/a/b/c/f407.ts","name":"f407.ts","dir":false,"depth":3,"x":617.75,"y":584.53,"z":60.79,"r":14.36,"add":172,"del":31,"status":"M","testPair":false,"viewed":false},{"id":266,"path":"src/deep/a/b/c/f408.ts","name":"f408.ts","dir":false,"depth":3,"x":633.45,"y":572.83,"z":60.79,"r":2.27},{"id":267,"path":"src/deep/a/b/c/f409.ts","name":"f409.ts","dir":false,"depth":3,"x":640.3,"y":569.66,"z":60.79,"r":2.27},{"id":268,"path":"src/deep/a/b/c/f410.ts","name":"f410.ts","dir":false,"depth":3,"x":647.47,"y":567.29,"z":60.79,"r":2.27},{"id":269,"path":"src/deep/a/b/c/f411.ts","name":"f411.ts","dir":false,"depth":3,"x":654.87,"y":565.77,"z":60.79,"r":2.27},{"id":270,"path":"src/deep/a/b/c/f412.ts","name":"f412.ts","dir":false,"depth":3,"x":662.39,"y":565.1,"z":60.79,"r":2.27},{"id":271,"path":"src/deep/a/b/c/f413.ts","name":"f413.ts","dir":false,"depth":3,"x":669.94,"y":565.31,"z":60.79,"r":2.27},{"id":272,"path":"src/deep/a/b/c/f414.ts","name":"f414.ts","dir":false,"depth":3,"x":677.42,"y":566.37,"z":60.79,"r":2.27},{"id":273,"path":"src/deep/a/b/c/f415.ts","name":"f415.ts","dir":false,"depth":3,"x":684.72,"y":568.29,"z":60.79,"r":2.27},{"id":274,"path":"src/deep/a/b/c/f416.ts","name":"f416.ts","dir":false,"depth":3,"x":691.76,"y":571.04,"z":60.79,"r":2.27},{"id":275,"path":"src/deep/a/b/c/f417.ts","name":"f417.ts","dir":false,"depth":3,"x":698.43,"y":574.57,"z":60.79,"r":2.27},{"id":276,"path":"src/deep/a/b/c/f418.ts","name":"f418.ts","dir":false,"depth":3,"x":713.47,"y":587.1,"z":60.79,"r":14.36,"add":209,"del":44,"status":"M","testPair":false,"viewed":false},{"id":277,"path":"src/deep/a/b/c/f419.ts","name":"f419.ts","dir":false,"depth":3,"x":724.15,"y":603.5,"z":60.79,"r":2.27},{"id":278,"path":"src/deep/a/b/c/f420.ts","name":"f420.ts","dir":false,"depth":3,"x":726.89,"y":610.54,"z":60.79,"r":2.27},{"id":279,"path":"src/deep/a/b/c/f421.ts","name":"f421.ts","dir":false,"depth":3,"x":728.79,"y":617.85,"z":60.79,"r":2.27},{"id":280,"path":"src/deep/a/b/c/f422.ts","name":"f422.ts","dir":false,"depth":3,"x":729.84,"y":625.33,"z":60.79,"r":2.27},{"id":281,"path":"src/deep/a/b/c/f423.ts","name":"f423.ts","dir":false,"depth":3,"x":730.03,"y":632.88,"z":60.79,"r":2.27},{"id":282,"path":"src/deep/a/b/c/f424.ts","name":"f424.ts","dir":false,"depth":3,"x":729.35,"y":640.4,"z":60.79,"r":2.27},{"id":283,"path":"src/deep/a/b/c/f425.ts","name":"f425.ts","dir":false,"depth":3,"x":727.81,"y":647.79,"z":60.79,"r":2.27},{"id":284,"path":"src/deep/a/b/c/f426.ts","name":"f426.ts","dir":false,"depth":3,"x":725.44,"y":654.96,"z":60.79,"r":2.27},{"id":285,"path":"src/deep/a/b/c/f427.ts","name":"f427.ts","dir":false,"depth":3,"x":722.25,"y":661.81,"z":60.79,"r":2.27},{"id":286,"path":"src/deep/a/b/c/f428.ts","name":"f428.ts","dir":false,"depth":3,"x":718.3,"y":668.24,"z":60.79,"r":2.27},{"id":287,"path":"src/deep/a/b/c/f429.ts","name":"f429.ts","dir":false,"depth":3,"x":704.85,"y":682.46,"z":60.79,"r":14.36,"add":246,"del":57,"status":"A","testPair":false,"viewed":false},{"id":288,"path":"src/deep/a/b/c/f430.ts","name":"f430.ts","dir":false,"depth":3,"x":687.81,"y":692.09,"z":60.79,"r":2.27},{"id":289,"path":"src/deep/a/b/c/f431.ts","name":"f431.ts","dir":false,"depth":3,"x":680.61,"y":694.37,"z":60.79,"r":2.27},{"id":290,"path":"src/deep/a/b/c/f432.ts","name":"f432.ts","dir":false,"depth":3,"x":673.19,"y":695.81,"z":60.79,"r":2.27},{"id":291,"path":"src/deep/a/b/c/f433.ts","name":"f433.ts","dir":false,"depth":3,"x":665.66,"y":696.38,"z":60.79,"r":2.27},{"id":292,"path":"src/deep/a/b/c/f434.ts","name":"f434.ts","dir":false,"depth":3,"x":658.12,"y":696.09,"z":60.79,"r":2.27},{"id":293,"path":"src/deep/a/b/c/f435.ts","name":"f435.ts","dir":false,"depth":3,"x":650.65,"y":694.94,"z":60.79,"r":2.27},{"id":294,"path":"src/deep/a/b/c/f436.ts","name":"f436.ts","dir":false,"depth":3,"x":643.37,"y":692.94,"z":60.79,"r":2.27},{"id":295,"path":"src/deep/a/b/c/f437.ts","name":"f437.ts","dir":false,"depth":3,"x":636.37,"y":690.11,"z":60.79,"r":2.27},{"id":296,"path":"src/deep/a/b/c/f438.ts","name":"f438.ts","dir":false,"depth":3,"x":629.74,"y":686.5,"z":60.79,"r":2.27},{"id":297,"path":"src/deep/a/b/c/f439.ts","name":"f439.ts","dir":false,"depth":3,"x":623.56,"y":682.15,"z":60.79,"r":2.27},{"id":298,"path":"src/deep/a/b/c/f440.ts","name":"f440.ts","dir":false,"depth":3,"x":617.93,"y":677.12,"z":60.79,"r":2.27},{"id":299,"path":"src/deep/a/b/c/f441.ts","name":"f441.ts","dir":false,"depth":3,"x":612.91,"y":671.47,"z":60.79,"r":2.27},{"id":300,"path":"src/deep/a/b/c/f442.ts","name":"f442.ts","dir":false,"depth":3,"x":608.57,"y":665.29,"z":60.79,"r":2.27},{"id":301,"path":"src/deep/a/b/c/f443.ts","name":"f443.ts","dir":false,"depth":3,"x":604.97,"y":658.65,"z":60.79,"r":2.27},{"id":302,"path":"src/deep/a/b/c/f444.ts","name":"f444.ts","dir":false,"depth":3,"x":602.16,"y":651.64,"z":60.79,"r":2.27},{"id":303,"path":"src/deep/a/b/c/f445.ts","name":"f445.ts","dir":false,"depth":3,"x":600.17,"y":644.36,"z":60.79,"r":2.27},{"id":304,"path":"src/deep/a/b/c/f446.ts","name":"f446.ts","dir":false,"depth":3,"x":599.03,"y":636.89,"z":60.79,"r":2.27},{"id":305,"path":"src/deep/a/b/c/f447.ts","name":"f447.ts","dir":false,"depth":3,"x":598.76,"y":629.35,"z":60.79,"r":2.27},{"id":306,"path":"src/deep/a/b/c/f448.ts","name":"f448.ts","dir":false,"depth":3,"x":599.35,"y":621.82,"z":60.79,"r":2.27},{"id":307,"path":"src/deep/a/b/c/f449.ts","name":"f449.ts","dir":false,"depth":3,"x":600.81,"y":614.41,"z":60.79,"r":2.27},{"id":308,"path":"src/ui","name":"ui","dir":true,"depth":2,"x":634.6149032135994,"y":226.19103344242885,"z":64.86,"r":0,"br":167.27,"bx":634.61,"by":226.19,"files":90},{"id":309,"path":"src/ui/components","name":"components","dir":true,"depth":3,"x":551.6020512383711,"y":226.19103344242885,"z":93.63,"r":67.69,"br":78.99,"bx":551.6,"by":226.19,"files":45},{"id":310,"path":"src/ui/components/f090.ts","name":"f090.ts","dir":false,"depth":4,"x":545.54,"y":158.77,"z":93.63,"r":2.27},{"id":311,"path":"src/ui/components/f091.ts","name":"f091.ts","dir":false,"depth":4,"x":553.09,"y":158.52,"z":93.63,"r":2.27},{"id":312,"path":"src/ui/components/f092.ts","name":"f092.ts","dir":false,"depth":4,"x":560.62,"y":159.11,"z":93.63,"r":2.27},{"id":313,"path":"src/ui/components/f093.ts","name":"f093.ts","dir":false,"depth":4,"x":568.04,"y":160.53,"z":93.63,"r":2.27},{"id":314,"path":"src/ui/components/f094.ts","name":"f094.ts","dir":false,"depth":4,"x":575.25,"y":162.77,"z":93.63,"r":2.27},{"id":315,"path":"src/ui/components/f095.ts","name":"f095.ts","dir":false,"depth":4,"x":582.17,"y":165.8,"z":93.63,"r":2.27},{"id":316,"path":"src/ui/components/f096.ts","name":"f096.ts","dir":false,"depth":4,"x":588.71,"y":169.58,"z":93.63,"r":2.27},{"id":317,"path":"src/ui/components/f097.ts","name":"f097.ts","dir":false,"depth":4,"x":594.78,"y":174.06,"z":93.63,"r":2.27},{"id":318,"path":"src/ui/components/f098.ts","name":"f098.ts","dir":false,"depth":4,"x":600.32,"y":179.2,"z":93.63,"r":2.27},{"id":319,"path":"src/ui/components/f099.ts","name":"f099.ts","dir":false,"depth":4,"x":611.73,"y":195.11,"z":93.63,"r":14.36,"add":336,"del":27,"status":"?","testPair":false,"viewed":false},{"id":320,"path":"src/ui/components/f100.ts","name":"f100.ts","dir":false,"depth":4,"x":618.11,"y":213.61,"z":93.63,"r":2.27},{"id":321,"path":"src/ui/components/f101.ts","name":"f101.ts","dir":false,"depth":4,"x":619.1,"y":221.1,"z":93.63,"r":2.27},{"id":322,"path":"src/ui/components/f102.ts","name":"f102.ts","dir":false,"depth":4,"x":619.25,"y":228.65,"z":93.63,"r":2.27},{"id":323,"path":"src/ui/components/f103.ts","name":"f103.ts","dir":false,"depth":4,"x":618.55,"y":236.17,"z":93.63,"r":2.27},{"id":324,"path":"src/ui/components/f104.ts","name":"f104.ts","dir":false,"depth":4,"x":617.02,"y":243.57,"z":93.63,"r":2.27},{"id":325,"path":"src/ui/components/f105.ts","name":"f105.ts","dir":false,"depth":4,"x":614.68,"y":250.75,"z":93.63,"r":2.27},{"id":326,"path":"src/ui/components/f106.ts","name":"f106.ts","dir":false,"depth":4,"x":611.55,"y":257.62,"z":93.63,"r":2.27},{"id":327,"path":"src/ui/components/f107.ts","name":"f107.ts","dir":false,"depth":4,"x":607.68,"y":264.1,"z":93.63,"r":2.27},{"id":328,"path":"src/ui/components/f108.ts","name":"f108.ts","dir":false,"depth":4,"x":603.1,"y":270.12,"z":93.63,"r":2.27},{"id":329,"path":"src/ui/components/f109.ts","name":"f109.ts","dir":false,"depth":4,"x":597.89,"y":275.58,"z":93.63,"r":2.27},{"id":330,"path":"src/ui/components/f110.ts","name":"f110.ts","dir":false,"depth":4,"x":581.82,"y":286.76,"z":93.63,"r":14.36,"add":373,"del":40,"status":"D","testPair":false,"viewed":false},{"id":331,"path":"src/ui/components/f111.ts","name":"f111.ts","dir":false,"depth":4,"x":563.22,"y":292.87,"z":93.63,"r":2.27},{"id":332,"path":"src/ui/components/f112.ts","name":"f112.ts","dir":false,"depth":4,"x":555.72,"y":293.75,"z":93.63,"r":2.27},{"id":333,"path":"src/ui/components/f113.ts","name":"f113.ts","dir":false,"depth":4,"x":548.17,"y":293.79,"z":93.63,"r":2.27},{"id":334,"path":"src/ui/components/f114.ts","name":"f114.ts","dir":false,"depth":4,"x":540.66,"y":292.99,"z":93.63,"r":2.27},{"id":335,"path":"src/ui/components/f115.ts","name":"f115.ts","dir":false,"depth":4,"x":533.29,"y":291.35,"z":93.63,"r":2.27},{"id":336,"path":"src/ui/components/f116.ts","name":"f116.ts","dir":false,"depth":4,"x":526.14,"y":288.91,"z":93.63,"r":2.27},{"id":337,"path":"src/ui/components/f117.ts","name":"f117.ts","dir":false,"depth":4,"x":519.31,"y":285.68,"z":93.63,"r":2.27},{"id":338,"path":"src/ui/components/f118.ts","name":"f118.ts","dir":false,"depth":4,"x":512.89,"y":281.71,"z":93.63,"r":2.27},{"id":339,"path":"src/ui/components/f119.ts","name":"f119.ts","dir":false,"depth":4,"x":506.94,"y":277.06,"z":93.63,"r":2.27},{"id":340,"path":"src/ui/components/f120.ts","name":"f120.ts","dir":false,"depth":4,"x":501.55,"y":271.76,"z":93.63,"r":2.27},{"id":341,"path":"src/ui/components/f121.ts","name":"f121.ts","dir":false,"depth":4,"x":492.43,"y":259.07,"z":93.63,"r":10.38,"add":10,"del":53,"status":"R","testPair":false,"viewed":false},{"id":342,"path":"src/ui/components/f122.ts","name":"f122.ts","dir":false,"depth":4,"x":486.47,"y":244.62,"z":93.63,"r":2.27},{"id":343,"path":"src/ui/components/f123.ts","name":"f123.ts","dir":false,"depth":4,"x":484.82,"y":237.25,"z":93.63,"r":2.27},{"id":344,"path":"src/ui/components/f124.ts","name":"f124.ts","dir":false,"depth":4,"x":484.01,"y":229.74,"z":93.63,"r":2.27},{"id":345,"path":"src/ui/components/f125.ts","name":"f125.ts","dir":false,"depth":4,"x":484.03,"y":222.19,"z":93.63,"r":2.27},{"id":346,"path":"src/ui/components/f126.ts","name":"f126.ts","dir":false,"depth":4,"x":484.9,"y":214.69,"z":93.63,"r":2.27},{"id":347,"path":"src/ui/components/f127.ts","name":"f127.ts","dir":false,"depth":4,"x":486.59,"y":207.33,"z":93.63,"r":2.27},{"id":348,"path":"src/ui/components/f128.ts","name":"f128.ts","dir":false,"depth":4,"x":489.1,"y":200.21,"z":93.63,"r":2.27},{"id":349,"path":"src/ui/components/f129.ts","name":"f129.ts","dir":false,"depth":4,"x":492.38,"y":193.4,"z":93.63,"r":2.27},{"id":350,"path":"src/ui/components/f130.ts","name":"f130.ts","dir":false,"depth":4,"x":496.4,"y":187.01,"z":93.63,"r":2.27},{"id":351,"path":"src/ui/components/f131.ts","name":"f131.ts","dir":false,"depth":4,"x":501.11,"y":181.11,"z":93.63,"r":2.27},{"id":352,"path":"src/ui/components/f132.ts","name":"f132.ts","dir":false,"depth":4,"x":514.65,"y":169.48,"z":93.63,"r":12.61,"add":47,"del":66,"status":"M","testPair":false,"viewed":false},{"id":353,"path":"src/ui/components/f133.ts","name":"f133.ts","dir":false,"depth":4,"x":530.77,"y":161.79,"z":93.63,"r":2.27},{"id":354,"path":"src/ui/components/f134.ts","name":"f134.ts","dir":false,"depth":4,"x":538.07,"y":159.87,"z":93.63,"r":2.27},{"id":355,"path":"src/ui/hooks","name":"hooks","dir":true,"depth":3,"x":716.2386339075874,"y":226.19103344242885,"z":83.62,"r":69.08,"br":80.38,"bx":716.24,"by":226.19,"files":45},{"id":356,"path":"src/ui/hooks/f135.ts","name":"f135.ts","dir":false,"depth":4,"x":769.47,"y":270.21,"z":83.62,"r":2.27,"inDeg":1},{"id":357,"path":"src/ui/hooks/f136.ts","name":"f136.ts","dir":false,"depth":4,"x":764.35,"y":275.76,"z":83.62,"r":2.27},{"id":358,"path":"src/ui/hooks/f137.ts","name":"f137.ts","dir":false,"depth":4,"x":758.65,"y":280.72,"z":83.62,"r":2.27},{"id":359,"path":"src/ui/hooks/f138.ts","name":"f138.ts","dir":false,"depth":4,"x":752.44,"y":285.02,"z":83.62,"r":2.27},{"id":360,"path":"src/ui/hooks/f139.ts","name":"f139.ts","dir":false,"depth":4,"x":745.8,"y":288.62,"z":83.62,"r":2.27},{"id":361,"path":"src/ui/hooks/f140.ts","name":"f140.ts","dir":false,"depth":4,"x":738.81,"y":291.48,"z":83.62,"r":2.27},{"id":362,"path":"src/ui/hooks/f141.ts","name":"f141.ts","dir":false,"depth":4,"x":731.55,"y":293.55,"z":83.62,"r":2.27},{"id":363,"path":"src/ui/hooks/f142.ts","name":"f142.ts","dir":false,"depth":4,"x":724.1,"y":294.82,"z":83.62,"r":2.27},{"id":364,"path":"src/ui/hooks/f143.ts","name":"f143.ts","dir":false,"depth":4,"x":704.53,"y":294.27,"z":83.62,"r":14.36,"add":84,"del":79,"status":"M","testPair":false,"viewed":false},{"id":365,"path":"src/ui/hooks/f144.ts","name":"f144.ts","dir":false,"depth":4,"x":685.9,"y":288.25,"z":83.62,"r":2.27},{"id":366,"path":"src/ui/hooks/f145.ts","name":"f145.ts","dir":false,"depth":4,"x":679.31,"y":284.57,"z":83.62,"r":2.27},{"id":367,"path":"src/ui/hooks/f146.ts","name":"f146.ts","dir":false,"depth":4,"x":673.15,"y":280.19,"z":83.62,"r":2.27},{"id":368,"path":"src/ui/hooks/f147.ts","name":"f147.ts","dir":false,"depth":4,"x":667.52,"y":275.16,"z":83.62,"r":2.27},{"id":369,"path":"src/ui/hooks/f148.ts","name":"f148.ts","dir":false,"depth":4,"x":662.46,"y":269.55,"z":83.62,"r":2.27},{"id":370,"path":"src/ui/hooks/f149.ts","name":"f149.ts","dir":false,"depth":4,"x":658.05,"y":263.42,"z":83.62,"r":2.27},{"id":371,"path":"src/ui/hooks/f150.ts","name":"f150.ts","dir":false,"depth":4,"x":654.33,"y":256.84,"z":83.62,"r":2.27},{"id":372,"path":"src/ui/hooks/f151.ts","name":"f151.ts","dir":false,"depth":4,"x":651.36,"y":249.9,"z":83.62,"r":2.27},{"id":373,"path":"src/ui/hooks/f152.ts","name":"f152.ts","dir":false,"depth":4,"x":649.16,"y":242.68,"z":83.62,"r":2.27},{"id":374,"path":"src/ui/hooks/f153.ts","name":"f153.ts","dir":false,"depth":4,"x":647.76,"y":235.26,"z":83.62,"r":2.27},{"id":375,"path":"src/ui/hooks/f154.ts","name":"f154.ts","dir":false,"depth":4,"x":647.77,"y":217.02,"z":83.62,"r":13,"add":121,"del":2,"status":"M","testPair":false,"viewed":false},{"id":376,"path":"src/ui/hooks/f155.ts","name":"f155.ts","dir":false,"depth":4,"x":652.56,"y":199.43,"z":83.62,"r":2.27},{"id":377,"path":"src/ui/hooks/f156.ts","name":"f156.ts","dir":false,"depth":4,"x":655.86,"y":192.64,"z":83.62,"r":2.27},{"id":378,"path":"src/ui/hooks/f157.ts","name":"f157.ts","dir":false,"depth":4,"x":659.88,"y":186.25,"z":83.62,"r":2.27},{"id":379,"path":"src/ui/hooks/f158.ts","name":"f158.ts","dir":false,"depth":4,"x":664.58,"y":180.33,"z":83.62,"r":2.27},{"id":380,"path":"src/ui/hooks/f159.ts","name":"f159.ts","dir":false,"depth":4,"x":669.89,"y":174.97,"z":83.62,"r":2.27},{"id":381,"path":"src/ui/hooks/f160.ts","name":"f160.ts","dir":false,"depth":4,"x":675.76,"y":170.21,"z":83.62,"r":2.27},{"id":382,"path":"src/ui/hooks/f161.ts","name":"f161.ts","dir":false,"depth":4,"x":682.12,"y":166.13,"z":83.62,"r":2.27},{"id":383,"path":"src/ui/hooks/f162.ts","name":"f162.ts","dir":false,"depth":4,"x":688.88,"y":162.76,"z":83.62,"r":2.27},{"id":384,"path":"src/ui/hooks/f163.ts","name":"f163.ts","dir":false,"depth":4,"x":695.97,"y":160.16,"z":83.62,"r":2.27},{"id":385,"path":"src/ui/hooks/f164.ts","name":"f164.ts","dir":false,"depth":4,"x":703.3,"y":158.34,"z":83.62,"r":2.27},{"id":386,"path":"src/ui/hooks/f165.ts","name":"f165.ts","dir":false,"depth":4,"x":722.85,"y":157.43,"z":83.62,"r":14.36,"add":158,"del":15,"status":"A","testPair":false,"viewed":false},{"id":387,"path":"src/ui/hooks/f166.ts","name":"f166.ts","dir":false,"depth":4,"x":741.88,"y":162.05,"z":83.62,"r":2.27},{"id":388,"path":"src/ui/hooks/f167.ts","name":"f167.ts","dir":false,"depth":4,"x":748.73,"y":165.23,"z":83.62,"r":2.27},{"id":389,"path":"src/ui/hooks/f168.ts","name":"f168.ts","dir":false,"depth":4,"x":755.19,"y":169.14,"z":83.62,"r":2.27},{"id":390,"path":"src/ui/hooks/f169.ts","name":"f169.ts","dir":false,"depth":4,"x":761.19,"y":173.74,"z":83.62,"r":2.27},{"id":391,"path":"src/ui/hooks/f170.ts","name":"f170.ts","dir":false,"depth":4,"x":766.64,"y":178.96,"z":83.62,"r":2.27},{"id":392,"path":"src/ui/hooks/f171.ts","name":"f171.ts","dir":false,"depth":4,"x":771.5,"y":184.74,"z":83.62,"r":2.27},{"id":393,"path":"src/ui/hooks/f172.ts","name":"f172.ts","dir":false,"depth":4,"x":775.69,"y":191.02,"z":83.62,"r":2.27},{"id":394,"path":"src/ui/hooks/f173.ts","name":"f173.ts","dir":false,"depth":4,"x":779.18,"y":197.72,"z":83.62,"r":2.27},{"id":395,"path":"src/ui/hooks/f174.ts","name":"f174.ts","dir":false,"depth":4,"x":781.91,"y":204.77,"z":83.62,"r":2.27},{"id":396,"path":"src/ui/hooks/f175.ts","name":"f175.ts","dir":false,"depth":4,"x":783.86,"y":212.06,"z":83.62,"r":2.27},{"id":397,"path":"src/ui/hooks/f176.ts","name":"f176.ts","dir":false,"depth":4,"x":785.1,"y":231.6,"z":83.62,"r":14.36,"add":195,"del":28,"status":"D","testPair":false,"viewed":false},{"id":398,"path":"src/ui/hooks/f177.ts","name":"f177.ts","dir":false,"depth":4,"x":780.82,"y":250.71,"z":83.62,"r":2.27},{"id":399,"path":"src/ui/hooks/f178.ts","name":"f178.ts","dir":false,"depth":4,"x":777.76,"y":257.61,"z":83.62,"r":2.27},{"id":400,"path":"src/ui/hooks/f179.ts","name":"f179.ts","dir":false,"depth":4,"x":773.96,"y":264.14,"z":83.62,"r":2.27},{"id":401,"path":"test","name":"test","dir":true,"depth":1,"x":404.0589396955022,"y":980.8949970314072,"z":33.75,"r":0,"br":166.4,"bx":404.06,"by":980.89,"files":90},{"id":402,"path":"test/e2e","name":"e2e","dir":true,"depth":2,"x":323.73350316705194,"y":980.8949970314072,"z":55.71,"r":69.51,"br":80.82,"bx":323.73,"by":980.89,"files":45},{"id":403,"path":"test/e2e/f270.ts","name":"f270.ts","dir":false,"depth":3,"x":327.94,"y":1050.28,"z":55.71,"r":2.27},{"id":404,"path":"test/e2e/f271.ts","name":"f271.ts","dir":false,"depth":3,"x":320.38,"y":1050.33,"z":55.71,"r":2.27},{"id":405,"path":"test/e2e/f272.ts","name":"f272.ts","dir":false,"depth":3,"x":312.87,"y":1049.55,"z":55.71,"r":2.27},{"id":406,"path":"test/e2e/f273.ts","name":"f273.ts","dir":false,"depth":3,"x":305.49,"y":1047.97,"z":55.71,"r":2.27},{"id":407,"path":"test/e2e/f274.ts","name":"f274.ts","dir":false,"depth":3,"x":298.32,"y":1045.59,"z":55.71,"r":2.27},{"id":408,"path":"test/e2e/f275.ts","name":"f275.ts","dir":false,"depth":3,"x":281.28,"y":1035.94,"z":55.71,"r":14.36,"add":128,"del":55,"status":"M","testPair":false,"viewed":false},{"id":409,"path":"test/e2e/f276.ts","name":"f276.ts","dir":false,"depth":3,"x":267.62,"y":1021.91,"z":55.71,"r":2.27},{"id":410,"path":"test/e2e/f277.ts","name":"f277.ts","dir":false,"depth":3,"x":263.5,"y":1015.58,"z":55.71,"r":2.27},{"id":411,"path":"test/e2e/f278.ts","name":"f278.ts","dir":false,"depth":3,"x":260.09,"y":1008.84,"z":55.71,"r":2.27},{"id":412,"path":"test/e2e/f279.ts","name":"f279.ts","dir":false,"depth":3,"x":257.43,"y":1001.77,"z":55.71,"r":2.27},{"id":413,"path":"test/e2e/f280.ts","name":"f280.ts","dir":false,"depth":3,"x":255.56,"y":994.46,"z":55.71,"r":2.27},{"id":414,"path":"test/e2e/f281.ts","name":"f281.ts","dir":false,"depth":3,"x":254.49,"y":986.98,"z":55.71,"r":2.27},{"id":415,"path":"test/e2e/f282.ts","name":"f282.ts","dir":false,"depth":3,"x":254.24,"y":979.43,"z":55.71,"r":2.27},{"id":416,"path":"test/e2e/f283.ts","name":"f283.ts","dir":false,"depth":3,"x":254.81,"y":971.9,"z":55.71,"r":2.27},{"id":417,"path":"test/e2e/f284.ts","name":"f284.ts","dir":false,"depth":3,"x":256.19,"y":964.48,"z":55.71,"r":2.27},{"id":418,"path":"test/e2e/f285.ts","name":"f285.ts","dir":false,"depth":3,"x":258.37,"y":957.25,"z":55.71,"r":2.27},{"id":419,"path":"test/e2e/f286.ts","name":"f286.ts","dir":false,"depth":3,"x":267.56,"y":939.96,"z":55.71,"r":14.36,"add":165,"del":68,"status":"M","testPair":false,"viewed":false},{"id":420,"path":"test/e2e/f287.ts","name":"f287.ts","dir":false,"depth":3,"x":281.2,"y":925.91,"z":55.71,"r":2.27},{"id":421,"path":"test/e2e/f288.ts","name":"f288.ts","dir":false,"depth":3,"x":287.42,"y":921.62,"z":55.71,"r":2.27},{"id":422,"path":"test/e2e/f289.ts","name":"f289.ts","dir":false,"depth":3,"x":294.06,"y":918.03,"z":55.71,"r":2.27},{"id":423,"path":"test/e2e/f290.ts","name":"f290.ts","dir":false,"depth":3,"x":301.06,"y":915.19,"z":55.71,"r":2.27},{"id":424,"path":"test/e2e/f291.ts","name":"f291.ts","dir":false,"depth":3,"x":308.32,"y":913.11,"z":55.71,"r":2.27},{"id":425,"path":"test/e2e/f292.ts","name":"f292.ts","dir":false,"depth":3,"x":315.77,"y":911.84,"z":55.71,"r":2.27},{"id":426,"path":"test/e2e/f293.ts","name":"f293.ts","dir":false,"depth":3,"x":323.31,"y":911.39,"z":55.71,"r":2.27},{"id":427,"path":"test/e2e/f294.ts","name":"f294.ts","dir":false,"depth":3,"x":330.85,"y":911.75,"z":55.71,"r":2.27},{"id":428,"path":"test/e2e/f295.ts","name":"f295.ts","dir":false,"depth":3,"x":338.31,"y":912.93,"z":55.71,"r":2.27},{"id":429,"path":"test/e2e/f296.ts","name":"f296.ts","dir":false,"depth":3,"x":345.6,"y":914.91,"z":55.71,"r":2.27},{"id":430,"path":"test/e2e/f297.ts","name":"f297.ts","dir":false,"depth":3,"x":363.13,"y":923.63,"z":55.71,"r":14.36,"add":202,"del":81,"status":"?","testPair":false,"viewed":false},{"id":431,"path":"test/e2e/f298.ts","name":"f298.ts","dir":false,"depth":3,"x":377.54,"y":936.89,"z":55.71,"r":2.27},{"id":432,"path":"test/e2e/f299.ts","name":"f299.ts","dir":false,"depth":3,"x":382,"y":942.98,"z":55.71,"r":2.27},{"id":433,"path":"test/e2e/f300.ts","name":"f300.ts","dir":false,"depth":3,"x":385.77,"y":949.53,"z":55.71,"r":2.27},{"id":434,"path":"test/e2e/f301.ts","name":"f301.ts","dir":false,"depth":3,"x":388.8,"y":956.44,"z":55.71,"r":2.27},{"id":435,"path":"test/e2e/f302.ts","name":"f302.ts","dir":false,"depth":3,"x":391.07,"y":963.65,"z":55.71,"r":2.27},{"id":436,"path":"test/e2e/f303.ts","name":"f303.ts","dir":false,"depth":3,"x":392.54,"y":971.06,"z":55.71,"r":2.27},{"id":437,"path":"test/e2e/f304.ts","name":"f304.ts","dir":false,"depth":3,"x":393.21,"y":978.58,"z":55.71,"r":2.27},{"id":438,"path":"test/e2e/f305.ts","name":"f305.ts","dir":false,"depth":3,"x":393.05,"y":986.13,"z":55.71,"r":2.27},{"id":439,"path":"test/e2e/f306.ts","name":"f306.ts","dir":false,"depth":3,"x":392.07,"y":993.62,"z":55.71,"r":2.27},{"id":440,"path":"test/e2e/f307.ts","name":"f307.ts","dir":false,"depth":3,"x":390.29,"y":1000.96,"z":55.71,"r":2.27},{"id":441,"path":"test/e2e/f308.ts","name":"f308.ts","dir":false,"depth":3,"x":382.05,"y":1018.72,"z":55.71,"r":14.36,"add":239,"del":4,"status":"D","testPair":false,"viewed":false},{"id":442,"path":"test/e2e/f309.ts","name":"f309.ts","dir":false,"depth":3,"x":369.19,"y":1033.49,"z":55.71,"r":2.27},{"id":443,"path":"test/e2e/f310.ts","name":"f310.ts","dir":false,"depth":3,"x":363.21,"y":1038.11,"z":55.71,"r":2.27},{"id":444,"path":"test/e2e/f311.ts","name":"f311.ts","dir":false,"depth":3,"x":356.77,"y":1042.05,"z":55.71,"r":2.27},{"id":445,"path":"test/e2e/f312.ts","name":"f312.ts","dir":false,"depth":3,"x":349.94,"y":1045.28,"z":55.71,"r":2.27},{"id":446,"path":"test/e2e/f313.ts","name":"f313.ts","dir":false,"depth":3,"x":342.8,"y":1047.74,"z":55.71,"r":2.27},{"id":447,"path":"test/e2e/f314.ts","name":"f314.ts","dir":false,"depth":3,"x":335.44,"y":1049.41,"z":55.71,"r":2.27},{"id":448,"path":"test/unit","name":"unit","dir":true,"depth":2,"x":487.50482934550246,"y":980.8949970314072,"z":67.48,"r":66.39,"br":77.7,"bx":487.5,"by":980.89,"files":45},{"id":449,"path":"test/unit/f225.ts","name":"f225.ts","dir":false,"depth":3,"x":553.17,"y":971.13,"z":67.48,"r":2.27},{"id":450,"path":"test/unit/f226.ts","name":"f226.ts","dir":false,"depth":3,"x":553.86,"y":978.65,"z":67.48,"r":2.27},{"id":451,"path":"test/unit/f227.ts","name":"f227.ts","dir":false,"depth":3,"x":553.68,"y":986.2,"z":67.48,"r":2.27},{"id":452,"path":"test/unit/f228.ts","name":"f228.ts","dir":false,"depth":3,"x":552.65,"y":993.68,"z":67.48,"r":2.27},{"id":453,"path":"test/unit/f229.ts","name":"f229.ts","dir":false,"depth":3,"x":550.78,"y":1001,"z":67.48,"r":2.27},{"id":454,"path":"test/unit/f230.ts","name":"f230.ts","dir":false,"depth":3,"x":548.09,"y":1008.05,"z":67.48,"r":2.27},{"id":455,"path":"test/unit/f231.ts","name":"f231.ts","dir":false,"depth":3,"x":537.53,"y":1024.54,"z":67.48,"r":14.36,"add":380,"del":3,"status":"A","testPair":false,"viewed":false},{"id":456,"path":"test/unit/f232.ts","name":"f232.ts","dir":false,"depth":3,"x":522.63,"y":1037.23,"z":67.48,"r":2.27},{"id":457,"path":"test/unit/f233.ts","name":"f233.ts","dir":false,"depth":3,"x":516.01,"y":1040.86,"z":67.48,"r":2.27},{"id":458,"path":"test/unit/f234.ts","name":"f234.ts","dir":false,"depth":3,"x":509.01,"y":1043.7,"z":67.48,"r":2.27},{"id":459,"path":"test/unit/f235.ts","name":"f235.ts","dir":false,"depth":3,"x":501.74,"y":1045.74,"z":67.48,"r":2.27},{"id":460,"path":"test/unit/f236.ts","name":"f236.ts","dir":false,"depth":3,"x":494.28,"y":1046.94,"z":67.48,"r":2.27},{"id":461,"path":"test/unit/f237.ts","name":"f237.ts","dir":false,"depth":3,"x":486.74,"y":1047.28,"z":67.48,"r":2.27},{"id":462,"path":"test/unit/f238.ts","name":"f238.ts","dir":false,"depth":3,"x":479.21,"y":1046.76,"z":67.48,"r":2.27},{"id":463,"path":"test/unit/f239.ts","name":"f239.ts","dir":false,"depth":3,"x":471.78,"y":1045.4,"z":67.48,"r":2.27},{"id":464,"path":"test/unit/f240.ts","name":"f240.ts","dir":false,"depth":3,"x":464.56,"y":1043.19,"z":67.48,"r":2.27},{"id":465,"path":"test/unit/f241.ts","name":"f241.ts","dir":false,"depth":3,"x":457.63,"y":1040.18,"z":67.48,"r":2.27},{"id":466,"path":"test/unit/f242.ts","name":"f242.ts","dir":false,"depth":3,"x":446,"y":1032.71,"z":67.48,"r":8.55,"add":17,"del":16,"status":"D","testPair":false,"viewed":false},{"id":467,"path":"test/unit/f243.ts","name":"f243.ts","dir":false,"depth":3,"x":436.18,"y":1023,"z":67.48,"r":2.27},{"id":468,"path":"test/unit/f244.ts","name":"f244.ts","dir":false,"depth":3,"x":431.73,"y":1016.9,"z":67.48,"r":2.27},{"id":469,"path":"test/unit/f245.ts","name":"f245.ts","dir":false,"depth":3,"x":428,"y":1010.33,"z":67.48,"r":2.27},{"id":470,"path":"test/unit/f246.ts","name":"f246.ts","dir":false,"depth":3,"x":425.04,"y":1003.38,"z":67.48,"r":2.27},{"id":471,"path":"test/unit/f247.ts","name":"f247.ts","dir":false,"depth":3,"x":422.89,"y":996.14,"z":67.48,"r":2.27},{"id":472,"path":"test/unit/f248.ts","name":"f248.ts","dir":false,"depth":3,"x":421.58,"y":988.71,"z":67.48,"r":2.27},{"id":473,"path":"test/unit/f249.ts","name":"f249.ts","dir":false,"depth":3,"x":421.12,"y":981.17,"z":67.48,"r":2.27},{"id":474,"path":"test/unit/f250.ts","name":"f250.ts","dir":false,"depth":3,"x":421.51,"y":973.63,"z":67.48,"r":2.27},{"id":475,"path":"test/unit/f251.ts","name":"f251.ts","dir":false,"depth":3,"x":422.77,"y":966.18,"z":67.48,"r":2.27},{"id":476,"path":"test/unit/f252.ts","name":"f252.ts","dir":false,"depth":3,"x":424.86,"y":958.92,"z":67.48,"r":2.27},{"id":477,"path":"test/unit/f253.ts","name":"f253.ts","dir":false,"depth":3,"x":432.26,"y":944.07,"z":67.48,"r":11.35,"add":54,"del":29,"status":"R","testPair":false,"viewed":false},{"id":478,"path":"test/unit/f254.ts","name":"f254.ts","dir":false,"depth":3,"x":443.12,"y":931.52,"z":67.48,"r":2.27},{"id":479,"path":"test/unit/f255.ts","name":"f255.ts","dir":false,"depth":3,"x":449.02,"y":926.8,"z":67.48,"r":2.27},{"id":480,"path":"test/unit/f256.ts","name":"f256.ts","dir":false,"depth":3,"x":455.41,"y":922.78,"z":67.48,"r":2.27},{"id":481,"path":"test/unit/f257.ts","name":"f257.ts","dir":false,"depth":3,"x":462.22,"y":919.51,"z":67.48,"r":2.27},{"id":482,"path":"test/unit/f258.ts","name":"f258.ts","dir":false,"depth":3,"x":469.35,"y":917.03,"z":67.48,"r":2.27},{"id":483,"path":"test/unit/f259.ts","name":"f259.ts","dir":false,"depth":3,"x":476.72,"y":915.39,"z":67.48,"r":2.27},{"id":484,"path":"test/unit/f260.ts","name":"f260.ts","dir":false,"depth":3,"x":484.23,"y":914.59,"z":67.48,"r":2.27},{"id":485,"path":"test/unit/f261.ts","name":"f261.ts","dir":false,"depth":3,"x":491.78,"y":914.64,"z":67.48,"r":2.27},{"id":486,"path":"test/unit/f262.ts","name":"f262.ts","dir":false,"depth":3,"x":499.28,"y":915.56,"z":67.48,"r":2.27},{"id":487,"path":"test/unit/f263.ts","name":"f263.ts","dir":false,"depth":3,"x":506.62,"y":917.32,"z":67.48,"r":2.27},{"id":488,"path":"test/unit/f264.ts","name":"f264.ts","dir":false,"depth":3,"x":523.5,"y":925.11,"z":67.48,"r":13.36,"add":91,"del":42,"status":"M","testPair":false,"viewed":false},{"id":489,"path":"test/unit/f265.ts","name":"f265.ts","dir":false,"depth":3,"x":537.56,"y":937.28,"z":67.48,"r":2.27},{"id":490,"path":"test/unit/f266.ts","name":"f266.ts","dir":false,"depth":3,"x":542.19,"y":943.25,"z":67.48,"r":2.27},{"id":491,"path":"test/unit/f267.ts","name":"f267.ts","dir":false,"depth":3,"x":546.11,"y":949.7,"z":67.48,"r":2.27},{"id":492,"path":"test/unit/f268.ts","name":"f268.ts","dir":false,"depth":3,"x":549.27,"y":956.56,"z":67.48,"r":2.27},{"id":493,"path":"test/unit/f269.ts","name":"f269.ts","dir":false,"depth":3,"x":551.64,"y":963.73,"z":67.48,"r":2.27}],"edges":[{"from":172,"to":171,"hot":true},{"from":173,"to":171,"hot":true},{"from":174,"to":171,"hot":true},{"from":175,"to":171,"hot":true},{"from":176,"to":171,"hot":true},{"from":177,"to":171,"hot":true},{"from":178,"to":171,"hot":true},{"from":179,"to":171,"hot":true},{"from":180,"to":171,"hot":true},{"from":181,"to":171,"hot":true},{"from":182,"to":171,"hot":true},{"from":183,"to":171,"hot":true},{"from":184,"to":171,"hot":true},{"from":185,"to":171,"hot":true},{"from":186,"to":171,"hot":true},{"from":187,"to":171,"hot":true},{"from":188,"to":171,"hot":true},{"from":189,"to":171,"hot":true},{"from":190,"to":171,"hot":true},{"from":191,"to":171,"hot":true},{"from":192,"to":171,"hot":true},{"from":193,"to":171,"hot":true},{"from":194,"to":171,"hot":true},{"from":195,"to":171,"hot":true},{"from":196,"to":171,"hot":true},{"from":197,"to":171,"hot":true},{"from":198,"to":171,"hot":true},{"from":199,"to":171,"hot":true},{"from":200,"to":171,"hot":true},{"from":201,"to":171,"hot":true},{"from":310,"to":171,"hot":true},{"from":310,"to":356},{"from":125,"to":171,"hot":true},{"from":125,"to":172}],"totalFiles":480,"shownFiles":480,"truncated":false,"changedCount":40,"root":"","maxDepth":3};
+window.addEventListener('gitmap-ready', () => {
+  window.GitMap.setData(window.__payload);
+  window.GitMap.analysis('src/core/f000.ts', { word: 'refactor', risk: 'medium', quality: 'review', summary: 'Rework of the core pipeline entry.' });
+  window.GitMap.analysis('src/core/f011.ts', { word: 'bugfix', risk: 'low', quality: 'clean', summary: 'Off-by-one fix in pagination.' });
+  window.__ready = true;
+});
+document.getElementById('map-panel-close').addEventListener('click', () => window.__gdvMapBridge.hidePanel());
+</script>
+<script type="importmap">{ "imports": { "three": "/node_modules/three/build/three.module.js" } }</script>
+<script type="module" src="/media/map.js"></script>
+</body>
+</html>

@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.33.0
+
+- Code Map redesigned as an **orbital board** (v2 layout):
+  - Every folder is a horizontal **ring (orbit)** floating at a height set by its depth; the folder's files are **spheres resting on the ring**, spaced by size. Child folders pack inside the parent's boundary circle — orbits within orbits, connected by faint vertical stems.
+  - Sphere hue = git status (green added, amber modified, red deleted, blue renamed); changed files float above their orbit and carry name + churn pill labels.
+  - **Hubs**: files imported by 4+ others get a violet halo and an "imported by N" count — the load-bearing walls of the repo stand out.
+  - Import paths render as directional arcs (cyan → purple = importer → imported); hovering or selecting a sphere draws its own arcs bright — outgoing cyan/purple, incoming amber — while the rest stays ambient.
+  - **Hover = diff peek**: the tooltip shows the file's first hunk with +/− coloring, straight from the working diff.
+  - **Click = anchored diff window**: a floating panel opens next to the sphere (connector line included, follows the camera) with the full interactive diff — hunk approve/reject, stage/unstage, inline comments all work inside it.
+  - **Notes for the AI**: the panel has a notes strip + composer; saved notes ride along with "Analyze with notes" so the AI review addresses what you asked. Notes are stored as file-level comments.
+- Architecture: the three.js renderer moved out of the webview template literal into `media/map.js` (real ES module, loaded via importmap) — editable, lintable, testable.
+- Fixed: opening a diff from the map crashed (`gridMode` const reassignment) — the map diff panel now renders through `renderFile(change, flat)`.
+- Fixed: fast mouse movement could leave the hover stuck on a passed-through node (trailing re-pick added).
+- Camera: unchanged — fixed isometric, drag pan, wheel zoom, Q/E snap rotation.
+
 ## 0.32.0
 
 - New: **Code Map** (experimental, `gitDiffViewer.experimentalMap`) — a zoomable, circle-packed bubble view of the whole repo rendered with three.js. Toolbar `◉ Map` toggles between the map and the diff grid.
